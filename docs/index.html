@@ -1,25 +1,73 @@
 <!DOCTYPE html>
 <html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <!-- Title -->
+    <title>SpiraCSS</title>
+    <style>
+      html,body{height:100%}*,*:after,*:before{box-sizing:border-box}*{padding:0;margin:0;font-size:inherit;line-height:inherit}main{display:block}img{vertical-align:middle}img{width:100%;max-width:100%;height:auto;border:0}body{display:flex;flex-direction:column;min-height:100dvh;font-family:Noto Sans JP,sans-serif;font-size:1rem;line-height:1.5;color:var(--color-text, #2a2f63);overflow-wrap:break-word;background-color:#fff;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-moz-text-size-adjust:100%;text-size-adjust:100%}.main-container{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center}a{color:#00f;text-decoration:underline}a:visited{color:navy}a:hover{color:red;text-decoration:none}a:active{color:#ff8000;text-decoration:none}:root{--color-text:#2a2f63;--color-red:#d51313;--color-yellow:#ffdf2f;--white:#fff;--black:#000;--gray:#d4d4d4;--gray-50:#f9fafb;--gray-100:#f8fafc;--gray-200:#f3f4f6;--gray-300:#e5e7eb;--gray-400:#e2e8f0;--gray-500:#cbd5e1;--gray-600:#6c757d;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;--slate-900:#0f172a;--red:#ff4d4d;--orange:#ff944d;--yellow:#ffeb3b;--green:#4caf50;--blue:#2196f3;--purple:#9c27b0;--light-gray:#fafafa;--light-red:#ffe5e7;--light-orange:#fff1e0;--light-yellow:#ffffe0;--light-green:#e6ffeb;--light-blue:#e6f7ff;--light-purple:#f3e6ff}@media print{*,*:before,*:after{color:#000!important;text-shadow:none!important;background:transparent!important;box-shadow:none!important}a,a:visited{text-decoration:underline}img{-moz-column-break-inside:avoid;break-inside:avoid}img{max-width:100%!important}p{widows:3;orphans:3}}.footer-container{display:flex;flex-direction:column;align-items:center;width:100%;padding:1rem;color:var(--white);text-align:center;background-color:#191d38}@media(min-width:768px){.footer-container{position:absolute;bottom:0}}.footer-container>.github{width:11.7333333333vw}@media(min-width:768px){.footer-container>.github{width:2.75rem}}.footer-container>.copyright{margin-top:1rem;font-size:1rem}@media(min-width:768px){.footer-container>.copyright{font-size:1rem}}.footer-container>.github>a{display:block;transition:opacity .2s ease}.footer-container>.github>a:hover{opacity:.7}.kv-container{padding:3.125rem 1.5625rem;text-align:center}@media(min-width:768px){.kv-container{max-width:62.5rem;padding:0 6.25rem}}.kv-container>.h{width:13.6875rem;margin:auto}@media(min-width:768px){.kv-container>.h{width:23.1875rem}}.kv-container>.catch{margin:2.6666666667vw auto 0;font-size:1.25rem;line-height:1.4}@media(min-width:768px){.kv-container>.catch{margin:clamp(6px,.78125vw,10px) auto 0;font-size:1.5rem}}.kv-container>.catch>.bold{font-weight:700}.kv-container>.desc{padding:5.3333333333vw;font-size:1rem;line-height:1.5;text-align:left;background-color:#f8f8f8;border:1px solid #e0e0e0;border-radius:.3125rem}@media(min-width:768px){.kv-container>.desc{padding:clamp(12px,1.5625vw,20px) clamp(18px,2.34375vw,30px);font-size:1.125rem;line-height:1.4444444444}}.kv-container>.desc[data-variant=en]{margin:5.3333333333vw auto 0}@media(min-width:768px){.kv-container>.desc[data-variant=en]{margin:clamp(24px,3.125vw,40px) auto 0}}.kv-container>.desc[data-variant=ja]{margin:5.3333333333vw auto 0}@media(min-width:768px){.kv-container>.desc[data-variant=ja]{margin:clamp(6px,.78125vw,10px) auto 0}}@media(min-width:768px){.main-container{display:flex;align-items:center;justify-content:center;height:100%}}@media(min-width:768px){.main-container>.kv-container{margin-top:clamp(-100px,-7.8125vw,-60px)}}
+    </style>
 
-<head>
-  <meta charset="UTF-8">
-  <title>SpiraCSS</title>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5847B37RW8"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
+    <!-- meta -->
+    <meta name="description" content="Simplified Practical Integrated Relational Architecture for CSS">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="keywords" content="SpiraCSS">
 
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
+    <!-- icons -->
+    <link rel="icon" href="assets/img/icon-favicon-8c4c21e8.ico" sizes="32x32" type="image/x-icon">
+    <link rel="icon" href="assets/img/icon-android-chrome-192x192-f673d8a6.png" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="assets/img/icon-apple-touch-icon-ba08c709.png">
 
-    gtag('config', 'G-5847B37RW8');
-  </script>
-</head>
+    <!-- canonical -->
+    <link rel="canonical" href="https://spiracss.jp/">
 
-<body>
-  SpiraCSS
-</body>
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 
+    <link rel="preload" href="assets/css/global-D7vfBB1H.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="assets/css/common-oyF2dGOs.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="assets/css/index-7M_du2qO.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+    <script type="module" src="assets/js/common-B_y6hEsN.js"></script>
+
+    <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-5847B37RW8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+      gtag('config', 'G-5847B37RW8')
+    </script>
+  </head>
+
+  <body>
+    <main class="main-container">
+      <section class="kv-container">
+        <h1 class="h">
+          <img src="assets/img/c-index-kv-container-img-logo-6715631c.svg" width="371" height="98" data-aspectratio="3.786" alt="SpiraCSS">
+        </h1>
+        <p class="catch">
+          <span class="bold">S</span>implified <span class="bold">P</span>ractical <span class="bold">I</span>ntegrated <span class="bold">R</span>elational<br><span class="bold">A</span>rchitecture
+          for <span class="bold">CSS</span>
+        </p>
+        <p data-variant="en" class="desc">
+          SpiraCSS is a CSS architecture that reduces intuition-driven, implementer-dependent judgments to a minimal set of principles—designed to be automatically validated by tools—so humans and AI
+          can maintain consistent design using a shared standard.
+        </p>
+        <p data-variant="ja" class="desc">SpiraCSS は、実装者の感覚でブレがちな判断を最小限の原則に落とし込み、ツール検証で人間と AI が同じ基準で一貫設計できる CSS アーキテクチャです。</p>
+      </section>
+    </main>
+    <footer class="footer-container">
+      <p class="github">
+        <a href="https://github.com/zetsubo-dev/spiracss" target="_blank" rel="noopener noreferrer" class="link">
+          <img src="assets/img/c-c-footer-container-img-github-mark-white-f202b6fa.svg" width="98" height="96" data-aspectratio="1.021" alt="GitHub">
+        </a>
+      </p>
+      <p class="copyright">© SpiraCSS</p>
+    </footer>
+  </body>
 </html>

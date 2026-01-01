@@ -7,24 +7,24 @@ SpiraCSS のツール群の詳細ドキュメントです。
 | ツール | 役割 | ドキュメント |
 | ------ | ---- | ------------ |
 | **spiracss.config.js** | 全ツール共通の設定ファイル | [spiracss-config.md](spiracss-config.md) |
-| **stylelint プラグイン** | SCSS の構造・命名を自動検証 | [stylelint.md](stylelint.md) |
-| **HTML CLI** | HTML から SCSS を生成、HTML 構造を検証 | [html-cli.md](html-cli.md) |
-| **VSCode Comment Links** | リンクコメントをクリックで該当ファイルを開く | [comment-links.md](comment-links.md) |
-| **VSCode HTML to SCSS** | HTML から SCSS テンプレートを生成 | [html-to-scss.md](html-to-scss.md) |
+| **SpiraCSS Stylelint プラグイン** | SCSS の構造・命名を自動検証 | [stylelint.md](stylelint.md) |
+| **SpiraCSS HTML CLI** | HTML から SCSS を生成、HTML 構造を検証 | [html-cli.md](html-cli.md) |
+| **SpiraCSS Comment Links** | リンクコメントをクリックで該当ファイルを開く | [comment-links.md](comment-links.md) |
+| **SpiraCSS HTML to SCSS** | HTML から SCSS テンプレートを生成 | [html-to-scss.md](html-to-scss.md) |
 
 ## 運用フロー
 
 ```
 spiracss.config.js（共通設定）
          │
-         ├── HTML CLI / VSCode HTML to SCSS ──→ SCSS テンプレート生成
+         ├── SpiraCSS HTML CLI / SpiraCSS HTML to SCSS ──→ SCSS テンプレート生成
          │
-         └── stylelint プラグイン ──→ ルール違反を自動検出
+         └── SpiraCSS Stylelint プラグイン ──→ ルール違反を自動検出
 ```
 
 1. `spiracss.config.js` でプロジェクトの命名規則・検証ルールを設定
-2. HTML CLI または VSCode HTML to SCSS で SCSS テンプレートを生成
-3. stylelint でルール違反を自動検出
+2. SpiraCSS HTML CLI または SpiraCSS HTML to SCSS で SCSS テンプレートを生成
+3. Stylelint でルール違反を自動検出
 
 ## 設定の共有
 
@@ -35,10 +35,10 @@ SpiraCSS ツール群は `spiracss.config.js` を共通の設定ファイルと�
 ## 関連ツール
 ### ツール
 - [ツール連携](index.md)
-- [stylelint プラグイン](stylelint.md)
-- [HTML CLI](html-cli.md)
-- [VSCode Comment Links](comment-links.md)
-- [VSCode HTML to SCSS](html-to-scss.md)
+- [SpiraCSS Stylelint プラグイン](stylelint.md)
+- [SpiraCSS HTML CLI](html-cli.md)
+- [SpiraCSS Comment Links](comment-links.md)
+- [SpiraCSS HTML to SCSS](html-to-scss.md)
 
 ### 設定
 - [spiracss.config.js](spiracss-config.md)

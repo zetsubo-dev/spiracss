@@ -3,7 +3,7 @@
 `spiracss.config.js` は SpiraCSS 関連ツールで共有される設定ファイルです。
 主な参照先は以下です。
 
-- **aliasRoots**: Comment Links / stylelint のパス解決
+- **aliasRoots**: Comment Links / Stylelint のパス解決
 - **stylelint**: ルール設定（classStructure / interactionScope / relComments など）
 - **selectorPolicy**: バリアント/状態の表現方針（lint / generator / HTML lint）
 - **htmlFormat**: HTML プレースホルダ付与の出力属性
@@ -64,14 +64,14 @@ aliasRoots: {
 
 - キーに `@` プレフィックスは不要です（`components` → `@components/...`）
 - 値は配列で指定します（相対パス推奨 / 絶対パスも可）
-- `aliasRoots` に無いエイリアスは stylelint 側では解決できません
+- `aliasRoots` に無いエイリアスは Stylelint 側では解決できません
 - Comment Links は未定義のエイリアスでも拡張内フォールバックで解決します
 - CLI ツールは `aliasRoots` を参照しません
-- stylelint プラグインの `createRules()` を使う場合、`aliasRoots` は必須です（未設定だとエラー）
+- SpiraCSS Stylelint プラグインの `createRules()` を使う場合、`aliasRoots` は必須です（未設定だとエラー）
 
 ### `stylelint`
 
-stylelint プラグインのルール設定です。
+SpiraCSS Stylelint プラグインのルール設定です。
 `createRules()` を使う場合は `classStructure` / `interactionScope` / `relComments` を必ず定義してください。
 
 #### `stylelint.sectionCommentPatterns`
@@ -338,9 +338,9 @@ module.exports = {
 - パスがプロジェクトルートからの相対パスになっているか確認
 - `spiracss.config.js` を保存し、ワークスペースの再読込を試す
 
-### stylelint ルールが適用されない
+### Stylelint ルールが適用されない
 
-- stylelint の設定ファイルでプラグインが読み込まれているか確認
+- Stylelint の設定ファイルでプラグインが読み込まれているか確認
 - `spiracss.config.js` がプロジェクトルートにあるか確認
 
 ### 生成される SCSS の構造がおかしい
@@ -350,10 +350,10 @@ module.exports = {
 
 ## 関連ツール
 ### ツール
-- [stylelint プラグイン](stylelint.md)
-- [HTML CLI](html-cli.md)
-- [VSCode Comment Links](comment-links.md)
-- [VSCode HTML to SCSS](html-to-scss.md)
+- [SpiraCSS Stylelint プラグイン](stylelint.md)
+- [SpiraCSS HTML CLI](html-cli.md)
+- [SpiraCSS Comment Links](comment-links.md)
+- [SpiraCSS HTML to SCSS](html-to-scss.md)
 
 ### 設定
 - spiracss.config.js

@@ -1,7 +1,7 @@
-# HTML CLI
+# SpiraCSS HTML CLI
 
-VSCode 拡張と同じロジックを使った CLI ツールです。CI/CD やスクリプトからの利用に適しています。
-解析仕様やテンプレート対応の詳細は [VSCode HTML to SCSS](html-to-scss.md) を参照してください。
+VS Code 拡張と同じロジックを使った CLI ツールです。CI/CD やスクリプトからの利用に適しています。
+解析仕様やテンプレート対応の詳細は [SpiraCSS HTML to SCSS](html-to-scss.md) を参照してください。
 
 ## インストール
 
@@ -213,10 +213,10 @@ module.exports = {
 
 ## 関連ツール
 ### ツール
-- [stylelint プラグイン](stylelint.md)
-- HTML CLI
-- [VSCode Comment Links](comment-links.md)
-- [VSCode HTML to SCSS](html-to-scss.md)
+- [SpiraCSS Stylelint プラグイン](stylelint.md)
+- SpiraCSS HTML CLI
+- [SpiraCSS Comment Links](comment-links.md)
+- [SpiraCSS HTML to SCSS](html-to-scss.md)
 
 ### 設定
 - [spiracss.config.js](spiracss-config.md)

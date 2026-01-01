@@ -1,6 +1,6 @@
-# stylelint プラグイン
+# SpiraCSS Stylelint プラグイン
 
-SpiraCSS の設計ルールを検証する stylelint プラグインです。
+SpiraCSS の設計ルールを検証する SpiraCSS Stylelint プラグインです。
 
 SpiraCSS 自体の設計原則は [styleguide.md](../styleguide.md) を参照してください。
 このドキュメントでは「lint で守れる範囲」と「導入手順」を整理します。
@@ -15,7 +15,7 @@ SpiraCSS 自体の設計原則は [styleguide.md](../styleguide.md) を参照し
 
 ## インストール
 
-stylelint v16 以上が必要です。
+Stylelint v16 以上が必要です。
 
 ```bash
 npm install -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
@@ -27,10 +27,10 @@ yarn add -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
 
 ### 共通設定ファイル（spiracss.config.js）の準備
 
-SpiraCSS 関連ツール（stylelint プラグイン、VSCode 拡張、CLI）は同じ設定を参照します。
+SpiraCSS 関連ツール（SpiraCSS Stylelint プラグイン、VS Code 拡張、CLI）は同じ設定を参照します。
 プロジェクトルートに `spiracss.config.js` を配置し、設定内容は [spiracss-config.md](spiracss-config.md) を参照して調整してください。
 
-### stylelint への組み込み
+### Stylelint への組み込み
 
 `spiracss.config.js` を用意したら、`stylelint.config.js` で `createRules()` を使用します：
 
@@ -124,7 +124,7 @@ interaction セクション（`// --interaction` と `@at-root & { ... }`）の�
 
 ### 3つのルールの役割分担
 
-SpiraCSS の 3 つの stylelint ルールは、対応セクションごとに分担しています。
+SpiraCSS の 3 つの Stylelint ルールは、対応セクションごとに分担しています。
 
 | ルール | 対応セクション |
 |--------|--------------|
@@ -139,16 +139,16 @@ SpiraCSS の 3 つの stylelint ルールは、対応セクションごとに分
 ## カスタマイズ
 
 `spiracss.config.js` でルールをプロジェクトに合わせて調整できます。
-仕様から外れる設定を使う場合は、設計レビューで合意し、stylelint / VSCode 拡張 / CLI が同じ設定を参照するように統一してください。
+仕様から外れる設定を使う場合は、設計レビューで合意し、Stylelint / VS Code 拡張 / CLI が同じ設定を参照するように統一してください。
 
 詳細は [spiracss-config.md](spiracss-config.md) を参照してください。
 
 ## 関連ツール
 ### ツール
-- stylelint プラグイン
-- [HTML CLI](html-cli.md)
-- [VSCode Comment Links](comment-links.md)
-- [VSCode HTML to SCSS](html-to-scss.md)
+- SpiraCSS Stylelint プラグイン
+- [SpiraCSS HTML CLI](html-cli.md)
+- [SpiraCSS Comment Links](comment-links.md)
+- [SpiraCSS HTML to SCSS](html-to-scss.md)
 
 ### 設定
 - [spiracss.config.js](spiracss-config.md)

@@ -1,6 +1,6 @@
-# VSCode Comment Links
+# SpiraCSS Comment Links
 
-SCSS ファイル内の `// @rel/...`、`// @components/...` などの形式のコメントを **Cmd/Ctrl+Click** でファイルジャンプできるようにする VSCode 拡張です。
+SCSS ファイル内の `// @rel/...`、`// @components/...` などの形式のコメントを **Cmd/Ctrl+Click** でファイルジャンプできるようにする VS Code 拡張です。
 
 [SpiraCSS](../styleguide.md) の CSS 設計規約と組み合わせて使うことを想定しています。
 
@@ -11,7 +11,7 @@ SCSS ファイル内の `// @rel/...`、`// @components/...` などの形式の�
 
 ## インストール
 
-VSCode 拡張マーケットプレイスから `SpiraCSS Comment Links` を検索してインストールします。
+VS Code 拡張マーケットプレイスから `SpiraCSS Comment Links` を検索してインストールします。
 
 → [Marketplace からインストール](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-comment-links)
 
@@ -90,10 +90,10 @@ module.exports = {
 
 ## 関連ツール
 ### ツール
-- [stylelint プラグイン](stylelint.md)
-- [HTML CLI](html-cli.md)
-- VSCode Comment Links
-- [VSCode HTML to SCSS](html-to-scss.md)
+- [SpiraCSS Stylelint プラグイン](stylelint.md)
+- [SpiraCSS HTML CLI](html-cli.md)
+- SpiraCSS Comment Links
+- [SpiraCSS HTML to SCSS](html-to-scss.md)
 
 ### 設定
 - [spiracss.config.js](spiracss-config.md)

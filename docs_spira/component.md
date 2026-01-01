@@ -194,7 +194,7 @@ Variant / State の表現は **data モード**（デフォルト・推奨）と
 - Variant を複数の属性に分けることもできます（例: `data-variant="primary"` と `data-size="large"` を併用）
 - Variant と State でモードを別々に設定することもできます（例: Variant は data、State は class）
 
-設定ファイルで指定すると、stylelint での検証や CLI での生成に反映されます。
+設定ファイルで指定すると、Stylelint での検証や CLI での生成に反映されます。
 
 ### 設定例
 
@@ -225,7 +225,7 @@ module.exports = {
 
 shared / interaction はルート Block 直下に配置します。
 
-> stylelint のセクション判定コメント（`// --shared` / `// --interaction`）は `spiracss.config.js` で変更できます。
+> Stylelint のセクション判定コメント（`// --shared` / `// --interaction`）は `spiracss.config.js` で変更できます。
 
 ### SCSS ファイル全体の構造例
 
@@ -356,8 +356,8 @@ interaction セクションは、Block の状態変化や `:hover` / `:focus-vis
 ## @rel コメント
 
 Block 間の親子関係をコメントで明示し、ファイル間をたどれるようにします。  
-VSCode 拡張でリンクコメント（`@rel` など）をクリックすると該当ファイルを開けます。  
-SCSS を生成する際は HTML 構造から VSCode 拡張 / CLI が適切なコメントパスを自動挿入します。
+VS Code 拡張でリンクコメント（`@rel` など）をクリックすると該当ファイルを開けます。  
+SCSS を生成する際は HTML 構造から VS Code 拡張 / CLI が適切なコメントパスを自動挿入します。
 
 例: 親 Block の SCSS（`components/home-section/home-section.scss`）
 
@@ -406,7 +406,7 @@ SCSS を生成する際は HTML 構造から VSCode 拡張 / CLI が適切なコ
 
 ## 次のステップ
 
-→ [ガイドライン](guidelines.md): stylelint では強制しない推奨ルール
+→ [ガイドライン](guidelines.md): Stylelint では強制しない推奨ルール
 
 ## SpiraCSS ドキュメント
 - [スタイルガイド](styleguide.md)

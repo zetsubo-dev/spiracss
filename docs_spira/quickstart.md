@@ -2,7 +2,7 @@
 
 SpiraCSS のツールを導入する手順です。
 
-## stylelint プラグイン
+## SpiraCSS Stylelint プラグイン
 
 SCSS の構造・命名を自動検証します。
 
@@ -14,7 +14,7 @@ npm install -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
 
 ### 設定
 
-stylelint の設定ファイルに SpiraCSS プラグインを追加します。`createRules()` に `spiracss.config.js` を渡すと、設定に応じたルールが生成されます。
+Stylelint の設定ファイルに SpiraCSS プラグインを追加します。`createRules()` に `spiracss.config.js` を渡すと、設定に応じたルールが生成されます。
 
 **ESM（stylelint.config.js）**
 
@@ -58,7 +58,7 @@ npx stylelint "src/**/*.scss"
 
 ---
 
-## HTML CLI
+## SpiraCSS HTML CLI
 
 HTML から SCSS を生成、HTML 構造を検証します。
 
@@ -79,7 +79,7 @@ echo "$HTML" | npx spiracss-html-format --stdin
 
 ---
 
-## VSCode 拡張
+## VS Code 拡張
 
 ### Comment Links
 
@@ -98,9 +98,9 @@ HTML から SCSS テンプレートを生成します。
 ## 共通設定
 
 すべてのツールは `spiracss.config.js` を参照します。プロジェクトルートに作成してください。
-stylelint の `createRules()` を使う場合は、`aliasRoots` と `stylelint` セクションが必須です。
+Stylelint の `createRules()` を使う場合は、`aliasRoots` と `stylelint` セクションが必須です。
 
-### 最小構成（stylelint 使用時）
+### 最小構成（Stylelint 使用時）
 
 ```js
 export default {

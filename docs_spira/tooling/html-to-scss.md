@@ -1,6 +1,6 @@
-# VSCode HTML to SCSS
+# SpiraCSS HTML to SCSS
 
-HTML / テンプレートから [SpiraCSS](../styleguide.md) のルールに沿った SCSS ファイルを自動生成する VSCode 拡張です。
+HTML / テンプレートから [SpiraCSS](../styleguide.md) のルールに沿った SCSS ファイルを自動生成する VS Code 拡張です。
 
 ## 変換例
 
@@ -81,7 +81,7 @@ your-component/
 
 ## インストール
 
-VSCode 拡張マーケットプレイスから `SpiraCSS HTML to SCSS (Beta)` を検索してインストールします。
+VS Code 拡張マーケットプレイスから `SpiraCSS HTML to SCSS` を検索してインストールします。
 
 → [Marketplace からインストール](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss)
 
@@ -205,10 +205,10 @@ class 属性の**先頭トークン**を base class として判定します。�
 
 ## 関連ツール
 ### ツール
-- [stylelint プラグイン](stylelint.md)
-- [HTML CLI](html-cli.md)
-- [VSCode Comment Links](comment-links.md)
-- VSCode HTML to SCSS
+- [SpiraCSS Stylelint プラグイン](stylelint.md)
+- [SpiraCSS HTML CLI](html-cli.md)
+- [SpiraCSS Comment Links](comment-links.md)
+- SpiraCSS HTML to SCSS
 
 ### 設定
 - [spiracss.config.js](spiracss-config.md)

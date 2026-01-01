@@ -20,7 +20,7 @@
 - **判断のブレを減らす**: 命名と構造で機械的に判定できる規則に絞る。
 - **Variant / State の分離**: 見た目の差分（Variant）と状態（State）を区別する。
 - **1 Block = 1 ファイル**: SCSS ファイルは Block 単位で分割する。
-- **ツールで検証できる範囲を重視**: stylelint / HTML lint に載るルールを優先。
+- **ツールで検証できる範囲を重視**: Stylelint / HTML lint に載るルールを優先。
 
 ---
 
@@ -103,7 +103,7 @@ class モード（互換）:
 3. **`--interaction`**（状態・hover など）
 
 要点:
-- `--shared` / `--interaction` のコメントが無いと stylelint エラーになる（設定に従う）
+- `--shared` / `--interaction` のコメントが無いと Stylelint エラーになる（設定に従う）
 - interaction は `@at-root & { ... }` にまとめ、セレクタは `&` 起点で書く。基本構造より後、原則ファイル末尾
 - `--shared` / `--interaction` はルート Block 直下に置く（子ルール内に置かない）
 
@@ -449,7 +449,7 @@ src/
 - 親 → ページ: `// @assets/css/page.scss`
 - ページ → Block: `// @components/...`（ページ側の `> .block` 内）
 
-パス解決は `aliasRoots` を使用（stylelint 側）。CLI は `aliasRoots` を参照しない。
+パス解決は `aliasRoots` を使用（Stylelint 側）。CLI は `aliasRoots` を参照しない。
 
 ---
 
@@ -458,10 +458,10 @@ src/
 ### 共通
 
 - **`spiracss.config.js` が唯一の正解**
-- すべてのツールはこの設定を参照（stylelint / HTML CLI / 生成）
+- すべてのツールはこの設定を参照（Stylelint / SpiraCSS HTML CLI / 生成）
 - `package.json` に `"type": "module"` がある場合は ESM（`export default`）
 
-### stylelint プラグイン
+### SpiraCSS Stylelint プラグイン
 
 - パッケージ: `@spiracss/stylelint-plugin`
 - ルール:
@@ -473,11 +473,11 @@ src/
 - `createRules()` を使って設定を展開
 - `stylelint-scss` と `postcss-scss` が必要
 - `aliasRoots` と `stylelint` 設定が必須（`createRules()` 使用時）
-- stylelint v16 以上が必要
+- Stylelint v16 以上が必要
 - ESM の場合は `createRules(設定オブジェクト)`、CJS の場合は `createRules('./spiracss.config.js')`
 - `customSyntax: 'postcss-scss'` と `scss/at-rule-no-unknown: true` を設定
 
-### HTML CLI
+### SpiraCSS HTML CLI
 
 - パッケージ: `@spiracss/html-cli`
 - コマンド:
@@ -551,12 +551,12 @@ AI が変更・生成を行う前に、必ず現在の設定を確認する。
 
 ### `aliasRoots`
 
-- エイリアスの解決ルート（stylelint のパス検証に必須）
+- エイリアスの解決ルート（Stylelint のパス検証に必須）
 - CLI は参照しない
 - キーは `@` なし（例: `components` → `@components/...`）
 - 値は配列で指定（相対パス推奨 / 絶対パス可）
 - `createRules()` 利用時に未設定だとエラー
-- 未定義のエイリアスは stylelint 側では解決できない
+- 未定義のエイリアスは Stylelint 側では解決できない
 
 ### `stylelint`
 

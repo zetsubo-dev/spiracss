@@ -118,8 +118,8 @@ SCSS は 3 セクションに分けて記述します：
 
 運用は共通設定（`spiracss.config.js`）とツールで統一します。
 
-- **自動生成**: `@rel` コメントや構造の SCSS など面倒な部分は CLI / VSCode 拡張で自動生成
-- **自動検証**: ルール違反は stylelint が人間にも AI にも同じ基準で検出
+- **自動生成**: `@rel` コメントや構造の SCSS など面倒な部分は CLI / VS Code 拡張で自動生成
+- **自動検証**: ルール違反は Stylelint が人間にも AI にも同じ基準で検出
 - **設定でカスタマイズ**: 命名・コメント形式・検証の強さなどは `spiracss.config.js` でプロジェクト / チームの方針に合わせて調整できる
 
 生成・検証のすべてが同じ設定ファイルを参照するため、方針に合わせて設定を変えてもツールが同じ基準で追従します。「書く」こともできますが、「生成して検証する」運用と特に相性が良い設計です。
@@ -143,5 +143,5 @@ SCSS は 3 セクションに分けて記述します：
 
 | ドキュメント | 内容 |
 | ------------ | ---- |
-| [ツール連携](tooling/index.md) | stylelint / VSCode 拡張 / CLI の使い方 |
+| [ツール連携](tooling/index.md) | Stylelint / VS Code 拡張 / CLI の使い方 |
 | [spiracss.config.js](tooling/spiracss-config.md) | 共通設定ファイルの詳細（selectorPolicy など） |

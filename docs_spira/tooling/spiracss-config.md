@@ -173,7 +173,7 @@ relComments: {
   skipFilesWithoutRules: true,
   requireChildRelComments: true,
   requireChildRelCommentsInShared: true,
-  requireChildRelCommentsInInteraction: true,
+  requireChildRelCommentsInInteraction: false,
   requireParentRelComment: true,
   childScssDir: 'scss'
 }

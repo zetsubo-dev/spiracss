@@ -71,7 +71,7 @@ your-component/
 
 - 同一 base class が複数ある場合、modifier / variant / state / aria は重複排除して統合されます
 - 予約キーは `selectorPolicy` で変更できます（例: `data-theme`, `data-status`, `aria-hidden`）
-- data モードでは `variant` は基本構造、`state` / `aria` は interaction セクションに出力されます
+- data モードでは `variant` は基本構造に出力されます（インタラクション初期値は手動で interaction に移してよい）
 
 ## spiracss-html-lint
 

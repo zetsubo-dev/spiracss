@@ -81,7 +81,8 @@ SpiraCSS のクラス構造（Block / Element / Modifier）と基本のセレク
 
 - 命名（Block / Element / Modifier）
 - Block / Element の親子関係（`Element > Block` などを禁止）
-- Block 直下の `>` を強制（shared セクションでは緩和）
+- Block 直下の `>` を強制（shared / interaction セクションでは緩和）
+- interaction セクションでは構造ルール（Block/Element の深さ・親子制限）を適用しない
 - shared セクションはルート Block 直下に配置
 - `enforceSingleRootBlock` によるルート Block 制限
 - トップレベルセレクタは root Block を含む（`enforceSingleRootBlock` 有効時）
@@ -109,6 +110,7 @@ interaction セクション（`// --interaction` と `@at-root & { ... }`）の�
 - `// --interaction` コメントが直前に付いているか
 - interaction ブロックがファイル末尾に配置されているか
 - interaction ブロックがルート Block 直下に配置されているか
+- `data-variant` は interaction に置いてよい（インタラクション初期値用途。`data-state` / `aria-*` と同一セレクタで混在させない）
 
 ### `spiracss/rel-comments`
 

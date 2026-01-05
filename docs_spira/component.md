@@ -164,14 +164,14 @@ Variant / State の表現は **data モード**（デフォルト・推奨）と
 
 | 種別 | 用途 | HTML | SCSS | 配置セクション |
 | ---- | ---- | ---- | ---- | -------------- |
-| **Variant** | 見た目のバリエーション | `data-variant="primary"` | `&[data-variant="primary"]` | 基本構造 |
+| **Variant** | 見た目のバリエーション | `data-variant="primary"` | `&[data-variant="primary"]` | 基本構造（原則） |
 | **State** | インタラクション状態 | `data-state="active"` | `&[data-state="active"]` | `--interaction` |
 | **ARIA 状態** | アクセシビリティ状態 | `aria-expanded="true"` | `&[aria-expanded="true"]` | `--interaction` |
 
-> この分離により、「これは見た目のバリエーション？インタラクション状態？」という迷いがなくなり、SCSS の配置も一意に決まります。
+> この分離により、「これは見た目のバリエーション？インタラクション状態？」という迷いがなくなり、SCSS の基本配置指針が明確になります。
 
 **配置ルール:**
-- `data-variant` は基本構造セクションに書く
+- 原則、`data-variant` は基本構造セクションに書く。インタラクション初期値は `--interaction` に置いてよい
 - `data-state` / `aria-*` は interaction セクションに書く
 - 状態で見た目を変えたい場合は Variant ではなく State 側に書く
 
@@ -234,7 +234,7 @@ shared / interaction はルート Block 直下に配置します。
   // 基本構造 -----------------------------------
   display: block;
 
-  &[data-variant="primary"] { ... }  // Variant は基本構造セクションに配置
+  &[data-variant="primary"] { ... }  // Variant は原則基本構造（インタラクション初期値は interaction も可）
 
   > .sample-header {
     // 子 Block / Element のレイアウト・スキン
@@ -311,11 +311,12 @@ interaction セクションは、Block の状態変化や `:hover` / `:focus-vis
 - アニメーション・トランジション関連の指定（初期値を含む）
 
 **記述ルール:**
-- `data-variant` は基本構造セクションに書く
+- 原則、`data-variant` は基本構造セクションに書く。インタラクション初期値は `--interaction` に置いてよい
 - `data-state` / `aria-*` は interaction セクションに書く
 - interaction セクションはルート Block 直下に置く（子ルール内に置かない）
 - interaction セクション内のセレクタは `&` 起点で書く（`> .child:hover` のように `&` を省略しない）
 - interaction セクションでは、状態に応じて深い階層の要素まで影響を及ぼすことがあるため、セレクタの深さ自体には固定の上限を設けません
+- interaction セクションでは Block / Element の親子関係の制約は適用しない（親から孫以降の Block/Element を直接指定してよい）
 
 **記述例:**
 

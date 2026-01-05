@@ -97,8 +97,8 @@ const config = {
       requireChildRelComments: true,
       // shared セクション内でも子 @rel を必須にするか（デフォルト: true）
       requireChildRelCommentsInShared: true,
-      // interaction セクション内でも子 @rel を必須にするか（デフォルト: true）
-      requireChildRelCommentsInInteraction: true,
+      // interaction セクション内でも子 @rel を必須にするか（デフォルト: false）
+      requireChildRelCommentsInInteraction: false,
       // 子→親の @rel を必須にするか（デフォルト: true）
       requireParentRelComment: true,
       // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）

@@ -45,18 +45,19 @@
 - `Block > Block`
 - `Block > Element`
 
-原則禁止:
+原則禁止（基本構造 / shared）:
 - `Element > Block`
 - `Element > Element`（例外: レイアウト目的ではない装飾・意味付けのみ）
 - 親 Block から子 Block 配下の Element まで直接指定
 
-深さ:
+深さ（基本構造 / shared）:
 - `Block > Block > Block` の 3 段以上は原則避ける
 - Element 連鎖の上限はデフォルト 4（設定で変更）
 
 セレクタ:
 - 基本構造セクションでは `>` を使い 1 段ずつ
 - shared セクションのみ `>` の強制を緩和
+- interaction セクションは構造制約対象外（親から孫以降の Block/Element を直接指定可）
 
 ### Variant / State
 
@@ -66,7 +67,7 @@
 - ARIA 状態: `aria-expanded="true"` など
 
 配置:
-- Variant → 基本構造セクション
+- Variant → 原則は基本構造（インタラクション初期値は interaction も可）
 - State / ARIA → `--interaction` セクション
 
 命名:
@@ -106,6 +107,7 @@ class モード（互換）:
 - `--shared` / `--interaction` のコメントが無いと Stylelint エラーになる（設定に従う）
 - interaction は `@at-root & { ... }` にまとめ、セレクタは `&` 起点で書く。基本構造より後、原則ファイル末尾
 - `--shared` / `--interaction` はルート Block 直下に置く（子ルール内に置かない）
+- interaction セクションは構造ルール対象外（Block / Element の親子・深さ制約を適用しない）
 
 #### 最小テンプレート（3 セクション）
 
@@ -290,10 +292,10 @@ class モード（`modifierPrefix="-"` の場合）:
 
 ## 禁止事項 / アンチパターン
 
-- 親 Block から子 Block 配下の Element まで直接指定する
-- `Element > Block` や `Element > Element` を構造目的で使う
+- 基本構造 / shared で、親 Block から子 Block 配下の Element まで直接指定する
+- 基本構造 / shared で、`Element > Block` や `Element > Element` を構造目的で使う
 - `data-state` / `aria-*` を interaction 以外で使う
-- Variant / State の配置を混同する
+- Variant / State の意味を混同する（状態なのに Variant 扱いする等）
 - data モードで modifier を使う / class モードで `data-variant` / `data-state` を使う
 - ページ層でコンポーネント内部構造を定義する
 - ページ固有の `scss/` ディレクトリを作る
@@ -611,7 +613,7 @@ AI が変更・生成を行う前に、必ず現在の設定を確認する。
 - `spiracss.config.js` を最初に確認する
 - Block / Element を命名規則で判定する
 - `Block > Block / Element` 以外の構造を作らない
-- Variant / State の区別を守り、セクションに正しく配置する
+- Variant / State の区別を守り、原則は基本構造。インタラクション初期値は Variant を interaction に置いてよい
 - `--shared` / `--interaction` のコメントを省略しない
 - `--shared` / `--interaction` はルート Block 直下に置く
 - 1 Block = 1 SCSS ファイルを維持する

@@ -1,0 +1,10 @@
+// ページエントリ SCSS だが、どの Block を使っているかを示す
+// リンクコメント（@components/...）を書いていない NG 例
+
+.home-page {
+  > .home-section {
+    // 本来はここに
+    // 例: @components/home-section/home-section.scss
+    // のようなリンクコメントを書く想定
+  }
+}

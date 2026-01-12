@@ -1,0 +1,40 @@
+@use "@styles/partials/global" as *;
+@use "sass:meta";
+
+// @assets/css/index.scss
+
+.sample-box {
+  @include meta.load-css("scss");
+
+  @include breakpoint-up(md) {
+    // layout mixin
+  }
+
+  > .hero-header {
+    // @rel/scss/hero-header.scss
+    @include breakpoint-up(md) {
+      // child component layout
+    }
+  }
+
+  > .feature-list {
+    // @rel/scss/feature-list.scss
+    @include breakpoint-up(md) {
+      // child component layout
+    }
+  }
+
+  > .cta-section {
+    // @rel/scss/cta-section.scss
+    @include breakpoint-up(md) {
+      // child component layout
+    }
+  }
+
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

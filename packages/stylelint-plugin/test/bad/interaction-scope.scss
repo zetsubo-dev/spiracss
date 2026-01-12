@@ -1,0 +1,25 @@
+/* stylelint-disable spiracss/class-structure */
+
+// spiracss/interaction-scope のエラー検証用
+
+.button-box {
+  // needAtRoot / needComment: :hover が @at-root & { ... } 外かつコメントなし
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.panel-box {
+  // 正しいコメントはあるが…
+  // --interaction -----------------------------------
+  @at-root & {
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+
+  // needTail: interaction ブロックの後ろに別のルールを置く
+  > .footer {
+    margin-top: 16px;
+  }
+}

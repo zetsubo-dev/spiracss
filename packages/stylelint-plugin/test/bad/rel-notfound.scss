@@ -1,0 +1,8 @@
+// spiracss/rel-comments: notFound 検証用
+// エイリアスは stylelint.config.js の aliasRoots を前提にする
+
+// @assets/css/does-not-exist.scss
+
+.demo-block {
+  color: blue;
+}

@@ -1,2 +1,35 @@
-# Claude Code
+template/
+AGENTS.md
+CLAUDE.md
+**/AGENTS.md
+**/CLAUDE.md
+node_modules/
+
+# Yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+**/.yarn/*
+!**/.yarn/releases
+!**/.yarn/plugins
+.pnp.*
 .claude/
+.serena/
+.cache/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# VSCode 拡張開発
+vscode/**/.vscode-test/
+vscode/**/node_modules/
+vscode/**/dist/
+vscode/**/out/
+
+stylelint/plugin/node_modules/
+
+# 配布用ビルド成果物
+*.tgz
+*.vsix
+vscode/**/build/*

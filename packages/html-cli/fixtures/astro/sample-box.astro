@@ -1,0 +1,34 @@
+---
+const features = [
+  { id: 1, title: 'Primary feature', body: 'Primary feature description.', primary: true, wide: true },
+  { id: 2, title: 'Secondary feature', body: 'Secondary feature description.', primary: false, secondary: true }
+];
+const showCta = true;
+---
+
+<!-- Astro frontmatter + JSX 風構文の混在 -->
+<section class="sample-box">
+  <header class="hero-header">
+    <h1 class="title">{Astro.props.title}</h1>
+    <p class="lede">{Astro.props.description}</p>
+  </header>
+
+  <div class="feature-list">
+    {features.map((feature) => (
+      <article class="feature-card" data-id={feature.id}>
+        <h2 class="title">{feature.title}</h2>
+        <p class="body">{feature.body}</p>
+        {feature.primary && <button class="button -primary">Primary action</button>}
+        {feature.wide && <span class="badge -wide">Wide</span>}
+        {feature.secondary && <span class="badge -secondary">Secondary</span>}
+      </article>
+    ))}
+  </div>
+
+  {showCta && (
+    <section class="cta-section">
+      <p class="body">Call to action text.</p>
+      <a class="button" href={Astro.props.ctaHref}>Go somewhere</a>
+    </section>
+  )}
+</section>

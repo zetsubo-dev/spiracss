@@ -1,0 +1,28 @@
+@use "@styles/partials/global" as *;
+
+// @rel/../sample-box.scss
+
+.hero-header {
+  @include breakpoint-up(md) {
+    // layout mixin
+  }
+
+  > .title {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+  > .lede {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

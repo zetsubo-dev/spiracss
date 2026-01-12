@@ -1,0 +1,36 @@
+# Development and source files
+.vscode
+.vscode-test
+.claude
+.serena
+src
+test
+fixtures
+build
+out
+node_modules
+.yarn
+.yarnrc.yml
+.yarnrc
+yarn.lock
+
+# Config and build files
+.gitignore
+.prettierrc
+.prettierignore
+.vscode-test.mjs
+esbuild.js
+tsconfig.json
+eslint.config.mjs
+.node-version
+AGENTS.md
+DEV.md
+.README.draft.md
+
+# Build artifacts
+**/*.map
+**/*.ts
+
+# Workspace files that cause monorepo traversal
+../../**
+../**

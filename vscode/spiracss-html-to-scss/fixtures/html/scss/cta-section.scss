@@ -1,0 +1,28 @@
+@use "@styles/partials/global" as *;
+
+// @rel/../sample-box.scss
+
+.cta-section {
+  @include breakpoint-up(md) {
+    // layout mixin
+  }
+
+  > .body {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+  > .button {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

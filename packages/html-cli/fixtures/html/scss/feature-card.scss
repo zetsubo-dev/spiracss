@@ -1,0 +1,52 @@
+@use "@styles/partials/global" as *;
+
+// @rel/feature-list.scss
+
+.feature-card {
+  @include breakpoint-up(md) {
+    // layout mixin
+  }
+
+  &.-primary {
+    @include breakpoint-up(md) {
+      // variant styles
+    }
+  }
+
+  &.-wide {
+    @include breakpoint-up(md) {
+      // variant styles
+    }
+  }
+
+  &.-secondary {
+    @include breakpoint-up(md) {
+      // variant styles
+    }
+  }
+
+  > .title {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+  > .body {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+  > .button {
+    @include breakpoint-up(md) {
+      // layout mixin
+    }
+  }
+
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

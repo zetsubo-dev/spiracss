@@ -1,0 +1,66 @@
+{
+  "name": "spiracss-comment-links",
+  "displayName": "SpiraCSS Comment Links",
+  "description": "VS Code extension that opens SpiraCSS link comments in SCSS.",
+  "homepage": "https://spiracss.jp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zetsubo-dev/spiracss.git"
+  },
+  "version": "0.2.1",
+  "license": "MIT",
+  "publisher": "spiracss",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "spiracss",
+    "spira",
+    "scss",
+    "css",
+    "comment",
+    "link",
+    "navigation",
+    "components",
+    "assets",
+    "alias"
+  ],
+  "activationEvents": [
+    "onLanguage:scss"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --production",
+    "compile": "yarn run check-types && yarn run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "yarn run check-types && yarn run lint && node esbuild.js --production && node -e \"require('fs').mkdirSync('build',{recursive:true})\" && npx vsce package --no-yarn --out build/spiracss-comment-links-$(node -p \"require('./package.json').version\").vsix",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.99.0",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.7.0",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "yarn@4.10.3"
+}

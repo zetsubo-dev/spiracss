@@ -1,0 +1,7 @@
+// spiracss/rel-comments: missing @rel コメント検証用
+
+.demo-block {
+  > .child-block {
+    color: red;
+  }
+}

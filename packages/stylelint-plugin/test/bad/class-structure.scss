@@ -1,0 +1,56 @@
+// spiracss/class-structure のエラー検証用
+
+// invalidName: Block/Element/Modifier いずれにも当てはまらないクラス名
+.BadBlock {
+  color: red;
+}
+
+.demo-block {
+  // needChild: Block 直下だが `>` を使っていない
+  .title {
+    font-size: 16px;
+  }
+
+  // Element > Block: Element から Block をぶら下げている（invalidNesting）
+  .title {
+    .demo-header {
+      padding: 8px;
+    }
+  }
+
+  // Element 連鎖が深くなりすぎるケース（allowElementChainDepth=4 を超える）
+  .title {
+    .subtitle {
+      .caption {
+        .note {
+          .extra {
+            font-weight: bold;
+          }
+        }
+      }
+    }
+  }
+
+  // needAmpForMod: Modifier を &.-primary ではなく .-primary として書いている
+  .-primary {
+    color: blue;
+  }
+}
+
+// Block > Block > Block のような 3 段以上の Block 連鎖（NG）
+.demo-layout {
+  > .section-box {
+    > .content-box {
+      padding: 8px;
+    }
+  }
+}
+
+// 親 Block ファイル内で孫セレクタ（> .child-block > .element）まで指定しているケース（NG）
+.demo-card {
+  > .card-list {
+    > .title {
+      font-weight: bold;
+    }
+  }
+}

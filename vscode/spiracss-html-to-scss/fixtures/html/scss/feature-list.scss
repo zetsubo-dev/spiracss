@@ -1,0 +1,23 @@
+@use "@styles/partials/global" as *;
+
+// @rel/../sample-box.scss
+
+.feature-list {
+  @include breakpoint-up(md) {
+    // layout mixin
+  }
+
+  > .feature-card {
+    // @rel/feature-card.scss
+    @include breakpoint-up(md) {
+      // child component layout
+    }
+  }
+
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

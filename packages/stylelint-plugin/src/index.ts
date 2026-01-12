@@ -1,0 +1,20 @@
+import spiracssClassStructure from './rules/spiracss-class-structure'
+import spiracssInteractionProperties from './rules/spiracss-interaction-properties'
+import spiracssInteractionScope from './rules/spiracss-interaction-scope'
+import spiracssKeyframesNaming from './rules/spiracss-keyframes-naming'
+import spiracssPseudoNesting from './rules/spiracss-pseudo-nesting'
+import spiracssRelComments from './rules/spiracss-rel-comments'
+
+// Align with the Stylelint v16 plugin format:
+// default export is an array of rule plugin definitions.
+export default [
+  spiracssClassStructure,
+  spiracssInteractionScope,
+  spiracssInteractionProperties,
+  spiracssKeyframesNaming,
+  spiracssPseudoNesting,
+  spiracssRelComments
+]
+
+// Helper to build SpiraCSS rules from spiracss.config.js
+export { createRules, createRulesAsync } from './helpers'

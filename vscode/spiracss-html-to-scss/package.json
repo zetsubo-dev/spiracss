@@ -1,0 +1,148 @@
+{
+  "name": "spiracss-html-to-scss",
+  "displayName": "SpiraCSS HTML to SCSS",
+  "description": "VS Code extension to generate SpiraCSS SCSS from HTML and insert placeholder classes.",
+  "homepage": "https://spiracss.jp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zetsubo-dev/spiracss.git"
+  },
+  "license": "MIT",
+  "publisher": "spiracss",
+  "version": "0.2.1",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Formatters"
+  ],
+  "keywords": [
+    "spiracss",
+    "spira",
+    "scss",
+    "css",
+    "html",
+    "rscss",
+    "bem",
+    "smacss",
+    "component",
+    "generator",
+    "astro",
+    "react",
+    "vue",
+    "svelte",
+    "ejs",
+    "nunjucks"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.generateSpiracssScssFromRoot",
+        "title": "Generate SpiraCSS SCSS from Root"
+      },
+      {
+        "command": "extension.generateSpiracssScssFromSelection",
+        "title": "Generate SpiraCSS SCSS from Selection"
+      },
+      {
+        "command": "extension.insertSracssPlaceholders",
+        "title": "Insert SpiraCSS placeholders (block-box / element)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "extension.generateSpiracssScssFromRoot",
+          "when": "editorTextFocus && editorHasSelection",
+          "group": "navigation"
+        },
+        {
+          "command": "extension.generateSpiracssScssFromSelection",
+          "when": "editorTextFocus && editorHasSelection",
+          "group": "navigation"
+        },
+        {
+          "command": "extension.insertSracssPlaceholders",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "extension.generateSpiracssScssFromRoot",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "extension.generateSpiracssScssFromSelection",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "extension.insertSracssPlaceholders",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "extension.generateSpiracssScssFromRoot",
+        "key": "cmd+ctrl+a",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "extension.generateSpiracssScssFromSelection",
+        "key": "cmd+ctrl+s",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "extension.insertSracssPlaceholders",
+        "key": "cmd+ctrl+d",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "node esbuild.js --production",
+    "compile": "yarn run check-types && yarn run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "yarn run check-types && yarn run lint && node esbuild.js --production && node -e \"require('fs').mkdirSync('build',{recursive:true})\" && npx vsce package --no-yarn --out build/spiracss-html-to-scss-$(node -p \"require('./package.json').version\").vsix",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "yarn run test:extension",
+    "test:extension": "node esbuild.js && vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.99.0",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.7.0",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "mocha": "^11.1.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@spiracss/html-cli": "^0.2.1"
+  },
+  "packageManager": "yarn@4.10.3"
+}

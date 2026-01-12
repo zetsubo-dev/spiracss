@@ -1,0 +1,25 @@
+<section class="sample-box">
+  <header class="hero-header">
+    <h1 class="title"><%= title %></h1>
+    <p class="lede"><%= description %></p>
+  </header>
+
+  <div class="feature-list">
+    <% features.forEach(function(feature) { %>
+      <article class="feature-card <%= feature.primary ? '-primary' : '' %> <%= feature.wide ? '-wide' : '' %> <%= feature.secondary ? '-secondary' : '' %>">
+        <h2 class="title"><%= feature.title %></h2>
+        <p class="body"><%= feature.body %></p>
+        <% if (feature.primary) { %>
+          <button class="button">Primary action</button>
+        <% } %>
+      </article>
+    <% }) %>
+  </div>
+
+  <% if (showCta) { %>
+    <section class="cta-section">
+      <p class="body">Call to action text.</p>
+      <a class="button" href="<%= ctaHref %>">Go somewhere</a>
+    </section>
+  <% } %>
+</section>

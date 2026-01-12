@@ -1,0 +1,4 @@
+{
+  "Failed to load spiracss.config.js. Comment Links settings might not be applied.": "spiracss.config.js の読み込みに失敗しました。Comment Links の設定が反映されない可能性があります。",
+  "aliasRoots path is outside the project root and will be ignored: {0}": "aliasRoots のパスがプロジェクトルート外のため無視されます: {0}"
+}

@@ -1,0 +1,81 @@
+{
+  "name": "@spiracss/html-cli",
+  "version": "0.2.1",
+  "description": "SpiraCSS CLI for HTML-to-SCSS generation, structure linting, and placeholder formatting.",
+  "homepage": "https://spiracss.jp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zetsubo-dev/spiracss.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "spiracss",
+    "spira",
+    "scss",
+    "css",
+    "bem",
+    "smacss",
+    "rscss",
+    "html",
+    "cli",
+    "generator",
+    "lint",
+    "format"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "spiracss-html-format": "./dist/html-format.js",
+    "spiracss-html-lint": "./dist/html-lint.js",
+    "spiracss-html-to-scss": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "node esbuild.js --production && tsc -p tsconfig.json --emitDeclarationOnly",
+    "prepublishOnly": "yarn build",
+    "compile": "yarn run check-types && yarn run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "TS_NODE_TRANSPILE_ONLY=1 mocha -r ts-node/register \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.10"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "mocha": "^11.1.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "yarn@4.10.3"
+}

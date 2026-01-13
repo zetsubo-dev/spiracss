@@ -272,6 +272,7 @@ Validates `@keyframes` naming and placement rules.
 ```js
 stylelint: {
   keyframesNaming: {
+    enabled: true,
     actionMaxWords: 3,
     blockNameSource: 'selector',
     warnOnMissingBlock: true,
@@ -289,6 +290,7 @@ stylelint: {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
+| `enabled` | boolean | `true` | Disables this rule when set to `false` (only when using `createRules()` / `createRulesAsync()`) |
 | `actionMaxWords` | number | `3` | Max words in the action segment (1–3) |
 | `blockNameSource` | `'selector' \| 'file' \| 'selector-or-file'` | `'selector'` | Block name source (root selector, file name, or fallback) |
 | `warnOnMissingBlock` | boolean | `true` | Warn when the root Block cannot be resolved |

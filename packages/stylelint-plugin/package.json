@@ -1,6 +1,6 @@
 {
   "name": "@spiracss/stylelint-plugin",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "Stylelint plugin enforcing SpiraCSS conventions for class structure, interaction scope, pseudo nesting, and rel-comment references.",
   "homepage": "https://spiracss.jp",

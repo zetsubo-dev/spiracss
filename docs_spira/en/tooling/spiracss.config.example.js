@@ -100,6 +100,8 @@ const config = {
     },
 
     keyframesNaming: {
+      // Enable or disable this rule (default: true)
+      enabled: true,
       // Max words for action (1-3 / default: 3)
       actionMaxWords: 3,
       // Block name source (selector / file / selector-or-file / default: selector)

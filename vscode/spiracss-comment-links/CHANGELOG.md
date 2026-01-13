@@ -2,7 +2,12 @@
 
 All notable changes to this extension will be documented in this file.
 
-## Unreleased
+## 0.2.2
+
+### Documentation
+
+- Add SpiraCSS Design Principles link to README
+- Add Japanese documentation links to Docs section
 
 ## 0.2.1
 

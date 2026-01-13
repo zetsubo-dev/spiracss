@@ -1,4 +1,4 @@
-# SpiraCSS AI Guide v0.2.1
+# SpiraCSS AI Guide v0.2.2
 
 This document is self-contained. Assume only this file and spiracss.config.js exist in the project.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -11,7 +11,7 @@ Lint messages are actionable fix guidance derived from the current implementatio
 
 Defaults are only a fallback when config is missing. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.2.1, @spiracss/html-cli v0.2.1.
+Version compatibility: @spiracss/stylelint-plugin v0.2.2, @spiracss/html-cli v0.2.2.
 
 ## 1. Design Overview (minimum)
 

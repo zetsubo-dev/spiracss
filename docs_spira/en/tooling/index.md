@@ -5,7 +5,7 @@ An overview of SpiraCSS tooling.
 ## Common prerequisites
 
 - Place `spiracss.config.js` at the project root ([spiracss-config.md](spiracss-config.md)).
-- Download [AI documentation](../../ai/spiracss-ai-doc.md) and use it as a reference document when integrating with AI.
+- Download [AI Agent documentation](../../ai/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
 
 If any of these are missing, AI outputs and tool behavior become unreliable and errors are more likely, so verify them before you start.
 

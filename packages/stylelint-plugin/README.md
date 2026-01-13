@@ -4,15 +4,15 @@ SpiraCSS Stylelint plugin. Validates class structure, interaction scope/properti
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for AI-assisted implementation and tool-based validation, it aims to shorten development time and ensure consistent quality.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for implementation with AI agents and tool-based validation, it aims to shorten development time and ensure consistent quality.
 
 Overview: [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md)
 
 Key points:
 - Structural decisions can be derived from class names and HTML structure.
 - `shared`/`interaction`/`rel` comment conventions can be treated as tool-verifiable contracts.
-- SpiraCSS projects should place [`spiracss.config.js`](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) at the project root so that generation and validation follow the same policy.
-- Download [spiracss-ai-doc.md](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ai/spiracss-ai-doc.md) and use it as a reference document for AI-assisted workflows.
+- SpiraCSS projects should place [spiracss.config.js](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) at the project root so that generation and validation follow the same policy.
+- Download [spiracss-ai-agent-doc.md](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ai/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
 
 This plugin validates those contracts at lint time, keeping structure verifiable.
 
@@ -112,7 +112,7 @@ Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use
 - [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/principles.md)\]
 - [Stylelint guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/stylelint.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md)\]
 - [Quickstart](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/quickstart.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/quickstart.md)\]
-- [`spiracss.config.js` guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/spiracss-config.md)\]
+- [spiracss.config.js guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/spiracss-config.md)\]
 
 ## Related Tools
 

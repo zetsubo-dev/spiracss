@@ -1,6 +1,6 @@
 # SpiraCSS Design Philosophy
 
-SpiraCSS is a CSS architecture that distills the structural characteristics of HTML/CSS into a minimal set of principles. It reduces inconsistencies in structural decisions by replacing individual intuition with clear principles. Designed for AI-assisted implementation and tool-based validation, it aims to shorten development time and keep quality consistent.
+SpiraCSS is a CSS architecture that distills the structural characteristics of HTML/CSS into a minimal set of principles. It reduces inconsistencies in structural decisions by replacing individual intuition with clear principles. Designed for implementation with AI agents and tool-based validation, it aims to shorten development time and keep quality consistent.
 
 Unlike utility-first approaches such as Tailwind CSS, SpiraCSS follows the lineage of BEM / SMACSS / RSCSS, expressing structure through class names and splitting files by component.
 
@@ -94,7 +94,7 @@ SpiraCSS narrows SMACSS / RSCSS down to **the smallest set of principles that ar
 
 - Automatic validation with the SpiraCSS Stylelint plugin
 - Auto-generation and link navigation with VS Code extensions
-- CLI tools for AI-assisted workflows
+- CLI tools for AI-agent workflows
 - 1 Block = 1 file = 1 module structure (Dart Sass assumed)
 
 ### Integrated

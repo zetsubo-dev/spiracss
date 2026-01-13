@@ -209,7 +209,7 @@ test/**
 ├── package.json                   # ワークスペース設定
 ├── docs_spira/
 │   ├── ai/                        # AI 用ドキュメント
-│   │   └── spiracss-ai-doc.md     # AI 用コア仕様
+│   │   └── spiracss-ai-agent-doc.md  # AI エージェント用コア仕様
 │   ├── ja/                        # 日本語ドキュメント
 │   │   ├── index.md               # 入口・リンク集
 │   │   ├── philosophy.md          # 設計思想

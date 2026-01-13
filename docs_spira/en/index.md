@@ -1,12 +1,12 @@
 # SpiraCSS
 
-SpiraCSS is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for AI-assisted implementation and tool-based validation, it aims to shorten development time and ensure consistent quality.
+SpiraCSS is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for implementation with AI agents and tool-based validation, it aims to shorten development time and ensure consistent quality.
 
 Key points:
 - Structural decisions can be derived from class names and HTML structure.
 - `shared`/`interaction`/`rel` comment conventions can be treated as tool-verifiable contracts.
 - SpiraCSS projects should place [`spiracss.config.js`](tooling/spiracss-config.md) at the project root so that generation and validation follow the same policy.
-- Download [`spiracss-ai-doc.md`](../ai/spiracss-ai-doc.md) and use it as a reference document for AI-assisted workflows.
+- Download [`spiracss-ai-agent-doc.md`](../ai/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
 
 Tool roles:
 - Generation: HTML CLI + VS Code HTML to SCSS

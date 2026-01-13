@@ -5,7 +5,7 @@ SpiraCSS のツール群の概要ドキュメントです。
 ## 共通前提
 
 - `spiracss.config.js` をプロジェクトルートに置く（[spiracss.config.js](spiracss-config.md)）
-- [AI用のドキュメントファイル](../../ai/spiracss-ai-doc.md) をダウンロードし、AI と連動させる際の参照ドキュメントにする
+- [AIエージェント用ドキュメント](../../ai/spiracss-ai-agent-doc.md) をダウンロードし、AIエージェントワークフローの参照ドキュメントにする
 
 いずれかが欠けている場合、判断が不確かになり誤りやすくなるため、作業前に必ず確認してください。
 

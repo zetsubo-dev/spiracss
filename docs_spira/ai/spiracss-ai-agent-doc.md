@@ -1,4 +1,4 @@
-# SpiraCSS AI Guide v0.2.2
+# SpiraCSS AI Agent Guide v0.2.2
 
 This document is self-contained. Assume only this file and spiracss.config.js exist in the project.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.

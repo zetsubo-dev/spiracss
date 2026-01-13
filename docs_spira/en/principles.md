@@ -1,6 +1,6 @@
 # SpiraCSS Design Principles
 
-SpiraCSS is a CSS architecture that distills the structural characteristics of HTML/CSS into a minimal set of principles. It reduces inconsistencies in structural decisions that are common in CSS design by replacing personal intuition with clear principles. It is designed for AI-assisted implementation and tool-based validation to shorten development time and keep quality consistent.
+SpiraCSS is a CSS architecture that distills the structural characteristics of HTML/CSS into a minimal set of principles. It reduces inconsistencies in structural decisions that are common in CSS design by replacing personal intuition with clear principles. It is designed for implementation with AI agents and tool-based validation to shorten development time and keep quality consistent.
 
 This page is the entry point to SpiraCSS. It is a quick reference that summarizes only the key points of the **default practice**. For exceptions, configuration, and detailed code examples, treat the dedicated documents as the source of truth.
 

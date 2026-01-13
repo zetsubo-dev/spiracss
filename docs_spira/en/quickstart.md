@@ -7,7 +7,7 @@ How to set up SpiraCSS tooling.
 For SpiraCSS workflows, prepare these two items:
 
 - [spiracss.config.js](tooling/spiracss-config.md) (project root)
-- [AI documentation](../ai/spiracss-ai-doc.md) (download and use as a reference document when integrating with AI)
+- [AI Agent documentation](../ai/spiracss-ai-agent-doc.md) (download and use as a reference document for AI-agent workflows)
 
 If any of them are missing, decisions become uncertain and error-prone, so verify their presence before starting work (do not assume defaults).
 

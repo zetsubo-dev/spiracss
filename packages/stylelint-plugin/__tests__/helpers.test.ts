@@ -82,6 +82,21 @@ describe('helpers/createRules', () => {
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
 
+  it('disables keyframes-naming when enabled is false', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/components']
+      },
+      stylelint: {
+        keyframesNaming: {
+          enabled: false
+        }
+      }
+    })
+
+    assert.strictEqual(rules['spiracss/keyframes-naming'], false)
+  })
+
   it('rejects missing aliasRoots', () => {
     assert.throws(
       () => createRules({}),
@@ -120,6 +135,21 @@ describe('helpers/createRules', () => {
     const relComments = rules['spiracss/rel-comments'] as [boolean, { aliasRoots?: unknown }]
     assert.strictEqual(relComments[0], true)
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
+  })
+
+  it('disables keyframes-naming when enabled is false in createRulesAsync', async () => {
+    const rules = await createRulesAsync({
+      aliasRoots: {
+        components: ['src/components']
+      },
+      stylelint: {
+        keyframesNaming: {
+          enabled: false
+        }
+      }
+    })
+
+    assert.strictEqual(rules['spiracss/keyframes-naming'], false)
   })
 
   it('loads an ESM config file via createRulesAsync in CJS build', async () => {

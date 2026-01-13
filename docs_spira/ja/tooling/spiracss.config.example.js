@@ -100,6 +100,8 @@ const config = {
     },
 
     keyframesNaming: {
+      // このルールを有効にするか（デフォルト: true）
+      enabled: true,
       // action の語数上限（1〜3 / デフォルト: 3）
       actionMaxWords: 3,
       // Block 名の取得元（selector / file / selector-or-file / デフォルト: selector）

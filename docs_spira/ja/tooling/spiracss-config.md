@@ -270,6 +270,7 @@ stylelint: {
 ```js
 stylelint: {
   keyframesNaming: {
+    enabled: true,
     actionMaxWords: 3,
     blockNameSource: 'selector',
     warnOnMissingBlock: true,
@@ -287,6 +288,7 @@ stylelint: {
 
 | 項目 | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
+| `enabled` | boolean | `true` | `false` の場合はこのルールを無効化（`createRules()` / `createRulesAsync()` 使用時のみ） |
 | `actionMaxWords` | number | `3` | action の語数上限（1〜3） |
 | `blockNameSource` | `'selector' \| 'file' \| 'selector-or-file'` | `'selector'` | Block 名の取得元（`selector` は最初の root Block、`file` はファイル名、`selector-or-file` はフォールバック） |
 | `warnOnMissingBlock` | boolean | `true` | Block を判定できない場合に警告するか |

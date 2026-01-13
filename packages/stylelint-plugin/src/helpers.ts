@@ -66,6 +66,7 @@ type KeyframesNamingConfig = Partial<
   ignoreFiles?: Array<string | RegExp>
   ignorePatterns?: Array<string | RegExp>
   cacheSizes?: CacheSizes
+  enabled?: boolean
 }
 
 type PseudoNestingConfig = Partial<Omit<PseudoNestingOptions, 'cacheSizes'>> & {
@@ -416,6 +417,8 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   withFallback(interactionProperties, 'cacheSizes', cacheSizes)
 
   const keyframesNaming = { ...spiracss.stylelint?.keyframesNaming }
+  const keyframesNamingEnabled = keyframesNaming.enabled !== false
+  delete keyframesNaming.enabled
   withFallback(keyframesNaming, 'naming', classStructure.naming)
   withFallback(keyframesNaming, 'allowExternalClasses', classStructure.allowExternalClasses)
   withFallback(keyframesNaming, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
@@ -437,7 +440,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     'spiracss/class-structure': [true, classStructure],
     'spiracss/interaction-scope': [true, interactionScope],
     'spiracss/interaction-properties': [true, interactionProperties],
-    'spiracss/keyframes-naming': [true, keyframesNaming],
+    'spiracss/keyframes-naming': keyframesNamingEnabled ? [true, keyframesNaming] : false,
     'spiracss/pseudo-nesting': [true, pseudoNesting],
     'spiracss/rel-comments': [
       true,

@@ -15,6 +15,7 @@ import type {
   SelectorPolicy as InteractionScopeSelectorPolicy
 } from './rules/spiracss-interaction-scope.types'
 import type { Options as KeyframesNamingOptions } from './rules/spiracss-keyframes-naming.types'
+import type { Options as PropertyPlacementOptions } from './rules/spiracss-property-placement.types'
 import type { Options as PseudoNestingOptions } from './rules/spiracss-pseudo-nesting.types'
 import type { Options as RelCommentsOptions } from './rules/spiracss-rel-comments.types'
 import type { CacheSizes } from './types'
@@ -59,6 +60,18 @@ type InteractionPropertiesConfig = Partial<
   cacheSizes?: CacheSizes
 }
 
+type PropertyPlacementConfig = Partial<
+  Omit<
+    PropertyPlacementOptions,
+    'selectorPolicy' | 'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'
+  >
+> & {
+  selectorPolicy?: ClassStructureSelectorPolicy
+  sharedCommentPattern?: RegExp | string
+  interactionCommentPattern?: RegExp | string
+  cacheSizes?: CacheSizes
+}
+
 type KeyframesNamingConfig = Partial<
   Omit<KeyframesNamingOptions, 'sharedFiles' | 'ignoreFiles' | 'ignorePatterns' | 'cacheSizes'>
 > & {
@@ -85,6 +98,7 @@ type SpiracssConfig = {
     classStructure?: ClassStructureConfig
     interactionScope?: InteractionScopeConfig
     interactionProperties?: InteractionPropertiesConfig
+    propertyPlacement?: PropertyPlacementConfig
     keyframesNaming?: KeyframesNamingConfig
     pseudoNesting?: PseudoNestingConfig
     relComments?: RelCommentsConfig
@@ -416,6 +430,22 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   withFallback(interactionProperties, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
   withFallback(interactionProperties, 'cacheSizes', cacheSizes)
 
+  const propertyPlacement = { ...spiracss.stylelint?.propertyPlacement }
+  if (spiracss.selectorPolicy && propertyPlacement.selectorPolicy === undefined) {
+    propertyPlacement.selectorPolicy = spiracss.selectorPolicy
+  }
+  withFallback(propertyPlacement, 'sharedCommentPattern', sharedCommentPattern)
+  withFallback(propertyPlacement, 'interactionCommentPattern', interactionCommentPattern)
+  withFallback(propertyPlacement, 'naming', classStructure.naming)
+  withFallback(propertyPlacement, 'allowExternalClasses', classStructure.allowExternalClasses)
+  withFallback(propertyPlacement, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
+  withFallback(
+    propertyPlacement,
+    'allowElementChainDepth',
+    classStructure.allowElementChainDepth
+  )
+  withFallback(propertyPlacement, 'cacheSizes', cacheSizes)
+
   const keyframesNaming = { ...spiracss.stylelint?.keyframesNaming }
   const keyframesNamingEnabled = keyframesNaming.enabled !== false
   delete keyframesNaming.enabled
@@ -438,6 +468,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
 
   return {
     'spiracss/class-structure': [true, classStructure],
+    'spiracss/property-placement': [true, propertyPlacement],
     'spiracss/interaction-scope': [true, interactionScope],
     'spiracss/interaction-properties': [true, interactionProperties],
     'spiracss/keyframes-naming': keyframesNamingEnabled ? [true, keyframesNaming] : false,

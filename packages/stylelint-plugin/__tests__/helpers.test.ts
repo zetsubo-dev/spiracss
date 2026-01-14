@@ -42,6 +42,7 @@ describe('helpers/createRules', () => {
       'spiracss/interaction-properties',
       'spiracss/interaction-scope',
       'spiracss/keyframes-naming',
+      'spiracss/property-placement',
       'spiracss/pseudo-nesting',
       'spiracss/rel-comments'
     ])
@@ -73,6 +74,7 @@ describe('helpers/createRules', () => {
       'spiracss/interaction-properties',
       'spiracss/interaction-scope',
       'spiracss/keyframes-naming',
+      'spiracss/property-placement',
       'spiracss/pseudo-nesting',
       'spiracss/rel-comments'
     ])

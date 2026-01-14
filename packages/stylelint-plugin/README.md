@@ -1,6 +1,6 @@
 # @spiracss/stylelint-plugin
 
-SpiraCSS Stylelint plugin. Validates class structure, interaction scope/properties, keyframes naming, pseudo nesting, and rel-comment links.
+SpiraCSS Stylelint plugin. Validates class structure, property placement, interaction scope/properties, keyframes naming, pseudo nesting, and rel-comment links.
 
 ## About SpiraCSS
 

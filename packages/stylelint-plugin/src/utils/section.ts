@@ -11,6 +11,7 @@ type SectionAnchorPredicate = (comment: Comment, parent: Container) => boolean
 type SectionNode = Rule | AtRule
 type SectionNodeVisitor = (node: SectionNode) => void
 type NodeIndexMap = Map<Node, number>
+const sectionIndexCache = new WeakMap<Container, NodeIndexMap>()
 
 export const getCommentText = (comment: Comment): string => {
   const rawText = (comment.raws as { text?: unknown } | undefined)?.text
@@ -91,17 +92,15 @@ const walkSectionNodes = (
   isValidAnchor: SectionAnchorPredicate | undefined,
   visit: SectionNodeVisitor
 ): void => {
-  const indexCache = new WeakMap<Container, NodeIndexMap>()
-
   const getNodeIndex = (container: Container, node: Node): number => {
-    let indexMap = indexCache.get(container)
+    let indexMap = sectionIndexCache.get(container)
     if (!indexMap) {
       indexMap = new Map<Node, number>()
       const nodes = container.nodes ?? []
       nodes.forEach((item, index) => {
         indexMap?.set(item, index)
       })
-      indexCache.set(container, indexMap)
+      sectionIndexCache.set(container, indexMap)
     }
     return indexMap.get(node) ?? -1
   }

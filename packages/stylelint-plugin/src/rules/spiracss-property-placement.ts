@@ -5,6 +5,7 @@ import stylelint from 'stylelint'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
+import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -25,7 +26,7 @@ import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../
 import { buildPatterns } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import { isRootBlockRule } from './spiracss-class-structure.sections'
-import type { Options as ClassStructureOptions } from './spiracss-class-structure.types'
+import type { ClassifyOptions } from './spiracss-class-structure.types'
 import { ruleName } from './spiracss-property-placement.constants'
 import { messages } from './spiracss-property-placement.messages'
 import { normalizeOptions } from './spiracss-property-placement.options'
@@ -200,7 +201,7 @@ const rule = createRule(
       options: ReturnType<typeof normalizeOptions>
       patterns: ReturnType<typeof buildPatterns>
       policySets: PolicySets
-      classifyOptions: ClassStructureOptions
+      classifyOptions: ClassifyOptions
       customModifierPattern: RegExp | undefined
       hasInvalidOptions: boolean
     }
@@ -217,11 +218,11 @@ const rule = createRule(
           }
         : undefined
       const options = normalizeOptions(rawOptions, handleInvalid)
-      const classifyOptions = {
+      const classifyOptions: ClassifyOptions = {
         allowExternalClasses: options.allowExternalClasses,
         allowExternalPrefixes: options.allowExternalPrefixes,
         naming: options.naming
-      } as ClassStructureOptions
+      }
       const customModifierPattern = normalizeCustomPattern(
         options.naming?.customPatterns?.modifier,
         'naming.customPatterns.modifier'
@@ -310,15 +311,9 @@ const rule = createRule(
         createValueTokenHelpers()
       const selectorPolicy = options.selectorPolicy
       const variantMode = selectorPolicy.variant.mode
-      // Display lowercase keys in messages to match actual selector matching behavior.
-      const variantKeys = selectorPolicy.variant.dataKeys.map((key) => key.toLowerCase())
       const stateMode = selectorPolicy.state.mode
-      const stateKeys = Array.from(
-        new Set([
-          selectorPolicy.state.dataKey.toLowerCase(),
-          ...selectorPolicy.state.ariaKeys.map((key) => key.toLowerCase())
-        ])
-      )
+      // Display lowercase keys in messages to match actual selector matching behavior.
+      const { variantKeys, stateKeys } = getLowercasePolicyKeys(selectorPolicy)
       const naming = options.naming ?? {}
       const modifierPrefix = naming.modifierPrefix ?? '-'
       const modifierCase = naming.modifierCase ?? 'kebab'
@@ -516,7 +511,7 @@ const rule = createRule(
         return key
       }
 
-      const familyOffsetMap = new Map<string, Set<string>>()
+      const familyOffsetMap = new Map<string, boolean>()
       for (const [rule, decls] of declsByRule) {
         if (interactionContainers.has(rule)) continue
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) continue
@@ -530,12 +525,9 @@ const rule = createRule(
           const wrapperKey =
             decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
           if (!wrapperKey) continue
-          let offsets = familyOffsetMap.get(wrapperKey)
-          if (!offsets) {
-            offsets = new Set<string>()
-            familyOffsetMap.set(wrapperKey, offsets)
-          }
-          familyKeys.forEach((key) => offsets.add(key))
+          familyKeys.forEach((key) => {
+            familyOffsetMap.set(`${wrapperKey}::${key}`, true)
+          })
         }
       }
 
@@ -746,9 +738,9 @@ const rule = createRule(
                 decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
               if (!wrapperKey) return
               // Require offsets for every selector in a list to avoid partial matches.
-              const offsets = familyOffsetMap.get(wrapperKey)
-              const hasOffsets =
-                Boolean(offsets) && familyKeys.every((key) => offsets?.has(key))
+              const hasOffsets = familyKeys.every((key) =>
+                familyOffsetMap.has(`${wrapperKey}::${key}`)
+              )
               if (hasOffsets) return
               stylelint.utils.report({
                 ruleName,

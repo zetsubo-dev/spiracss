@@ -8,7 +8,7 @@ import { createSharedCacheAccessor } from '../utils/cache'
 import type { SelectorParserCache } from '../utils/selector'
 import { findParentRule } from '../utils/postcss-helpers'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
-import type { Options as ClassStructureOptions } from './spiracss-class-structure.types'
+import type { ClassifyOptions } from './spiracss-class-structure.types'
 import type { Options } from './spiracss-property-placement.types'
 import { messages } from './spiracss-property-placement.messages'
 
@@ -113,7 +113,7 @@ const getGlobalOnlySelectorCache =
 
 const hasLocalNodes = (
   nodes: SelectorNode[] | undefined,
-  state: { globalMode: boolean; inGlobal: boolean }
+  state: { globalMode: boolean }
 ): boolean => {
   if (!nodes || nodes.length === 0) return false
   for (const node of nodes) {
@@ -138,7 +138,7 @@ const hasLocalNodes = (
         continue
       }
     }
-    if (state.inGlobal || state.globalMode) continue
+    if (state.globalMode) continue
     return true
   }
   return false
@@ -147,7 +147,7 @@ const hasLocalNodes = (
 const selectorHasLocalNodes = (
   selector: ReturnType<SelectorParserCache['parse']>[number]
 ): boolean => {
-  const state = { globalMode: false, inGlobal: false }
+  const state = { globalMode: false }
   return hasLocalNodes(selector.nodes, state)
 }
 
@@ -166,20 +166,31 @@ export const stripGlobalSelector = (
   }
   const stripped: string[] = []
   selectors.forEach((sel) => {
+    let hasGlobal = false
     let hasBareGlobal = false
+    sel.walkPseudos((pseudo) => {
+      const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+      if (value === ':global') {
+        hasGlobal = true
+        if (!Array.isArray(pseudo.nodes) || pseudo.nodes.length === 0) {
+          hasBareGlobal = true
+        }
+      }
+    })
+    if (!hasGlobal) {
+      const normalized = normalizeStrippedSelector(sel.toString())
+      if (normalized) stripped.push(normalized)
+      return
+    }
+    if (hasBareGlobal) return
     const cloned = sel.clone()
     cloned.walkPseudos((pseudo) => {
       const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
       if (value === ':global') {
-        if (!Array.isArray(pseudo.nodes) || pseudo.nodes.length === 0) {
-          hasBareGlobal = true
-          return
-        }
         // Drop :global(...) entirely so global context doesn't affect placement checks.
         pseudo.remove()
       }
     })
-    if (hasBareGlobal) return
     const normalized = normalizeStrippedSelector(cloned.toString())
     if (normalized) stripped.push(normalized)
   })
@@ -369,7 +380,7 @@ const analyzePseudoBase = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
+  classifyOptions: ClassifyOptions
 ): PseudoBaseResult | null => {
   if (!('nodes' in pseudo) || !Array.isArray(pseudo.nodes)) return null
   const selectorNodes = pseudo.nodes.filter(
@@ -456,7 +467,7 @@ const analyzeSegmentInfo = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions,
+  classifyOptions: ClassifyOptions,
   mode: 'kind' | 'base'
 ): SegmentKindInfo | SegmentBase | null => {
   let baseKind: 'block' | 'element' | null = null
@@ -527,7 +538,7 @@ const analyzeSegmentKind = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
+  classifyOptions: ClassifyOptions
 ): 'block' | 'element' | null => {
   const info = analyzeSegmentInfo(
     segment,
@@ -545,7 +556,7 @@ const analyzeSegmentBase = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
+  classifyOptions: ClassifyOptions
 ): SegmentBase | null => {
   const info = analyzeSegmentInfo(
     segment,
@@ -684,7 +695,7 @@ export const analyzeSelectorList = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
+  classifyOptions: ClassifyOptions
 ): SelectorAnalysis => {
   if (selectorList.length === 0) return { status: 'skip' }
   const normalizedSelectors = selectorList.filter((selector) => selector.length > 0)
@@ -775,7 +786,7 @@ const analyzeSelectorWithFamilyKey = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
+  classifyOptions: ClassifyOptions
 ): SelectorAnalysisResult => {
   // Only evaluate simple chain selectors; complex patterns are treated as unverified.
   const parsed = parseSelectorSegments(selectorText, cache)

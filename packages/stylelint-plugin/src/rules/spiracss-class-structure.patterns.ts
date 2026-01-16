@@ -8,15 +8,15 @@ import {
 import { formatCode, formatPattern } from '../utils/messages'
 import type { InvalidOptionReporter } from '../utils/normalize'
 import type {
+  ClassifyOptions,
   Kind,
   NormalizedSelectorPolicy,
-  Options,
   Patterns,
   SelectorPolicyData,
   ValueNaming
 } from './spiracss-class-structure.types'
 
-type NamingHintOptions = Pick<Options, 'naming'>
+type NamingHintOptions = Pick<ClassifyOptions, 'naming'>
 
 const serializePattern = (pattern: RegExp | undefined): string =>
   pattern ? `${pattern.source}/${pattern.flags}` : ''
@@ -96,7 +96,7 @@ export const formatNamingHint = (options: NamingHintOptions): string => {
 }
 
 export const buildPatterns = (
-  options: Options,
+  options: ClassifyOptions,
   cacheSizes: NormalizedCacheSizes,
   reportInvalid?: InvalidOptionReporter
 ): Patterns => {
@@ -222,7 +222,11 @@ export const buildSelectorPolicyData = (
  * @param patterns - Compiled naming patterns for Block/Element/Modifier.
  * @returns Classification kind for the class name.
  */
-export const classify = (name: string, options: Options, patterns: Patterns): Kind => {
+export const classify = (
+  name: string,
+  options: ClassifyOptions,
+  patterns: Patterns
+): Kind => {
   const { allowExternalClasses, allowExternalPrefixes } = options
   if (allowExternalClasses.includes(name) || allowExternalPrefixes.some((p) => name.startsWith(p))) {
     return 'external'

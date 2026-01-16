@@ -8,15 +8,22 @@ import {
   isInsideNonSameElementPseudo,
   type CompoundNodes
 } from '../utils/selector'
+import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import { messages } from './spiracss-class-structure.messages'
 import { classify } from './spiracss-class-structure.patterns'
-import type { Kind, Options, Patterns, SelectorPolicyData } from './spiracss-class-structure.types'
+import type {
+  ClassifyOptions,
+  Kind,
+  Options,
+  Patterns,
+  SelectorPolicyData
+} from './spiracss-class-structure.types'
 
 const isClassNode = (node: SelectorNode): node is ClassName => node.type === 'class'
 
 export const collectRootBlockNames = (
   selectors: Selector[],
-  options: Options,
+  options: ClassifyOptions,
   patterns: Patterns
 ): string[] => {
   const names = new Set<string>()
@@ -401,13 +408,7 @@ export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null
     !(options.selectorPolicy.variant.mode === 'data' && options.selectorPolicy.state.mode === 'data')
   if (!modifiersAllowed && modifierClasses.length > 0) {
     // Display lowercase keys in messages to match actual selector matching behavior.
-    const variantKeys = options.selectorPolicy.variant.dataKeys.map((key) => key.toLowerCase())
-    const stateKeys = Array.from(
-      new Set([
-        options.selectorPolicy.state.dataKey.toLowerCase(),
-        ...options.selectorPolicy.state.ariaKeys.map((key) => key.toLowerCase())
-      ])
-    )
+    const { variantKeys, stateKeys } = getLowercasePolicyKeys(options.selectorPolicy)
     report(messages.disallowedModifier(variantKeys, stateKeys))
   }
 

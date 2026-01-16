@@ -48,6 +48,11 @@ export type Options = {
   cacheSizes: NormalizedCacheSizes
 }
 
+export type ClassifyOptions = Pick<
+  Options,
+  'allowExternalClasses' | 'allowExternalPrefixes' | 'naming'
+>
+
 export type Patterns = {
   blockRe: RegExp
   elementRe: RegExp

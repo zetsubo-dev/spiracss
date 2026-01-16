@@ -31,6 +31,7 @@ import { messages } from './spiracss-property-placement.messages'
 import { normalizeOptions } from './spiracss-property-placement.options'
 import {
   analyzeSelectorList,
+  isGlobalOnlySelector,
   buildPolicySets,
   normalizeScopePrelude,
   normalizeUnverifiedScopePrelude,
@@ -309,10 +310,14 @@ const rule = createRule(
         createValueTokenHelpers()
       const selectorPolicy = options.selectorPolicy
       const variantMode = selectorPolicy.variant.mode
-      const variantKeys = selectorPolicy.variant.dataKeys
+      // Display lowercase keys in messages to match actual selector matching behavior.
+      const variantKeys = selectorPolicy.variant.dataKeys.map((key) => key.toLowerCase())
       const stateMode = selectorPolicy.state.mode
       const stateKeys = Array.from(
-        new Set([selectorPolicy.state.dataKey, ...selectorPolicy.state.ariaKeys])
+        new Set([
+          selectorPolicy.state.dataKey.toLowerCase(),
+          ...selectorPolicy.state.ariaKeys.map((key) => key.toLowerCase())
+        ])
       )
       const naming = options.naming ?? {}
       const modifierPrefix = naming.modifierPrefix ?? '-'
@@ -344,7 +349,7 @@ const rule = createRule(
           const selectorTexts = splitSelectors(rule.selector, selectorCache)
           // Root block detection strips :global parts to stay consistent with placement analysis.
           const localSelectors = selectorTexts
-            .map((selector) => stripGlobalSelector(selector, selectorCache))
+            .map((selector) => stripGlobalSelector(selector, selectorCache, options.cacheSizes.selector))
             .filter((selector): selector is string => Boolean(selector))
           if (localSelectors.length === 0) return
           const selectors = localSelectors.flatMap((selector) =>
@@ -405,7 +410,12 @@ const rule = createRule(
         return (
           resolved.length > 0 &&
           resolved.every(
-            (selector) => !stripGlobalSelector(selector, selectorCache)
+            (selector) =>
+              isGlobalOnlySelector(
+                selector,
+                selectorCache,
+                options.cacheSizes.selector
+              )
           )
         )
       }
@@ -717,6 +727,19 @@ const rule = createRule(
               return
             }
             if (parsedPosition.value === 'relative' || parsedPosition.value === 'absolute') {
+              if (analysis.hasUnverifiedFamilyKeys) {
+                stylelint.utils.report({
+                  ruleName,
+                  result,
+                  node: decl,
+                  message: messages.positionInChildBlock(
+                    parsedPosition.value,
+                    resolvedSelector,
+                    options.responsiveMixins
+                  )
+                })
+                return
+              }
               const familyKeys = getRuleFamilyKeys(rule)
               if (!familyKeys) return
               const wrapperKey =

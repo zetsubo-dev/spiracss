@@ -400,17 +400,15 @@ export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null
   const modifiersAllowed =
     !(options.selectorPolicy.variant.mode === 'data' && options.selectorPolicy.state.mode === 'data')
   if (!modifiersAllowed && modifierClasses.length > 0) {
+    // Display lowercase keys in messages to match actual selector matching behavior.
+    const variantKeys = options.selectorPolicy.variant.dataKeys.map((key) => key.toLowerCase())
     const stateKeys = Array.from(
       new Set([
-        options.selectorPolicy.state.dataKey,
-        ...options.selectorPolicy.state.ariaKeys
+        options.selectorPolicy.state.dataKey.toLowerCase(),
+        ...options.selectorPolicy.state.ariaKeys.map((key) => key.toLowerCase())
       ])
     )
-    modifierClasses.forEach(() => {
-      report(
-        messages.disallowedModifier(options.selectorPolicy.variant.dataKeys, stateKeys)
-      )
-    })
+    report(messages.disallowedModifier(variantKeys, stateKeys))
   }
 
   // Ignore selectors that are purely external, but still catch SpiraCSS classes

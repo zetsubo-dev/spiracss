@@ -300,21 +300,55 @@ const rule = createRule(
         }
         return false
       }
+
+      // Cache node index lookups within containers to avoid repeated O(n) findIndex calls.
+      const nodeIndexCache = new WeakMap<Container, Map<Node, number>>()
+      const getNodeIndex = (container: Container, node: Node): number => {
+        let indexMap = nodeIndexCache.get(container)
+        if (!indexMap) {
+          indexMap = new Map<Node, number>()
+          const nodes = container.nodes ?? []
+          nodes.forEach((item, index) => indexMap?.set(item, index))
+          nodeIndexCache.set(container, indexMap)
+        }
+        return indexMap.get(node) ?? -1
+      }
+
+      // Cache section boundaries per container to determine if a node is in interaction section.
+      // Each node is assigned to a section based on the most recent section comment before it.
+      // Possible section values: 'interaction', 'shared', or null (no section comment before).
+      type SectionType = 'interaction' | 'shared' | null
+      const sectionBoundaryCache = new WeakMap<Container, Map<number, SectionType>>()
+      const getNodeSection = (container: Container, nodeIndex: number): SectionType => {
+        let sectionMap = sectionBoundaryCache.get(container)
+        if (!sectionMap) {
+          sectionMap = new Map<number, SectionType>()
+          const nodes = container.nodes ?? []
+          let currentSection: SectionType = null
+          for (let i = 0; i < nodes.length; i += 1) {
+            const node = nodes[i]
+            if (node.type === 'comment') {
+              const text = getCommentText(node)
+              if (safeTestPattern(commentPatterns.interactionCommentPattern, text)) {
+                currentSection = 'interaction'
+              } else if (safeTestPattern(commentPatterns.sharedCommentPattern, text)) {
+                currentSection = 'shared'
+              }
+            }
+            sectionMap.set(i, currentSection)
+          }
+          sectionBoundaryCache.set(container, sectionMap)
+        }
+        return sectionMap.get(nodeIndex) ?? null
+      }
+
       const isInInteractionByComment = (node: Node): boolean => {
         const parent = node.parent
         if (!isContainer(parent) || !isRule(parent)) return false
         if (!isRuleInRootScope(parent, ROOT_WRAPPER_NAMES)) return false
-        const nodes = parent.nodes ?? []
-        const index = nodes.findIndex((child) => child === node)
-        if (index === -1) return false
-        for (let i = index - 1; i >= 0; i -= 1) {
-          const sibling = nodes[i]
-          if (!sibling || sibling.type !== 'comment') continue
-          const text = getCommentText(sibling)
-          if (safeTestPattern(commentPatterns.interactionCommentPattern, text)) return true
-          if (safeTestPattern(commentPatterns.sharedCommentPattern, text)) return false
-        }
-        return false
+        const nodeIndex = getNodeIndex(parent, node)
+        if (nodeIndex === -1) return false
+        return getNodeSection(parent, nodeIndex) === 'interaction'
       }
 
       let rootBlockName: string | null = null
@@ -415,13 +449,15 @@ const rule = createRule(
         stylelint.utils.report({ ruleName, result, node: decl, message })
       }
 
+      const outsideInteractionDecls: Declaration[] = []
       root.walkDecls((decl: Declaration) => {
         if (isInsideKeyframes(decl)) return
         const prop = decl.prop.toLowerCase()
-        if (!TRANSITION_PROPERTIES.has(prop) && !ANIMATION_PROPERTIES.has(prop)) return
         const parentRule = findParentRule(decl)
         if (!parentRule) return
         const inInteraction = isInInteractionSection(decl) || isInInteractionByComment(decl)
+        if (!inInteraction) outsideInteractionDecls.push(decl)
+        if (!TRANSITION_PROPERTIES.has(prop) && !ANIMATION_PROPERTIES.has(prop)) return
         if (!inInteraction) {
           stylelint.utils.report({
             ruleName,
@@ -451,11 +487,9 @@ const rule = createRule(
 
       })
 
-      root.walkDecls((decl: Declaration) => {
-        if (isInsideKeyframes(decl)) return
+      outsideInteractionDecls.forEach((decl) => {
         const parentRule = findParentRule(decl)
         if (!parentRule) return
-        if (isInInteractionSection(decl) || isInInteractionByComment(decl)) return
         const prop = decl.prop.toLowerCase()
         const keys = resolveKeys(parentRule)
         if (keys.length === 0) return

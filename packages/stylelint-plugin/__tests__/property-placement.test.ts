@@ -144,6 +144,14 @@ describe('spiracss/property-placement', () => {
       },
       {
         code: `
+:global .foo {
+  @at-root & {
+    color: inherit;
+  }
+}`
+      },
+      {
+        code: `
 :global(.foo) {
   @extend %placeholder;
 }`
@@ -1032,7 +1040,7 @@ body {
         warnings: [
           {
             message:
-              '`position: relative` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context (e.g., `@media`/`@supports`/`@container`/`@layer`/`@scope`, or `@include` listed in `responsiveMixins` (current: `none`), or move `position: relative` to the child Block\'s own file. (spiracss/property-placement)'
+              '`position: relative` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: relative` to the child Block\'s own file. (spiracss/property-placement)'
           }
         ]
       },
@@ -1088,7 +1096,21 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global(.foo) > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context (e.g., `@media`/`@supports`/`@container`/`@layer`/`@scope`, or `@include` listed in `responsiveMixins` (current: `none`), or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global(.foo) > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name.block-alt {
+  > .child-block {
+    position: absolute;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name.block-alt > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
           }
         ]
       },
@@ -1104,7 +1126,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context (e.g., `@media`/`@supports`/`@container`/`@layer`/`@scope`, or `@include` listed in `responsiveMixins` (current: `none`), or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
           }
         ]
       },
@@ -1120,7 +1142,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context (e.g., `@media`/`@supports`/`@container`/`@layer`/`@scope`, or `@include` listed in `responsiveMixins` (current: `none`), or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
           }
         ]
       },
@@ -1917,7 +1939,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context (e.g., `@media`/`@supports`/`@container`/`@layer`/`@scope`, or `@include` listed in `responsiveMixins` (current: `breakpoint-up`), or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `breakpoint-up`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
           }
         ]
       }

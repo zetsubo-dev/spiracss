@@ -4,7 +4,7 @@ import {
   type SelectorPolicySetsBase,
   buildSelectorPolicySetsBase
 } from '../utils/selector-policy'
-import { DEFAULT_CACHE_SIZE, createSharedCacheAccessor } from '../utils/cache'
+import { createSharedCacheAccessor } from '../utils/cache'
 import type { SelectorParserCache } from '../utils/selector'
 import { findParentRule } from '../utils/postcss-helpers'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
@@ -25,7 +25,12 @@ export type SelectorInfo = {
 }
 
 export type SelectorAnalysis =
-  | { status: 'ok'; selectors: SelectorInfo[]; familyKeys: string[] }
+  | {
+      status: 'ok'
+      selectors: SelectorInfo[]
+      familyKeys: string[]
+      hasUnverifiedFamilyKeys: boolean
+    }
   | { status: 'skip' }
   | { status: 'error'; message: string }
 
@@ -102,12 +107,56 @@ const normalizeStrippedSelector = (selectorText: string): string | null => {
 type StrippedSelectorCacheEntry = { value: string | null }
 const getStrippedSelectorCache =
   createSharedCacheAccessor<string, StrippedSelectorCacheEntry>()
+type GlobalOnlyCacheEntry = { value: boolean }
+const getGlobalOnlySelectorCache =
+  createSharedCacheAccessor<string, GlobalOnlyCacheEntry>()
+
+const hasLocalNodes = (
+  nodes: SelectorNode[] | undefined,
+  state: { globalMode: boolean; inGlobal: boolean }
+): boolean => {
+  if (!nodes || nodes.length === 0) return false
+  for (const node of nodes) {
+    if (node.type === 'comment' || node.type === 'combinator') continue
+    if (node.type === 'pseudo') {
+      const value = typeof node.value === 'string' ? node.value.toLowerCase() : ''
+      if (value === ':global') {
+        const nestedSelectors = Array.isArray(node.nodes)
+          ? node.nodes.filter(
+              (
+                child
+              ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+                child.type === 'selector'
+            )
+          : []
+        if (nestedSelectors.length > 0) {
+          // Treat nodes inside :global(...) as out-of-scope.
+          continue
+        }
+        // Bare :global switches to global mode for the remainder of the selector.
+        state.globalMode = true
+        continue
+      }
+    }
+    if (state.inGlobal || state.globalMode) continue
+    return true
+  }
+  return false
+}
+
+const selectorHasLocalNodes = (
+  selector: ReturnType<SelectorParserCache['parse']>[number]
+): boolean => {
+  const state = { globalMode: false, inGlobal: false }
+  return hasLocalNodes(selector.nodes, state)
+}
 
 export const stripGlobalSelector = (
   selectorText: string,
-  cache: SelectorParserCache
+  cache: SelectorParserCache,
+  cacheSize: number
 ): string | null => {
-  const strippedCache = getStrippedSelectorCache(DEFAULT_CACHE_SIZE)
+  const strippedCache = getStrippedSelectorCache(cacheSize)
   const cached = strippedCache.get(selectorText)
   if (cached) return cached.value
   const selectors = cache.parse(selectorText)
@@ -117,18 +166,43 @@ export const stripGlobalSelector = (
   }
   const stripped: string[] = []
   selectors.forEach((sel) => {
+    let hasBareGlobal = false
     const cloned = sel.clone()
     cloned.walkPseudos((pseudo) => {
       const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
       if (value === ':global') {
+        if (!Array.isArray(pseudo.nodes) || pseudo.nodes.length === 0) {
+          hasBareGlobal = true
+          return
+        }
+        // Drop :global(...) entirely so global context doesn't affect placement checks.
         pseudo.remove()
       }
     })
+    if (hasBareGlobal) return
     const normalized = normalizeStrippedSelector(cloned.toString())
     if (normalized) stripped.push(normalized)
   })
   const result = stripped.length === 0 ? null : stripped.join(', ')
   strippedCache.set(selectorText, { value: result })
+  return result
+}
+
+export const isGlobalOnlySelector = (
+  selectorText: string,
+  cache: SelectorParserCache,
+  cacheSize: number
+): boolean => {
+  const globalOnlyCache = getGlobalOnlySelectorCache(cacheSize)
+  const cached = globalOnlyCache.get(selectorText)
+  if (cached) return cached.value
+  const selectors = cache.parse(selectorText)
+  if (selectors.length === 0) {
+    globalOnlyCache.set(selectorText, { value: false })
+    return false
+  }
+  const result = selectors.every((sel) => !selectorHasLocalNodes(sel))
+  globalOnlyCache.set(selectorText, { value: result })
   return result
 }
 
@@ -433,20 +507,18 @@ const analyzeSegmentInfo = (
         baseClass = className
       } else if (baseKind !== kind) {
         return null
-      } else if (mode === 'base') {
-        return null
       }
     }
   }
 
-  // For kind-only mode, multiple base classes of the same kind are still invalid.
-  if (baseCount > 1) return null
   if (!baseKind || !baseClass) return null
   if (pseudoKind && baseKind !== pseudoKind) return null
   if (mode === 'base') {
+    if (baseCount > 1) return null
     if (pseudoClass && baseClass !== pseudoClass) return null
     return { kind: baseKind, baseClass }
   }
+  // For kind-only mode, multiple base classes of the same kind are allowed.
   return { kind: baseKind }
 }
 
@@ -618,18 +690,19 @@ export const analyzeSelectorList = (
   const normalizedSelectors = selectorList.filter((selector) => selector.length > 0)
   if (normalizedSelectors.length === 0) return { status: 'skip' }
   const strippedSelectors = normalizedSelectors
-    .map((selector) => stripGlobalSelector(selector, cache))
+    .map((selector) => stripGlobalSelector(selector, cache, options.cacheSizes.selector))
     .filter((selector): selector is string => Boolean(selector))
   if (strippedSelectors.length === 0) return { status: 'skip' }
 
   let hasPageRootSelector = false
   let hasKindMismatch = false
+  let hasUnverifiedFamilyKeys = false
   let expectedKind: SelectorKind | null = null
   const selectors: SelectorInfo[] = []
   const familyKeys: string[] = []
 
   for (const selectorText of strippedSelectors) {
-    const analysis = analyzeSelector(
+    const analysis = analyzeSelectorWithFamilyKey(
       selectorText,
       cache,
       options,
@@ -647,25 +720,16 @@ export const analyzeSelectorList = (
       continue
     }
 
-    const familyKey = buildSelectorFamilyKey(
-      selectorText,
-      cache,
-      options,
-      policy,
-      patterns,
-      classifyOptions
-    )
-    if (!familyKey) {
-      continue
-    }
-
     if (expectedKind && expectedKind !== analysis.selector.kind) {
       hasKindMismatch = true
     } else {
       expectedKind = analysis.selector.kind
     }
     selectors.push(analysis.selector)
-    if (!hasKindMismatch) familyKeys.push(familyKey)
+    if (!analysis.familyKey && analysis.selector.kind === 'child-block') {
+      hasUnverifiedFamilyKeys = true
+    }
+    if (!hasKindMismatch && analysis.familyKey) familyKeys.push(analysis.familyKey)
   }
 
   if (hasPageRootSelector && normalizedSelectors.length > 1) {
@@ -684,29 +748,50 @@ export const analyzeSelectorList = (
 
   return selectors.length === 0
     ? { status: 'skip' }
-    : { status: 'ok', selectors, familyKeys: [...new Set(familyKeys)] }
+    : {
+        status: 'ok',
+        selectors,
+        familyKeys: [...new Set(familyKeys)],
+        hasUnverifiedFamilyKeys
+      }
 }
 
-const analyzeSelector = (
+type SelectorAnalysisResult =
+  | { status: 'ok'; selector: SelectorInfo; familyKey: string | null }
+  | { status: 'skip' }
+  | { status: 'error'; message: string }
+
+const buildFamilyKeyFromChain = (chain: SelectorChain<SegmentBase>): string => {
+  let key = chain.segmentInfos[0].baseClass
+  for (let i = 1; i < chain.segmentInfos.length; i += 1) {
+    key += `${chain.combinators[i - 1]}${chain.segmentInfos[i].baseClass}`
+  }
+  return key
+}
+
+const analyzeSelectorWithFamilyKey = (
   selectorText: string,
   cache: SelectorParserCache,
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
   classifyOptions: ClassStructureOptions
-):
-  | { status: 'ok'; selector: SelectorInfo }
-  | { status: 'skip' }
-  | { status: 'error'; message: string } => {
+): SelectorAnalysisResult => {
   // Only evaluate simple chain selectors; complex patterns are treated as unverified.
   const parsed = parseSelectorSegments(selectorText, cache)
   if (!parsed) return { status: 'skip' }
   const { segments, combinators, rootCheck } = parsed
   if (rootCheck.status !== 'ok') return rootCheck
   if (rootCheck.kind === 'page-root') {
-    return { status: 'ok', selector: { kind: 'page-root', tailCombinator: null } }
+    return {
+      status: 'ok',
+      selector: { kind: 'page-root', tailCombinator: null },
+      familyKey: null
+    }
   }
 
+  // First pass: determine selector kind using relaxed validation (allows multiple
+  // base classes of the same kind in a segment, e.g., `.block.block-alt`).
   const chain = buildSelectorChain(
     segments,
     combinators,
@@ -718,49 +803,26 @@ const analyzeSelector = (
   )
   if (!chain) return { status: 'skip' }
 
+  let selector: SelectorInfo
   if (chain.segmentKinds.length === 1) {
-    return { status: 'ok', selector: { kind: 'root', tailCombinator: null } }
+    selector = { kind: 'root', tailCombinator: null }
+  } else if (chain.hasChildBlockAtTail) {
+    selector = { kind: 'child-block', tailCombinator: chain.tailCombinator }
+  } else {
+    selector = { kind: 'element', tailCombinator: chain.tailCombinator }
   }
 
-  if (chain.hasChildBlockAtTail) {
-    return {
-      status: 'ok',
-      selector: { kind: 'child-block', tailCombinator: chain.tailCombinator }
-    }
-  }
-
-  return {
-    status: 'ok',
-    selector: { kind: 'element', tailCombinator: chain.tailCombinator }
-  }
-}
-
-export const buildSelectorFamilyKey = (
-  selectorText: string,
-  cache: SelectorParserCache,
-  options: Options,
-  policy: PolicySets,
-  patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
-): string | null => {
-  const parsed = parseSelectorSegments(selectorText, cache)
-  if (!parsed) return null
-  const { segments, combinators, rootCheck } = parsed
-  if (rootCheck.status !== 'ok' || rootCheck.kind === 'page-root') return null
-  const chain = buildSelectorChain<SegmentBase>(
+  // Second pass: extract family key using strict validation (requires exactly one
+  // base class per segment). This may fail even when the first pass succeeded.
+  const baseChain = buildSelectorChain<SegmentBase>(
     segments,
     combinators,
     (segment) => analyzeSegmentBase(segment, options, policy, patterns, classifyOptions),
     options.allowElementChainDepth
   )
-  if (!chain) return null
+  const familyKey = baseChain ? buildFamilyKeyFromChain(baseChain) : null
 
-  let key = chain.segmentInfos[0].baseClass
-  for (let i = 1; i < chain.segmentInfos.length; i += 1) {
-    key += `${chain.combinators[i - 1]}${chain.segmentInfos[i].baseClass}`
-  }
-
-  return key
+  return { status: 'ok', selector, familyKey }
 }
 
 export const normalizeScopePrelude = (params: string): string | null => {

@@ -199,15 +199,14 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
         )}/${formatCode('inset-block-end')}/${formatCode(
           'inset-inline-start'
         )}/${formatCode('inset-inline-end')} ` +
-        `in the same wrapper context (e.g., ${formatCode(
-          '@media'
-        )}/${formatCode('@supports')}/${formatCode(
+        `in the same wrapper context. ` +
+        `${formatCode('@media')}/${formatCode('@supports')}/${formatCode(
           '@container'
-        )}/${formatCode('@layer')}/${formatCode(
-          '@scope'
-        )}, or ${formatCode('@include')} listed in ${formatCode(
+        )}/${formatCode('@layer')} are transparent (same context), ` +
+        `${formatCode('@scope')} creates a new context boundary. ` +
+        `${formatCode('@include')} in ${formatCode(
           'responsiveMixins'
-        )} (current: ${formatConfigList(responsiveMixins)}), ` +
+        )} (current: ${formatConfigList(responsiveMixins)}) are also transparent, ` +
         `or ${moveHintLower}`
       )
     }

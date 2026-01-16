@@ -4,6 +4,7 @@ import {
   type SelectorPolicySetsBase,
   buildSelectorPolicySetsBase
 } from '../utils/selector-policy'
+import { DEFAULT_CACHE_SIZE, createSharedCacheAccessor } from '../utils/cache'
 import type { SelectorParserCache } from '../utils/selector'
 import { findParentRule } from '../utils/postcss-helpers'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
@@ -92,17 +93,28 @@ export const buildPolicySets = (policy: Options['selectorPolicy']): PolicySets =
 const normalizeStrippedSelector = (selectorText: string): string | null => {
   const normalized = selectorText.replace(/\s+/g, ' ').trim()
   if (!normalized) return null
+  // Leading/trailing combinators mean we lost context after stripping :global.
   if (/^[>+~]/.test(normalized)) return null
   if (/[>+~]$/.test(normalized)) return null
   return normalized
 }
 
+type StrippedSelectorCacheEntry = { value: string | null }
+const getStrippedSelectorCache =
+  createSharedCacheAccessor<string, StrippedSelectorCacheEntry>()
+
 export const stripGlobalSelector = (
   selectorText: string,
   cache: SelectorParserCache
 ): string | null => {
+  const strippedCache = getStrippedSelectorCache(DEFAULT_CACHE_SIZE)
+  const cached = strippedCache.get(selectorText)
+  if (cached) return cached.value
   const selectors = cache.parse(selectorText)
-  if (selectors.length === 0) return null
+  if (selectors.length === 0) {
+    strippedCache.set(selectorText, { value: null })
+    return null
+  }
   const stripped: string[] = []
   selectors.forEach((sel) => {
     const cloned = sel.clone()
@@ -115,8 +127,9 @@ export const stripGlobalSelector = (
     const normalized = normalizeStrippedSelector(cloned.toString())
     if (normalized) stripped.push(normalized)
   })
-  if (stripped.length === 0) return null
-  return stripped.join(', ')
+  const result = stripped.length === 0 ? null : stripped.join(', ')
+  strippedCache.set(selectorText, { value: result })
+  return result
 }
 
 export const splitSelectors = (
@@ -630,13 +643,10 @@ export const analyzeSelectorList = (
     }
     if (analysis.selector.kind === 'page-root') {
       hasPageRootSelector = true
+      selectors.push(analysis.selector)
+      continue
     }
-    if (expectedKind && expectedKind !== analysis.selector.kind) {
-      hasKindMismatch = true
-    } else {
-      expectedKind = analysis.selector.kind
-    }
-    selectors.push(analysis.selector)
+
     const familyKey = buildSelectorFamilyKey(
       selectorText,
       cache,
@@ -645,7 +655,17 @@ export const analyzeSelectorList = (
       patterns,
       classifyOptions
     )
-    if (familyKey) familyKeys.push(familyKey)
+    if (!familyKey) {
+      continue
+    }
+
+    if (expectedKind && expectedKind !== analysis.selector.kind) {
+      hasKindMismatch = true
+    } else {
+      expectedKind = analysis.selector.kind
+    }
+    selectors.push(analysis.selector)
+    if (!hasKindMismatch) familyKeys.push(familyKey)
   }
 
   if (hasPageRootSelector && normalizedSelectors.length > 1) {

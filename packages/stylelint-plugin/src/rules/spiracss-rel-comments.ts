@@ -205,6 +205,13 @@ const rule = createRule(
       const selectorCache = selectorState.cache
       const pathExistsCache = createLruCache<string, boolean>(cacheSizes.path)
       const targetExistsCache = createLruCache<string, boolean>(cacheSizes.path)
+      const checkPathExists = (candidate: string): boolean => {
+        const cached = pathExistsCache.get(candidate)
+        if (cached !== undefined) return cached
+        const exists = fs.existsSync(candidate)
+        pathExistsCache.set(candidate, exists)
+        return exists
+      }
       const filePath: string = (result?.opts?.from as string) || ''
       const inScssDir = filePath.split(path.sep).includes(childScssDir)
       const containsRules = hasRuleNodes(root)
@@ -220,7 +227,7 @@ const rule = createRule(
           const resolvedBase = path.isAbsolute(base)
             ? base
             : path.resolve(projectRoot, base)
-          return fs.existsSync(resolvedBase)
+          return checkPathExists(resolvedBase)
         })
         if (!hasExistingBase) return false
         return resolveAliasCandidates(`@${key}`, projectRoot, aliasRoots).length > 0

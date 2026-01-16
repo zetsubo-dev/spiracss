@@ -55,6 +55,7 @@ const resolveRealpath = (target: string): string | null => {
       reportAliasError(error)
       realpathCache.set(target, { status: 'error' })
     }
+    // Do not cache ENOENT so newly created files can be resolved in the same run.
     return null
   }
 }

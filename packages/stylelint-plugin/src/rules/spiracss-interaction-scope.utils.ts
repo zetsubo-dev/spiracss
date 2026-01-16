@@ -135,10 +135,12 @@ export const findCommentBefore = (node: Node): string | null => {
 
     const idx = getNodeIndex(parent, current)
     if (idx === -1) {
+      // Node not found in the cached index; walk up to keep the search resilient.
       current = parent
       continue
     }
     if (idx === 0) {
+      // No preceding siblings in this container; keep walking up.
       current = parent
       continue
     }

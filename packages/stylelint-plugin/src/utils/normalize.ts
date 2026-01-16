@@ -23,7 +23,7 @@ const shouldReportNormalizeError = (): boolean => {
 const reportNormalizeError = (label: string, value: unknown): void => {
   if (!shouldReportNormalizeError()) return
   const detail = value instanceof RegExp ? value.toString() : String(value)
-  console.warn(`[spiracss] Invalid ${label}: ${detail}`)
+  console.warn(`${ERROR_PREFIX} Invalid ${label}: ${detail}`)
 }
 
 export type InvalidOptionReporter = (

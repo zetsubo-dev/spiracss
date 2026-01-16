@@ -3,7 +3,7 @@ import stylelint from 'stylelint'
 import { ruleName } from './spiracss-interaction-scope.constants'
 import {
   formatCode,
-  formatList,
+  formatConfigList,
   formatPattern,
   formatSelectorParseFailed,
   type RuleMessageArgs
@@ -32,9 +32,9 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
       '@at-root'
     )} block out of child rules.`,
   mixedStateVariant: (stateKeys: string[], variantKeys: string[]) =>
-    `Do not mix state selectors (${formatList(
+    `Do not mix state selectors (${formatConfigList(
       stateKeys
-    )}) with variant selectors (${formatList(
+    )}) with variant selectors (${formatConfigList(
       variantKeys
     )}) in the same selector. Split into separate selectors.`,
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])

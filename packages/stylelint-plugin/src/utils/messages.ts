@@ -61,6 +61,7 @@ export const formatCode = (
 ): string => {
   const maxChars = options?.maxChars ?? DEFAULT_CODE_MAX_CHARS
   const escaped = escapeInlineCode(value)
+  // Keep inline-code formatting even for empty/disabled outputs.
   if (maxChars <= 0) return '``'
   return `\`${trimTo(escaped, maxChars)}\``
 }
@@ -85,7 +86,7 @@ export const formatList = (
   items: Array<string | RegExp>,
   options?: FormatListOptions
 ): string => {
-  // maxChars is a soft ceiling; small overflow keeps suffix/counts readable.
+  // maxChars is a soft ceiling; the +2 keeps backticks/suffixes readable.
   const {
     maxItems = DEFAULT_LIST_MAX_ITEMS,
     maxItemChars = DEFAULT_LIST_MAX_ITEM_CHARS,
@@ -164,4 +165,12 @@ export const formatList = (
   const remaining = totalCount
   const fallbackSuffix = suffixVariants(remaining).at(-1) ?? ''
   return formatCode(fallbackSuffix, { maxChars: Math.max(1, maxChars) })
+}
+
+export const formatConfigList = (
+  items: Array<string | RegExp>,
+  options?: FormatListOptions
+): string => {
+  const maxItems = options?.maxItems ?? Math.max(items.length, 1)
+  return formatList(items, { ...options, maxItems })
 }

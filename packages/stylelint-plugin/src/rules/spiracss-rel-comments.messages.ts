@@ -3,13 +3,13 @@ import stylelint from 'stylelint'
 import { ruleName } from './spiracss-rel-comments.constants'
 import {
   formatCode,
-  formatList,
+  formatConfigList,
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
 
 const formatAliasList = (aliases: string[]): string =>
-  formatList(aliases.map((alias) => `@${alias}/`))
+  formatConfigList(aliases.map((alias) => `@${alias}/`))
 
 const formatAliasHint = (aliases: string[]): string =>
   ` (current: ${formatAliasList(aliases)})`

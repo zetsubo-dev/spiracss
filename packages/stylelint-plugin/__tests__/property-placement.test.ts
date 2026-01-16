@@ -180,13 +180,6 @@ describe('spiracss/property-placement', () => {
       },
       {
         code: `
-.block-name > .title,
-.block-name > .child-block {
-  display: flex;
-}`
-      },
-      {
-        code: `
 .block-name {
   > :where(.title, .lead) {
     margin-top: 8px;
@@ -627,6 +620,17 @@ body {
       },
       {
         code: `
+@scope(.modal)to(.limit) {
+  .block-name {
+    > .child-block {
+      position: absolute;
+      left: 0;
+    }
+  }
+}`
+      },
+      {
+        code: `
 @scope (.modal) {
   @scope (.inner) {
     .block-name {
@@ -695,6 +699,22 @@ body {
     }
   }
 }`
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+.block-name > .title,
+.block-name > .child-block {
+  display: flex;
+}`,
+        warnings: [
+          {
+            message:
+              'Selector list mixes incompatible kinds (root/element/child Block). Selector: `.block-name > .title, .block-name > .child-block`. Split selectors into separate rules so placement checks can be applied correctly. (spiracss/property-placement)'
+          }
+        ]
       },
       {
         code: `
@@ -704,7 +724,13 @@ body {
       color: inherit;
     }
   }
-}`
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `:global(.foo) .block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
       },
       {
         code: `
@@ -712,11 +738,14 @@ body {
   .block-name {
     @extend %placeholder;
   }
-}`
-      }
-    ],
-
-    reject: [
+}`,
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `:global(.foo) .block-name` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
       {
         code: `
 .block-name {
@@ -1335,7 +1364,7 @@ body, :global(.foo) {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property. Selector: `body, :global(.foo)`. Page roots are decoration-only and cannot define layout. Use a page root Block class with a direct child selector instead. (spiracss/property-placement)'
+              'Selector: `body, :global(.foo)`. Page-layer roots must be used alone. No extra selectors, attributes, or pseudos are allowed. Define layout on the page root Block class instead. (spiracss/property-placement)'
           }
         ]
       },
@@ -1347,7 +1376,7 @@ body, :global(.foo) {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property. Selector: `:global(.foo), body`. Page roots are decoration-only and cannot define layout. Use a page root Block class with a direct child selector instead. (spiracss/property-placement)'
+              'Selector: `:global(.foo), body`. Page-layer roots must be used alone. No extra selectors, attributes, or pseudos are allowed. Define layout on the page root Block class instead. (spiracss/property-placement)'
           }
         ]
       },

@@ -38,6 +38,10 @@ export const normalizeCommentPattern = (
   label = 'comment pattern',
   reportInvalid?: InvalidOptionReporter
 ): RegExp => {
+  const report = (value: unknown): void => {
+    if (reportInvalid) reportInvalid(label, value)
+    else reportNormalizeError(label, value)
+  }
   const isSafe = (regex: RegExp): boolean => {
     try {
       return safeRegex(regex)
@@ -47,8 +51,7 @@ export const normalizeCommentPattern = (
   }
   if (pattern instanceof RegExp) {
     if (!isSafe(pattern)) {
-      reportInvalid?.(label, pattern)
-      if (!reportInvalid) reportNormalizeError(label, pattern)
+      report(pattern)
       return fallback
     }
     return pattern
@@ -57,14 +60,12 @@ export const normalizeCommentPattern = (
     try {
       const regex = new RegExp(pattern, 'i')
       if (!isSafe(regex)) {
-        reportInvalid?.(label, pattern)
-        if (!reportInvalid) reportNormalizeError(label, pattern)
+        report(pattern)
         return fallback
       }
       return regex
     } catch {
-      reportInvalid?.(label, pattern)
-      if (!reportInvalid) reportNormalizeError(label, pattern)
+      report(pattern)
       return fallback
     }
   }

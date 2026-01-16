@@ -24,7 +24,7 @@ export type SelectorInfo = {
 }
 
 export type SelectorAnalysis =
-  | { status: 'ok'; selectors: SelectorInfo[] }
+  | { status: 'ok'; selectors: SelectorInfo[]; familyKeys: string[] }
   | { status: 'skip' }
   | { status: 'error'; message: string }
 
@@ -32,14 +32,13 @@ export type PolicySets = SelectorPolicySetsBase & {
   modifiersAllowed: boolean
 }
 
-// Detect selector fragments starting with a combinator.
-const COMBINATOR_START_PATTERN = /^[>+~]/
-// Parse @scope prelude: "(start)" or "(start) to (end)".
-const SCOPE_PARAM_PATTERN = /^\s*\(([^()]*)\)(?:\s+to\s+\(([^()]*)\))?\s*$/i
+// Parse @scope prelude: "(start)" or "(start) to (end)" (allow flexible spacing around "to").
+const SCOPE_PARAM_PATTERN = /^\s*\(([^()]*)\)(?:\s*to\s*\(([^()]*)\))?\s*$/i
 // Allow only simple selectors (no pseudo, attribute, combinator, or grouping).
 const SIMPLE_SCOPE_SELECTOR_PATTERN = /^[^,\s>+~&()\[\]:]+$/
 // Extract the leading token from @include params.
 const SCOPE_HEAD_PATTERN = /^([^\s(]+)/
+const ALLOWED_COMBINATORS = new Set(['>', '+', '~'])
 // Guard against selector explosion during nested resolution.
 const MAX_RESOLVED_SELECTORS = 1000
 
@@ -48,10 +47,28 @@ const isIdNode = (node: SelectorNode): node is IdNode => node.type === 'id'
 
 const normalizeCombinator = (value: string): string => value.trim() || ' '
 
-const isExternalClass = (name: string, options: Options): boolean =>
-  name.startsWith('u-') ||
-  options.allowExternalClasses.includes(name) ||
-  options.allowExternalPrefixes.some((prefix) => name.startsWith(prefix))
+const externalClassCache = new WeakMap<
+  Options,
+  { classSet: Set<string>; prefixes: string[] }
+>()
+
+const getExternalClassCache = (options: Options): { classSet: Set<string>; prefixes: string[] } => {
+  const cached = externalClassCache.get(options)
+  if (cached) return cached
+  const entry = {
+    classSet: new Set(options.allowExternalClasses),
+    prefixes: [...options.allowExternalPrefixes]
+  }
+  externalClassCache.set(options, entry)
+  return entry
+}
+
+const isExternalClass = (name: string, options: Options): boolean => {
+  if (name.startsWith('u-')) return true
+  const cached = getExternalClassCache(options)
+  if (cached.classSet.has(name)) return true
+  return cached.prefixes.some((prefix) => name.startsWith(prefix))
+}
 
 const isAllowedAttribute = (name: string, policy: PolicySets): boolean => {
   const lowered = name.toLowerCase()
@@ -72,7 +89,35 @@ export const buildPolicySets = (policy: Options['selectorPolicy']): PolicySets =
   modifiersAllowed: !(policy.variant.mode === 'data' && policy.state.mode === 'data')
 })
 
-export const hasGlobalSelector = (selector: string): boolean => selector.includes(':global')
+const normalizeStrippedSelector = (selectorText: string): string | null => {
+  const normalized = selectorText.replace(/\s+/g, ' ').trim()
+  if (!normalized) return null
+  if (/^[>+~]/.test(normalized)) return null
+  if (/[>+~]$/.test(normalized)) return null
+  return normalized
+}
+
+export const stripGlobalSelector = (
+  selectorText: string,
+  cache: SelectorParserCache
+): string | null => {
+  const selectors = cache.parse(selectorText)
+  if (selectors.length === 0) return null
+  const stripped: string[] = []
+  selectors.forEach((sel) => {
+    const cloned = sel.clone()
+    cloned.walkPseudos((pseudo) => {
+      const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+      if (value === ':global') {
+        pseudo.remove()
+      }
+    })
+    const normalized = normalizeStrippedSelector(cloned.toString())
+    if (normalized) stripped.push(normalized)
+  })
+  if (stripped.length === 0) return null
+  return stripped.join(', ')
+}
 
 export const splitSelectors = (
   selector: string,
@@ -87,10 +132,6 @@ const combineSelectors = (parent: string, child: string): string[] => {
   if (!trimmedChild) return []
   if (trimmedChild.includes('&')) {
     return [trimmedChild.replace(/&/g, parent)]
-  }
-  const startsWithCombinator = COMBINATOR_START_PATTERN.test(trimmedChild)
-  if (startsWithCombinator) {
-    return [`${parent} ${trimmedChild}`.trim()]
   }
   return [`${parent} ${trimmedChild}`.trim()]
 }
@@ -184,6 +225,7 @@ const collectSegments = (
     }
     current.push(node)
   })
+  // Keep empty segments to preserve combinator alignment; invalid selectors are rejected later.
   segments.push(current)
 }
 
@@ -314,8 +356,6 @@ const analyzePseudoBase = (
       resolvedHasBase = true
       resolvedClass = localClass
       resolvedKind = localKind
-    } else {
-      if (resolvedHasBase) return null
     }
   }
 
@@ -386,6 +426,7 @@ const analyzeSegmentInfo = (
     }
   }
 
+  // For kind-only mode, multiple base classes of the same kind are still invalid.
   if (baseCount > 1) return null
   if (!baseKind || !baseClass) return null
   if (pseudoKind && baseKind !== pseudoKind) return null
@@ -490,12 +531,12 @@ const buildSelectorChain = <T extends SegmentKindInfo>(
   maxElementDepth: number
 ): SelectorChain<T> | null => {
   // Only allow direct or sibling combinators; descendant combinator (space) is unsupported.
-  if (combinators.some((combinator) => !['>', '+', '~'].includes(combinator))) {
+  if (combinators.some((combinator) => !ALLOWED_COMBINATORS.has(combinator))) {
     return null
   }
   // Sibling combinators (+, ~) are allowed only at the tail position (after the last segment).
-  if (combinators.slice(0, -1).some((combinator) => combinator === '+' || combinator === '~')) {
-    return null
+  for (let i = 0; i < combinators.length - 1; i += 1) {
+    if (combinators[i] === '+' || combinators[i] === '~') return null
   }
 
   const segmentInfos: T[] = []
@@ -521,6 +562,7 @@ const buildSelectorChain = <T extends SegmentKindInfo>(
     segmentKinds[1] === 'block' &&
     (tailCombinator === '+' || tailCombinator === '~')
   ) {
+    // Reject `.block + .block` at the root to avoid block-to-block sibling targeting.
     return null
   }
 
@@ -560,20 +602,20 @@ export const analyzeSelectorList = (
   classifyOptions: ClassStructureOptions
 ): SelectorAnalysis => {
   if (selectorList.length === 0) return { status: 'skip' }
-  const trimmedSelectors = selectorList.map((selector) => selector.trim()).filter(Boolean)
-  if (trimmedSelectors.length === 0) return { status: 'skip' }
-  // Ignore :global selectors for placement analysis, but keep them in messages.
-  const nonGlobalSelectors = trimmedSelectors.filter(
-    (selector) => !hasGlobalSelector(selector)
-  )
-  if (nonGlobalSelectors.length === 0) return { status: 'skip' }
+  const normalizedSelectors = selectorList.filter((selector) => selector.length > 0)
+  if (normalizedSelectors.length === 0) return { status: 'skip' }
+  const strippedSelectors = normalizedSelectors
+    .map((selector) => stripGlobalSelector(selector, cache))
+    .filter((selector): selector is string => Boolean(selector))
+  if (strippedSelectors.length === 0) return { status: 'skip' }
 
   let hasPageRootSelector = false
   let hasKindMismatch = false
   let expectedKind: SelectorKind | null = null
   const selectors: SelectorInfo[] = []
+  const familyKeys: string[] = []
 
-  for (const selectorText of nonGlobalSelectors) {
+  for (const selectorText of strippedSelectors) {
     const analysis = analyzeSelector(
       selectorText,
       cache,
@@ -595,18 +637,34 @@ export const analyzeSelectorList = (
       expectedKind = analysis.selector.kind
     }
     selectors.push(analysis.selector)
+    const familyKey = buildSelectorFamilyKey(
+      selectorText,
+      cache,
+      options,
+      policy,
+      patterns,
+      classifyOptions
+    )
+    if (familyKey) familyKeys.push(familyKey)
   }
 
-  if (hasPageRootSelector && nonGlobalSelectors.length > 1) {
-    return { status: 'error', message: messages.pageRootNoChildren(trimmedSelectors.join(', ')) }
+  if (hasPageRootSelector && normalizedSelectors.length > 1) {
+    return {
+      status: 'error',
+      message: messages.pageRootNoChildren(normalizedSelectors.join(', '))
+    }
   }
-  // Skip entire list if selectors mix incompatible kinds.
-  // Unverified selectors are ignored to avoid bypassing the entire rule.
+  // Reject lists that mix incompatible kinds to avoid bypassing placement checks.
   if (hasKindMismatch) {
-    return { status: 'skip' }
+    return {
+      status: 'error',
+      message: messages.selectorKindMismatch(normalizedSelectors.join(', '))
+    }
   }
 
-  return selectors.length === 0 ? { status: 'skip' } : { status: 'ok', selectors }
+  return selectors.length === 0
+    ? { status: 'skip' }
+    : { status: 'ok', selectors, familyKeys: [...new Set(familyKeys)] }
 }
 
 const analyzeSelector = (

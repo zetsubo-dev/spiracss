@@ -2,6 +2,7 @@ import stylelint from 'stylelint'
 
 import { ruleName } from './spiracss-class-structure.constants'
 import {
+  formatConfigList,
   formatList,
   formatPattern,
   formatCode,
@@ -100,9 +101,9 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     )} and ${formatCode(
       'selectorPolicy.state.mode'
     )} are both ${formatCode('data')}. ` +
-    `Use variant attributes (current: ${formatList(
+    `Use variant attributes (current: ${formatConfigList(
       variantKeys
-    )}) or state attributes (current: ${formatList(
+    )}) or state attributes (current: ${formatConfigList(
       stateKeys
     )}) instead, or enable class mode in ${formatCode('selectorPolicy')}.`,
   invalidVariantAttribute: (attr: string, example: string) =>

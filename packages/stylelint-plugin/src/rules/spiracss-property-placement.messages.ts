@@ -4,7 +4,7 @@ import { ruleName } from './spiracss-property-placement.constants'
 import type { WordCase } from '../types'
 import {
   formatCode,
-  formatList,
+  formatConfigList,
   formatPattern,
   formatSelectorParseFailed,
   type RuleMessageArg,
@@ -45,7 +45,7 @@ const formatPolicyHint = (
     )
   }
   const attrType = label === 'variant' ? 'data' : 'state'
-  return `use ${attrType} attributes (keys: ${formatList(keys)})`
+  return `use ${attrType} attributes (keys: ${formatConfigList(keys)})`
 }
 
 const pageRootBase = (prop: string, selector: string, propType: string): string =>
@@ -127,6 +127,10 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     `(use the parent file that places this Block, typically linked via ${formatCode(
       '@rel'
     )}).`,
+  selectorKindMismatch: (selector: string) =>
+    `Selector list mixes incompatible kinds (root/element/child Block). ` +
+    `Selector: ${formatCode(selector)}. ` +
+    'Split selectors into separate rules so placement checks can be applied correctly.',
   marginSideViolation: (prop: string, selector: string, disallowedSide: 'top' | 'bottom') =>
     `${formatCode(
       prop
@@ -203,9 +207,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
           '@scope'
         )}, or ${formatCode('@include')} listed in ${formatCode(
           'responsiveMixins'
-        )} (current: ${formatList(
-          responsiveMixins
-        )}), ` +
+        )} (current: ${formatConfigList(responsiveMixins)}), ` +
         `or ${moveHintLower}`
       )
     }

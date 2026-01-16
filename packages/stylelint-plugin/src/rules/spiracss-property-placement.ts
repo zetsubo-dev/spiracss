@@ -32,12 +32,11 @@ import { normalizeOptions } from './spiracss-property-placement.options'
 import {
   analyzeSelectorList,
   buildPolicySets,
-  buildSelectorFamilyKey,
-  hasGlobalSelector,
   normalizeScopePrelude,
   normalizeUnverifiedScopePrelude,
   parseMixinName,
   resolveSelectors,
+  stripGlobalSelector,
   splitSelectors,
   type PolicySets,
   type SelectorAnalysis,
@@ -343,12 +342,12 @@ const rule = createRule(
           if (!isRootBlockRule(rule)) return
           if (typeof rule.selector !== 'string') return
           const selectorTexts = splitSelectors(rule.selector, selectorCache)
-          // Root block detection ignores :global selectors for consistency with placement analysis.
-          const nonGlobalSelectors = selectorTexts.filter(
-            (selector) => !hasGlobalSelector(selector)
-          )
-          if (nonGlobalSelectors.length === 0) return
-          const selectors = nonGlobalSelectors.flatMap((selector) =>
+          // Root block detection strips :global parts to stay consistent with placement analysis.
+          const localSelectors = selectorTexts
+            .map((selector) => stripGlobalSelector(selector, selectorCache))
+            .filter((selector): selector is string => Boolean(selector))
+          if (localSelectors.length === 0) return
+          const selectors = localSelectors.flatMap((selector) =>
             selectorCache.parse(selector)
           )
           const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
@@ -403,12 +402,21 @@ const rule = createRule(
       const isGlobalOnlyRule = (rule: Rule): boolean => {
         // If a rule has no non-:global selectors, treat it as out-of-scope for enforcement.
         const resolved = getResolvedSelectors(rule)
-        return resolved.length > 0 && resolved.every((selector) => hasGlobalSelector(selector))
+        return (
+          resolved.length > 0 &&
+          resolved.every(
+            (selector) => !stripGlobalSelector(selector, selectorCache)
+          )
+        )
       }
 
       const getRuleAnalysis = (
         rule: Rule
-      ): { resolvedSelectors: string[]; analysis: SelectorAnalysis; resolvedSelectorText: string } => {
+      ): {
+        resolvedSelectors: string[]
+        analysis: SelectorAnalysis
+        resolvedSelectorText: string
+      } => {
         const cached = ruleAnalysisCache.get(rule)
         if (cached) return cached
         const resolvedSelectors = getResolvedSelectors(rule)
@@ -436,44 +444,18 @@ const rule = createRule(
         if (ruleFamilyKeysCache.has(rule)) {
           return ruleFamilyKeysCache.get(rule) ?? null
         }
-        const { analysis, resolvedSelectors } = getRuleAnalysis(rule)
+        const { analysis } = getRuleAnalysis(rule)
         if (analysis.status !== 'ok') {
           ruleFamilyKeysCache.set(rule, null)
           return null
         }
-        // Match :global handling with analyzeSelectorList so offset lookups stay aligned.
-        const nonGlobalSelectors = resolvedSelectors.filter(
-          (selector) => !hasGlobalSelector(selector)
-        )
-        if (nonGlobalSelectors.length === 0) {
+        const keys = analysis.familyKeys
+        if (keys.length === 0) {
           ruleFamilyKeysCache.set(rule, null)
           return null
         }
-        const keys: string[] = []
-        let hasUnverified = false
-        // If any selector cannot yield a family key, skip to avoid partial matches.
-        for (const selectorText of nonGlobalSelectors) {
-          const key = buildSelectorFamilyKey(
-            selectorText,
-            selectorCache,
-            options,
-            policySets,
-            patterns,
-            classifyOptions
-          )
-          if (!key) {
-            hasUnverified = true
-            break
-          }
-          keys.push(key)
-        }
-        if (hasUnverified || keys.length === 0) {
-          ruleFamilyKeysCache.set(rule, null)
-          return null
-        }
-        const uniqueKeys = [...new Set(keys)]
-        ruleFamilyKeysCache.set(rule, uniqueKeys)
-        return uniqueKeys
+        ruleFamilyKeysCache.set(rule, keys)
+        return keys
       }
 
       const getWrapperContextKey = (node: Node): string | null => {
@@ -512,7 +494,14 @@ const rule = createRule(
           }
           current = current.parent ?? undefined
         }
-        const key = parts.length === 0 ? 'ctx:root' : `ctx:${parts.reverse().join('|')}`
+        let key = 'ctx:root'
+        if (parts.length > 0) {
+          let context = ''
+          for (let i = parts.length - 1; i >= 0; i -= 1) {
+            context += `${context ? '|' : ''}${parts[i]}`
+          }
+          key = `ctx:${context}`
+        }
         wrapperKeyCache.set(node, key)
         return key
       }
@@ -523,11 +512,13 @@ const rule = createRule(
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) continue
         const familyKeys = getRuleFamilyKeys(rule)
         if (!familyKeys) continue
+        const ruleWrapperKey = getWrapperContextKey(rule)
         for (const decl of decls) {
           if (isInsideAtRoot(decl)) continue
           const prop = decl.prop.toLowerCase()
           if (!OFFSET_PROP_NAMES.has(prop)) continue
-          const wrapperKey = getWrapperContextKey(decl)
+          const wrapperKey =
+            decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
           if (!wrapperKey) continue
           let offsets = familyOffsetMap.get(wrapperKey)
           if (!offsets) {
@@ -591,6 +582,7 @@ const rule = createRule(
 
         const decls = declsByRule.get(rule)
         if (!decls) return
+        const ruleWrapperKey = getWrapperContextKey(rule)
         decls.forEach((decl) => {
           if (isInsideAtRoot(decl)) return
           const prop = decl.prop.toLowerCase()
@@ -727,7 +719,8 @@ const rule = createRule(
             if (parsedPosition.value === 'relative' || parsedPosition.value === 'absolute') {
               const familyKeys = getRuleFamilyKeys(rule)
               if (!familyKeys) return
-              const wrapperKey = getWrapperContextKey(decl)
+              const wrapperKey =
+                decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
               if (!wrapperKey) return
               // Require offsets for every selector in a list to avoid partial matches.
               const offsets = familyOffsetMap.get(wrapperKey)

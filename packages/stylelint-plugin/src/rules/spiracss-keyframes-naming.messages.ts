@@ -3,7 +3,7 @@ import stylelint from 'stylelint'
 import { ruleName } from './spiracss-keyframes-naming.constants'
 import {
   formatCode,
-  formatList,
+  formatConfigList,
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
@@ -44,7 +44,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     `Shared keyframes ${formatCode(name)} (prefix ${formatCode(
       prefix
     )}) must be defined in a shared keyframes file ` +
-    `configured via ${formatCode('sharedFiles')} (current: ${formatList(
+    `configured via ${formatCode('sharedFiles')} (current: ${formatConfigList(
       sharedFiles
     )}).`,
   missingBlock: () =>

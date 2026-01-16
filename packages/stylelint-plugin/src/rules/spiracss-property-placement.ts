@@ -2,8 +2,9 @@ import type { AtRule, Declaration, Node, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
-import { NON_SELECTOR_AT_RULE_NAMES } from '../utils/constants'
+import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
+import { normalizeCustomPattern } from '../utils/naming'
+import { selectorParseFailedArgs } from '../utils/messages'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -11,9 +12,8 @@ import {
   SELECTOR_POLICY_SCHEMA,
   SHARED_COMMENT_PATTERN_SCHEMA
 } from '../utils/option-schema'
-import { isAtRule, isRule } from '../utils/postcss-helpers'
+import { findParentRule, isAtRule, isRule } from '../utils/postcss-helpers'
 import { isRuleInsideAtRule, markInteractionContainers } from '../utils/section'
-import type { SelectorParserCache } from '../utils/selector'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
   createPlugin,
@@ -21,15 +21,30 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
-import { buildPatterns, classify } from './spiracss-class-structure.patterns'
-import { collectRootBlockNames, findNearestParentRule } from './spiracss-class-structure.selectors'
+import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
+import { buildPatterns } from './spiracss-class-structure.patterns'
+import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import { isRootBlockRule } from './spiracss-class-structure.sections'
 import type { Options as ClassStructureOptions } from './spiracss-class-structure.types'
 import { ruleName } from './spiracss-property-placement.constants'
 import { messages } from './spiracss-property-placement.messages'
 import { normalizeOptions } from './spiracss-property-placement.options'
+import {
+  analyzeSelectorList,
+  buildPolicySets,
+  buildSelectorFamilyKey,
+  hasGlobalSelector,
+  normalizeScopePrelude,
+  normalizeUnverifiedScopePrelude,
+  parseMixinName,
+  resolveSelectors,
+  splitSelectors,
+  type PolicySets,
+  type SelectorAnalysis,
+  type SelectorInfo
+} from './spiracss-property-placement.selectors'
 import type { Options } from './spiracss-property-placement.types'
+import { createValueTokenHelpers } from './spiracss-property-placement.values'
 
 export { ruleName }
 
@@ -44,6 +59,10 @@ const optionSchema = {
   allowElementChainDepth: [isNumber],
   allowExternalClasses: [isString],
   allowExternalPrefixes: [isString],
+  marginSide: [isString],
+  enablePosition: [isBoolean],
+  enableSizeInternal: [isBoolean],
+  responsiveMixins: [isString],
   ...NAMING_SCHEMA,
   ...SHARED_COMMENT_PATTERN_SCHEMA,
   ...INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -51,7 +70,7 @@ const optionSchema = {
   ...CACHE_SIZES_SCHEMA
 }
 
-const CONTAINER_PROPS = new Set([
+const CONTAINER_PROP_NAMES = new Set([
   'flex-direction',
   'flex-wrap',
   'gap',
@@ -63,7 +82,7 @@ const CONTAINER_PROPS = new Set([
   'align-items'
 ])
 
-const ITEM_PROPS = new Set([
+const ITEM_PROP_NAMES = new Set([
   'margin',
   'margin-top',
   'margin-bottom',
@@ -87,7 +106,32 @@ const ITEM_PROPS = new Set([
   'grid-area'
 ])
 
+const MARGIN_SIDE_PROP_NAMES = new Set([
+  'margin',
+  'margin-top',
+  'margin-bottom',
+  'margin-block',
+  'margin-block-start',
+  'margin-block-end'
+])
+
 const DISPLAY_ALLOWED = new Set(['flex', 'inline-flex', 'grid', 'inline-grid'])
+
+const OVERFLOW_PROP_NAMES = new Set(['overflow', 'overflow-x', 'overflow-y'])
+
+const OFFSET_PROP_NAMES = new Set([
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'inset',
+  'inset-block',
+  'inset-inline',
+  'inset-block-start',
+  'inset-block-end',
+  'inset-inline-start',
+  'inset-inline-end'
+])
 
 const isPaddingProp = (prop: string): boolean =>
   prop === 'padding' || prop.startsWith('padding-')
@@ -102,122 +146,31 @@ const isContainerProp = (decl: Declaration): boolean => {
       .filter((token) => token.length > 0 && token !== 'important')
     return tokens.some((token) => DISPLAY_ALLOWED.has(token))
   }
+  if (prop === 'grid') return true
   if (prop === 'grid-template' || prop.startsWith('grid-template-')) return true
   if (prop.startsWith('grid-auto-')) return true
-  return CONTAINER_PROPS.has(prop)
+  return CONTAINER_PROP_NAMES.has(prop)
 }
 
-const isItemProp = (prop: string): boolean => ITEM_PROPS.has(prop)
+const isItemProp = (prop: string): boolean => ITEM_PROP_NAMES.has(prop)
 
-type SelectorKind = 'root' | 'element' | 'child-block' | 'page-root'
-type SelectorInfo = {
-  kind: SelectorKind
-  tailCombinator: '>' | '+' | '~' | null
-}
+const isMarginSideProp = (prop: string): boolean =>
+  MARGIN_SIDE_PROP_NAMES.has(prop)
 
-type SelectorNode = ReturnType<SelectorParserCache['parse']>[number]['nodes'][number]
-type SegmentNodes = SelectorNode[]
-type TagNode = SelectorNode & { type: 'tag'; value: string }
-type IdNode = SelectorNode & { type: 'id'; value: string }
+const isOverflowProp = (prop: string): boolean => OVERFLOW_PROP_NAMES.has(prop)
 
-type SelectorAnalysis =
-  | { status: 'ok'; selectors: SelectorInfo[] }
-  | { status: 'skip' }
-  | { status: 'error'; message: string }
+const isSizeInternalProp = (prop: string): boolean =>
+  prop === 'width' ||
+  prop === 'height' ||
+  prop === 'inline-size' ||
+  prop === 'block-size' ||
+  prop.startsWith('min-') ||
+  prop.startsWith('max-')
 
-type PolicySets = {
-  dataVariantEnabled: boolean
-  dataStateEnabled: boolean
-  variantKeys: Set<string>
-  stateKey: string
-  ariaKeys: Set<string>
-  modifiersAllowed: boolean
-}
-
-const buildPolicySets = (policy: Options['selectorPolicy']): PolicySets => ({
-  dataVariantEnabled: policy.variant.mode === 'data',
-  dataStateEnabled: policy.state.mode === 'data',
-  variantKeys: new Set(policy.variant.dataKeys.map((key) => key.toLowerCase())),
-  stateKey: policy.state.dataKey.toLowerCase(),
-  ariaKeys: new Set(policy.state.ariaKeys.map((key) => key.toLowerCase())),
-  modifiersAllowed: !(policy.variant.mode === 'data' && policy.state.mode === 'data')
-})
-
-const hasGlobalSelector = (selector: string): boolean => selector.includes(':global')
-
-const normalizeCombinator = (value: string): string => value.trim() || ' '
-
-const splitSelectors = (selector: string, cache: SelectorParserCache): string[] => {
-  const selectors = cache.parse(selector)
-  return selectors.map((sel) => sel.toString()).filter((text) => text.trim().length > 0)
-}
-
-const combineSelectors = (parent: string, child: string): string[] => {
-  const trimmedChild = child.trim()
-  if (!trimmedChild) return []
-  if (trimmedChild.includes('&')) {
-    return [trimmedChild.replace(/&/g, parent)]
-  }
-  const startsWithCombinator = /^[>+~]/.test(trimmedChild)
-  if (startsWithCombinator) {
-    return [`${parent} ${trimmedChild}`.trim()]
-  }
-  return [`${parent} ${trimmedChild}`.trim()]
-}
-
-const resolveSelectors = (
-  rule: Rule,
-  cache: SelectorParserCache,
-  resolvedCache: WeakMap<Rule, string[]>
-): string[] => {
-  const cached = resolvedCache.get(rule)
-  if (cached) return cached
-  if (typeof rule.selector !== 'string') {
-    resolvedCache.set(rule, [])
-    return []
-  }
-  const current = splitSelectors(rule.selector, cache)
-  const parentRule = findNearestParentRule(rule)
-  if (!parentRule) {
-    resolvedCache.set(rule, current)
-    return current
-  }
-  const parentSelectors = resolveSelectors(parentRule, cache, resolvedCache)
-  if (parentSelectors.length === 0 || current.length === 0) {
-    resolvedCache.set(rule, [])
-    return []
-  }
-  const combined: string[] = []
-  parentSelectors.forEach((parent) => {
-    current.forEach((child) => {
-      combined.push(...combineSelectors(parent, child))
-    })
-  })
-  resolvedCache.set(rule, combined)
-  return combined
-}
-
-const isTagNode = (node: SelectorNode): node is TagNode => node.type === 'tag'
-const isIdNode = (node: SelectorNode): node is IdNode => node.type === 'id'
-
-const isExternalClass = (name: string, options: Options): boolean =>
-  name.startsWith('u-') ||
-  options.allowExternalClasses.includes(name) ||
-  options.allowExternalPrefixes.some((prefix) => name.startsWith(prefix))
-
-const isAllowedAttribute = (name: string, policy: PolicySets): boolean => {
-  const lowered = name.toLowerCase()
-  if (lowered.startsWith('data-')) {
-    if (policy.dataVariantEnabled && policy.variantKeys.has(lowered)) return true
-    if (policy.dataStateEnabled && lowered === policy.stateKey) return true
-    return false
-  }
-  if (lowered.startsWith('aria-')) {
-    if (!policy.dataStateEnabled) return false
-    return policy.ariaKeys.has(lowered)
-  }
-  return false
-}
+const isInternalProp = (prop: string, enableSizeInternal: boolean): boolean =>
+  isPaddingProp(prop) ||
+  isOverflowProp(prop) ||
+  (enableSizeInternal && isSizeInternalProp(prop))
 
 const isInsideAtRoot = (node: Node): boolean => {
   let current: Node | undefined = node.parent ?? undefined
@@ -226,322 +179,6 @@ const isInsideAtRoot = (node: Node): boolean => {
     current = current.parent ?? undefined
   }
   return false
-}
-
-const analyzeSelectorList = (
-  selectorList: string[],
-  cache: SelectorParserCache,
-  options: Options,
-  policy: PolicySets,
-  patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
-): SelectorAnalysis => {
-  if (selectorList.length === 0) return { status: 'skip' }
-  const trimmedSelectors = selectorList.map((selector) => selector.trim()).filter(Boolean)
-  if (trimmedSelectors.length === 0) return { status: 'skip' }
-
-  let hasGlobalSelectorText = false
-  let hasPageRootSelector = false
-  let hasUnverifiedSelector = false
-  let hasKindMismatch = false
-  let expectedKind: SelectorKind | null = null
-  const selectors: SelectorInfo[] = []
-
-  for (const selectorText of trimmedSelectors) {
-    if (!selectorText.trim()) return { status: 'skip' }
-    if (hasGlobalSelector(selectorText)) {
-      hasGlobalSelectorText = true
-      continue
-    }
-    const parsed = cache.parse(selectorText)
-    if (parsed.length !== 1) {
-      hasUnverifiedSelector = true
-      continue
-    }
-    const sel = parsed[0]
-    const analysis = analyzeSelector(sel, selectorText, options, policy, patterns, classifyOptions)
-    if (analysis.status === 'error') return analysis
-    if (analysis.status === 'skip') {
-      hasUnverifiedSelector = true
-      continue
-    }
-    if (analysis.selector.kind === 'page-root') {
-      hasPageRootSelector = true
-    }
-    if (expectedKind && expectedKind !== analysis.selector.kind) {
-      hasKindMismatch = true
-    } else {
-      expectedKind = analysis.selector.kind
-    }
-    selectors.push(analysis.selector)
-  }
-
-  if (hasPageRootSelector && trimmedSelectors.length > 1) {
-    return { status: 'error', message: messages.pageRootNoChildren(trimmedSelectors.join(', ')) }
-  }
-  if (hasGlobalSelectorText || hasUnverifiedSelector || hasKindMismatch) {
-    return { status: 'skip' }
-  }
-
-  return selectors.length === 0 ? { status: 'skip' } : { status: 'ok', selectors }
-}
-
-const analyzeSelector = (
-  selector: ReturnType<SelectorParserCache['parse']>[number],
-  selectorText: string,
-  options: Options,
-  policy: PolicySets,
-  patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
-): 
-  | { status: 'ok'; selector: SelectorInfo }
-  | { status: 'skip' }
-  | { status: 'error'; message: string } => {
-  // Only evaluate simple chain selectors; complex patterns are treated as unverified.
-  const segments: SegmentNodes[] = []
-  const combinators: string[] = []
-  collectSegments(selector, segments, combinators)
-
-  if (segments.length === 0) return { status: 'skip' }
-
-  const rootCheck = analyzeRootSegment(segments[0], segments.length, combinators.length, selectorText)
-  if (rootCheck.status !== 'ok') return rootCheck
-  if (rootCheck.kind === 'page-root') {
-    return { status: 'ok', selector: { kind: 'page-root', tailCombinator: null } }
-  }
-
-  if (combinators.some((combinator) => combinator === ' ')) return { status: 'skip' }
-  if (combinators.some((combinator) => !['>', '+', '~'].includes(combinator))) {
-    return { status: 'skip' }
-  }
-  if (combinators.slice(0, -1).some((combinator) => combinator === '+' || combinator === '~')) {
-    return { status: 'skip' }
-  }
-
-  const segmentKinds: Array<'block' | 'element'> = []
-  for (const segment of segments) {
-    const kind = analyzeSegmentKind(segment, options, policy, patterns, classifyOptions)
-    if (!kind) return { status: 'skip' }
-    segmentKinds.push(kind)
-  }
-
-  if (segmentKinds[0] !== 'block') return { status: 'skip' }
-
-  const tailCombinator = combinators.length > 0 ? (combinators.at(-1) as '>' | '+' | '~') : null
-  if (tailCombinator && (tailCombinator === '+' || tailCombinator === '~')) {
-    const lastKind = segmentKinds.at(-1)
-    const prevKind = segmentKinds.at(-2)
-    if (!lastKind || !prevKind || lastKind !== prevKind) return { status: 'skip' }
-  }
-  if (
-    segmentKinds.length === 2 &&
-    segmentKinds[0] === 'block' &&
-    segmentKinds[1] === 'block' &&
-    (tailCombinator === '+' || tailCombinator === '~')
-  ) {
-    return { status: 'skip' }
-  }
-
-  const allowSiblingBlockTail =
-    (tailCombinator === '+' || tailCombinator === '~') &&
-    segmentKinds.at(-1) === 'block' &&
-    segmentKinds.at(-2) === 'block'
-  const childBlockScanEnd = allowSiblingBlockTail ? -2 : -1
-  const hasChildBlockBeforeTail = segmentKinds
-    .slice(1, childBlockScanEnd)
-    .some((kind) => kind === 'block')
-  if (hasChildBlockBeforeTail) return { status: 'skip' }
-
-  const hasChildBlockAtTail = segmentKinds.length > 1 && segmentKinds.at(-1) === 'block'
-  if (hasChildBlockAtTail) {
-    if (tailCombinator === '+'
-        || tailCombinator === '~'
-        || tailCombinator === '>') {
-      // allowed
-    } else {
-      return { status: 'skip' }
-    }
-  }
-
-  const maxDepth = calculateElementDepth(segmentKinds, combinators)
-  if (maxDepth > options.allowElementChainDepth) return { status: 'skip' }
-
-  if (segmentKinds.length === 1) {
-    return { status: 'ok', selector: { kind: 'root', tailCombinator: null } }
-  }
-
-  if (hasChildBlockAtTail) {
-    return { status: 'ok', selector: { kind: 'child-block', tailCombinator } }
-  }
-
-  return { status: 'ok', selector: { kind: 'element', tailCombinator } }
-}
-
-const collectSegments = (
-  selector: ReturnType<SelectorParserCache['parse']>[number],
-  segments: SegmentNodes[],
-  combinators: string[]
-): void => {
-  let current: SegmentNodes = []
-  selector.nodes.forEach((node) => {
-    if (node.type === 'comment') return
-    if (node.type === 'combinator') {
-      segments.push(current)
-      current = []
-      combinators.push(normalizeCombinator(node.value))
-      return
-    }
-    current.push(node)
-  })
-  segments.push(current)
-}
-
-const analyzeRootSegment = (
-  segment: SegmentNodes,
-  segmentCount: number,
-  combinatorCount: number,
-  selectorText: string
-):
-  | { status: 'ok'; kind?: 'page-root' }
-  | { status: 'skip' }
-  | { status: 'error'; message: string } => {
-  const tags = segment.filter(isTagNode)
-  const ids = segment.filter(isIdNode)
-  if (tags.length === 0 && ids.length === 0) return { status: 'ok' }
-
-  const hasOtherNodes = segment.some((node) => node.type !== 'tag' && node.type !== 'id')
-  const isBodyTag = tags.length === 1 && tags[0].value.toLowerCase() === 'body'
-  const isBody = isBodyTag && ids.length === 0
-  const isIdRoot = ids.length === 1 && tags.length === 0
-
-  if (isBodyTag && ids.length > 0) {
-    return { status: 'error', message: messages.pageRootNoChildren(selectorText) }
-  }
-
-  if (isBody || isIdRoot) {
-    if (hasOtherNodes || segmentCount > 1 || combinatorCount > 0) {
-      return { status: 'error', message: messages.pageRootNoChildren(selectorText) }
-    }
-    return { status: 'ok', kind: 'page-root' }
-  }
-
-  return { status: 'skip' }
-}
-
-const analyzeSegmentKind = (
-  segment: SegmentNodes,
-  options: Options,
-  policy: PolicySets,
-  patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
-): 'block' | 'element' | null => {
-  let baseKind: 'block' | 'element' | null = null
-  let baseCount = 0
-  let pseudoKind: 'block' | 'element' | null = null
-  for (const node of segment) {
-    if (node.type === 'nesting') return null
-    if (node.type === 'universal' || node.type === 'tag' || node.type === 'id') return null
-    if (node.type === 'attribute') {
-      const name = typeof node.attribute === 'string' ? node.attribute : ''
-      if (!name || !isAllowedAttribute(name, policy)) return null
-      continue
-    }
-    if (node.type === 'pseudo') {
-      const pseudoValue = typeof node.value === 'string' ? node.value.toLowerCase() : ''
-      if (![':is', ':where', ':not'].includes(pseudoValue)) return null
-      const parsed = analyzePseudoKind(node, options, patterns, classifyOptions)
-      if (!parsed) return null
-      if (!pseudoKind) {
-        pseudoKind = parsed
-      } else if (pseudoKind !== parsed) {
-        return null
-      }
-      continue
-    }
-    if (node.type !== 'class') continue
-    const className = node.value
-    if (isExternalClass(className, options)) return null
-    const kind = classify(className, classifyOptions, patterns)
-    if (kind === 'external' || kind === 'invalid') return null
-    if (kind === 'modifier') {
-      if (!policy.modifiersAllowed) return null
-      continue
-    }
-    if (kind === 'block' || kind === 'element') {
-      baseCount += 1
-      if (!baseKind) {
-        baseKind = kind
-      } else if (baseKind !== kind) {
-        return null
-      }
-    }
-  }
-
-  if (baseCount > 1) return null
-  if (!baseKind && pseudoKind) baseKind = pseudoKind
-  if (!baseKind) return null
-  if (pseudoKind && baseKind !== pseudoKind) return null
-  return baseKind
-}
-
-const analyzePseudoKind = (
-  pseudo: SelectorNode,
-  options: Options,
-  patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassStructureOptions
-): 'block' | 'element' | null => {
-  if (!('nodes' in pseudo) || !Array.isArray(pseudo.nodes)) return null
-  const selectorNodes = pseudo.nodes.filter(
-    (node): node is ReturnType<SelectorParserCache['parse']>[number] => node.type === 'selector'
-  )
-  if (selectorNodes.length === 0) return null
-
-  let resolved: 'block' | 'element' | null = null
-  for (const sel of selectorNodes) {
-    const classes: string[] = []
-    let hasInvalid = false
-    sel.nodes.forEach((node) => {
-      if (node.type === 'comment') return
-      if (node.type === 'class') {
-        classes.push(node.value)
-        return
-      }
-      hasInvalid = true
-    })
-    if (hasInvalid || classes.length !== 1) return null
-    const className = classes[0]
-    if (isExternalClass(className, options)) return null
-    const kind = classify(className, classifyOptions, patterns)
-    if (kind !== 'block' && kind !== 'element') return null
-    if (!resolved) resolved = kind
-    if (resolved !== kind) return null
-  }
-
-  return resolved
-}
-
-const calculateElementDepth = (
-  segmentKinds: Array<'block' | 'element'>,
-  combinators: string[]
-): number => {
-  // Track consecutive element chains joined by child combinators.
-  let maxDepth = 0
-  let currentDepth = 0
-  for (let i = 1; i < segmentKinds.length; i += 1) {
-    const kind = segmentKinds[i]
-    const combinator = combinators[i - 1]
-    if (kind !== 'element') {
-      currentDepth = 0
-      continue
-    }
-    if (combinator === '>' && segmentKinds[i - 1] === 'element') {
-      currentDepth += 1
-    } else {
-      currentDepth = 1
-    }
-    if (currentDepth > maxDepth) maxDepth = currentDepth
-  }
-  return maxDepth
 }
 
 const rule = createRule(
@@ -564,6 +201,7 @@ const rule = createRule(
       patterns: ReturnType<typeof buildPatterns>
       policySets: PolicySets
       classifyOptions: ClassStructureOptions
+      customModifierPattern: RegExp | undefined
       hasInvalidOptions: boolean
     }
     let cache: RuleCache | null = null
@@ -584,15 +222,16 @@ const rule = createRule(
         allowExternalPrefixes: options.allowExternalPrefixes,
         naming: options.naming
       } as ClassStructureOptions
+      const customModifierPattern = normalizeCustomPattern(
+        options.naming?.customPatterns?.modifier,
+        'naming.customPatterns.modifier'
+      )
       cache = {
         options,
-        patterns: buildPatterns(
-          classifyOptions,
-          options.cacheSizes ?? DEFAULT_CACHE_SIZES,
-          handleInvalid
-        ),
+        patterns: buildPatterns(classifyOptions, options.cacheSizes, handleInvalid),
         policySets: buildPolicySets(options.selectorPolicy),
         classifyOptions,
+        customModifierPattern,
         hasInvalidOptions
       }
       return cache
@@ -630,33 +269,108 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowExternalClasses', 'allowExternalPrefixes'],
+        ['allowExternalClasses', 'allowExternalPrefixes', 'responsiveMixins'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
       )
       if (shouldValidate && hasInvalid) return
 
-      const { options, patterns, policySets, classifyOptions, hasInvalidOptions } =
-        getCache(reportInvalid)
+      const {
+        options,
+        patterns,
+        policySets,
+        classifyOptions,
+        customModifierPattern,
+        hasInvalidOptions
+      } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const resolvedSelectorsCache = new WeakMap<Rule, string[]>()
+      const ruleAnalysisCache = new WeakMap<
+        Rule,
+        {
+          resolvedSelectors: string[]
+          analysis: SelectorAnalysis
+          resolvedSelectorText: string
+        }
+      >()
+      const ruleFamilyKeysCache = new WeakMap<Rule, string[] | null>()
+      const wrapperKeyCache = new WeakMap<Node, string | null>()
+      const atRuleIds = new WeakMap<AtRule, number>()
+      let atRuleIdSeed = 0
+      let firstRule: Rule | null = null
+      const responsiveMixins = new Set(
+        options.responsiveMixins.map((name) => name.toLowerCase())
+      )
+      const { checkMarginSide, parsePositionValue, isZeroMinSize } =
+        createValueTokenHelpers()
+      const selectorPolicy = options.selectorPolicy
+      const variantMode = selectorPolicy.variant.mode
+      const variantKeys = selectorPolicy.variant.dataKeys
+      const stateMode = selectorPolicy.state.mode
+      const stateKeys = Array.from(
+        new Set([selectorPolicy.state.dataKey, ...selectorPolicy.state.ariaKeys])
+      )
+      const naming = options.naming ?? {}
+      const modifierPrefix = naming.modifierPrefix ?? '-'
+      const modifierCase = naming.modifierCase ?? 'kebab'
+      const modifierPattern = customModifierPattern ?? ''
+
+      const getAtRuleId = (atRule: AtRule): number => {
+        const cached = atRuleIds.get(atRule)
+        if (cached) return cached
+        atRuleIdSeed += 1
+        atRuleIds.set(atRule, atRuleIdSeed)
+        return atRuleIdSeed
+      }
 
       const rootBlockRules = new WeakSet<Rule>()
-      root.walkRules((rule: Rule) => {
-        if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
-        if (findNearestParentRule(rule)) return
-        if (!isRootBlockRule(rule)) return
-        if (typeof rule.selector !== 'string') return
-        if (rule.selector.includes(':global')) return
-        const selectors = selectorCache.parse(rule.selector)
-        const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
-        if (rootBlocks.length === 0) return
-        rootBlockRules.add(rule)
+      const allRules: Rule[] = []
+      const allAtRules: AtRule[] = []
+      const declsByRule = new Map<Rule, Declaration[]>()
+
+      root.walk((node) => {
+        if (node.type === 'rule') {
+          const rule = node as Rule
+          allRules.push(rule)
+          if (!firstRule) firstRule = rule
+          if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
+          if (findParentRule(rule)) return
+          if (!isRootBlockRule(rule)) return
+          if (typeof rule.selector !== 'string') return
+          const selectorTexts = splitSelectors(rule.selector, selectorCache)
+          // Root block detection ignores :global selectors for consistency with placement analysis.
+          const nonGlobalSelectors = selectorTexts.filter(
+            (selector) => !hasGlobalSelector(selector)
+          )
+          if (nonGlobalSelectors.length === 0) return
+          const selectors = nonGlobalSelectors.flatMap((selector) =>
+            selectorCache.parse(selector)
+          )
+          const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
+          if (rootBlocks.length === 0) return
+          rootBlockRules.add(rule)
+          return
+        }
+        if (node.type === 'decl') {
+          const decl = node as Declaration
+          const parentRule = findParentRule(decl)
+          if (!parentRule) return
+          const bucket = declsByRule.get(parentRule)
+          if (bucket) {
+            bucket.push(decl)
+          } else {
+            declsByRule.set(parentRule, [decl])
+          }
+          return
+        }
+        if (isAtRule(node)) {
+          allAtRules.push(node)
+        }
       })
 
       const commentPatterns = {
@@ -668,18 +382,169 @@ const rule = createRule(
         commentPatterns,
         (_comment, parent) => isRule(parent) && rootBlockRules.has(parent)
       )
+      const selectorExplosion = { example: null as string | null, limit: 0 }
+      const reportSelectorExplosion = (selector: string, limit: number): void => {
+        if (!selectorExplosion.example) selectorExplosion.example = selector
+        selectorExplosion.limit = limit
+      }
+      const getResolvedSelectors = (rule: Rule): string[] =>
+        resolveSelectors(
+          rule,
+          selectorCache,
+          resolvedSelectorsCache,
+          reportSelectorExplosion
+        )
       const resolveContextSelector = (rule: Rule | null | undefined): string => {
         if (!rule || typeof rule.selector !== 'string') return '(unknown)'
-        const resolved = resolveSelectors(rule, selectorCache, resolvedSelectorsCache)
+        const resolved = getResolvedSelectors(rule)
         if (resolved.length > 0) return resolved.join(', ')
         return rule.selector
       }
+      const isGlobalOnlyRule = (rule: Rule): boolean => {
+        // If a rule has no non-:global selectors, treat it as out-of-scope for enforcement.
+        const resolved = getResolvedSelectors(rule)
+        return resolved.length > 0 && resolved.every((selector) => hasGlobalSelector(selector))
+      }
 
-      root.walkAtRules((atRule: AtRule) => {
+      const getRuleAnalysis = (
+        rule: Rule
+      ): { resolvedSelectors: string[]; analysis: SelectorAnalysis; resolvedSelectorText: string } => {
+        const cached = ruleAnalysisCache.get(rule)
+        if (cached) return cached
+        const resolvedSelectors = getResolvedSelectors(rule)
+        const analysis: SelectorAnalysis =
+          resolvedSelectors.length === 0
+            ? { status: 'skip' }
+            : analyzeSelectorList(
+                resolvedSelectors,
+                selectorCache,
+                options,
+                policySets,
+                patterns,
+                classifyOptions
+              )
+        const entry = {
+          resolvedSelectors,
+          analysis,
+          resolvedSelectorText: resolvedSelectors.join(', ')
+        }
+        ruleAnalysisCache.set(rule, entry)
+        return entry
+      }
+
+      const getRuleFamilyKeys = (rule: Rule): string[] | null => {
+        if (ruleFamilyKeysCache.has(rule)) {
+          return ruleFamilyKeysCache.get(rule) ?? null
+        }
+        const { analysis, resolvedSelectors } = getRuleAnalysis(rule)
+        if (analysis.status !== 'ok') {
+          ruleFamilyKeysCache.set(rule, null)
+          return null
+        }
+        // Match :global handling with analyzeSelectorList so offset lookups stay aligned.
+        const nonGlobalSelectors = resolvedSelectors.filter(
+          (selector) => !hasGlobalSelector(selector)
+        )
+        if (nonGlobalSelectors.length === 0) {
+          ruleFamilyKeysCache.set(rule, null)
+          return null
+        }
+        const keys: string[] = []
+        let hasUnverified = false
+        // If any selector cannot yield a family key, skip to avoid partial matches.
+        for (const selectorText of nonGlobalSelectors) {
+          const key = buildSelectorFamilyKey(
+            selectorText,
+            selectorCache,
+            options,
+            policySets,
+            patterns,
+            classifyOptions
+          )
+          if (!key) {
+            hasUnverified = true
+            break
+          }
+          keys.push(key)
+        }
+        if (hasUnverified || keys.length === 0) {
+          ruleFamilyKeysCache.set(rule, null)
+          return null
+        }
+        const uniqueKeys = [...new Set(keys)]
+        ruleFamilyKeysCache.set(rule, uniqueKeys)
+        return uniqueKeys
+      }
+
+      const getWrapperContextKey = (node: Node): string | null => {
+        if (wrapperKeyCache.has(node)) {
+          return wrapperKeyCache.get(node) ?? null
+        }
+        const parts: string[] = []
+        let current: Node | undefined = node.parent ?? undefined
+        while (current) {
+          if (isAtRule(current)) {
+            const name = current.name ? current.name.toLowerCase() : ''
+            if (name === 'scope') {
+              const params = typeof current.params === 'string' ? current.params : ''
+              const normalized = normalizeScopePrelude(params)
+              if (normalized) {
+                parts.push(`scope:${normalized}`)
+              } else {
+                const fallback = normalizeUnverifiedScopePrelude(params)
+                parts.push(`scope:unverified:${fallback ?? getAtRuleId(current)}`)
+              }
+            } else if (ROOT_WRAPPER_NAMES.has(name)) {
+              // allowed wrapper
+            } else if (name === 'include') {
+              const params = typeof current.params === 'string' ? current.params : ''
+              const mixinName = parseMixinName(params)
+              const allowlisted = mixinName
+                ? responsiveMixins.has(mixinName.toLowerCase())
+                : false
+              if (!allowlisted) {
+                parts.push(`include:${getAtRuleId(current)}`)
+              }
+            } else {
+              const keyName = name || 'unknown'
+              parts.push(`atrule:${keyName}:${getAtRuleId(current)}`)
+            }
+          }
+          current = current.parent ?? undefined
+        }
+        const key = parts.length === 0 ? 'ctx:root' : `ctx:${parts.reverse().join('|')}`
+        wrapperKeyCache.set(node, key)
+        return key
+      }
+
+      const familyOffsetMap = new Map<string, Set<string>>()
+      for (const [rule, decls] of declsByRule) {
+        if (interactionContainers.has(rule)) continue
+        if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) continue
+        const familyKeys = getRuleFamilyKeys(rule)
+        if (!familyKeys) continue
+        for (const decl of decls) {
+          if (isInsideAtRoot(decl)) continue
+          const prop = decl.prop.toLowerCase()
+          if (!OFFSET_PROP_NAMES.has(prop)) continue
+          const wrapperKey = getWrapperContextKey(decl)
+          if (!wrapperKey) continue
+          let offsets = familyOffsetMap.get(wrapperKey)
+          if (!offsets) {
+            offsets = new Set<string>()
+            familyOffsetMap.set(wrapperKey, offsets)
+          }
+          familyKeys.forEach((key) => offsets.add(key))
+        }
+      }
+
+      allAtRules.forEach((atRule: AtRule) => {
         const name = atRule.name ? atRule.name.toLowerCase() : ''
+        const parentRule = findParentRule(atRule)
+        if (parentRule && isGlobalOnlyRule(parentRule)) return
         if (name === 'extend') {
           const placeholder = atRule.params?.trim() || '%unknown'
-          const parentSelector = resolveContextSelector(findNearestParentRule(atRule))
+          const parentSelector = resolveContextSelector(parentRule)
           stylelint.utils.report({
             ruleName,
             result,
@@ -690,33 +555,26 @@ const rule = createRule(
         }
         if (name === 'at-root') {
           if (interactionContainers.has(atRule)) return
-          const parentSelector = resolveContextSelector(findNearestParentRule(atRule))
+          const parentSelector = resolveContextSelector(parentRule)
           stylelint.utils.report({
             ruleName,
             result,
             node: atRule,
-            message: messages.forbiddenAtRoot(parentSelector)
+            message: messages.forbiddenAtRoot(
+              parentSelector,
+              options.interactionCommentPattern
+            )
           })
         }
       })
 
-      root.walkRules((rule: Rule) => {
+      allRules.forEach((rule: Rule) => {
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (interactionContainers.has(rule)) return
         if (isInsideAtRoot(rule)) return
         if (typeof rule.selector !== 'string') return
 
-        const resolvedSelectors = resolveSelectors(rule, selectorCache, resolvedSelectorsCache)
-        if (resolvedSelectors.length === 0) return
-
-        const analysis = analyzeSelectorList(
-          resolvedSelectors,
-          selectorCache,
-          options,
-          policySets,
-          patterns,
-          classifyOptions
-        )
+        const { analysis, resolvedSelectorText } = getRuleAnalysis(rule)
         if (analysis.status === 'skip') return
         if (analysis.status === 'error') {
           stylelint.utils.report({
@@ -729,10 +587,11 @@ const rule = createRule(
         }
 
         const selectorInfos = analysis.selectors
-        const resolvedSelector = resolvedSelectors.join(', ')
+        const resolvedSelector = resolvedSelectorText
 
-        rule.walkDecls((decl: Declaration) => {
-          if (findNearestParentRule(decl) !== rule) return
+        const decls = declsByRule.get(rule)
+        if (!decls) return
+        decls.forEach((decl) => {
           if (isInsideAtRoot(decl)) return
           const prop = decl.prop.toLowerCase()
           if (!prop || prop.startsWith('--')) return
@@ -774,17 +633,33 @@ const rule = createRule(
               if (info.kind === 'root') return true
               return info.tailCombinator === null
             })
-            if (!hasInvalidPlacement) return
-            stylelint.utils.report({
-              ruleName,
-              result,
-              node: decl,
-              message: messages.itemInRoot(prop, resolvedSelector)
-            })
+            if (hasInvalidPlacement) {
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: decl,
+                message: messages.itemInRoot(prop, resolvedSelector)
+              })
+              return
+            }
+            if (isMarginSideProp(prop)) {
+              const marginSideResult = checkMarginSide(prop, decl.value, options.marginSide)
+              if (marginSideResult === 'error') {
+                const disallowedSide = options.marginSide === 'top' ? 'bottom' : 'top'
+                stylelint.utils.report({
+                  ruleName,
+                  result,
+                  node: decl,
+                  message: messages.marginSideViolation(prop, resolvedSelector, disallowedSide)
+                })
+              }
+            }
             return
           }
 
-          if (isPaddingProp(prop)) {
+          if (isInternalProp(prop, options.enableSizeInternal)) {
+            // Allow min-* = 0 everywhere (self/item-side exception) before internal checks.
+            if (options.enableSizeInternal && isZeroMinSize(prop, decl.value)) return
             const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
             if (hasPageRoot) {
               stylelint.utils.report({
@@ -801,11 +676,104 @@ const rule = createRule(
               ruleName,
               result,
               node: decl,
-              message: messages.internalInChildBlock(prop, resolvedSelector)
+              message: messages.internalInChildBlock(
+                prop,
+                resolvedSelector,
+                variantMode,
+                variantKeys,
+                stateMode,
+                stateKeys,
+                modifierPrefix,
+                modifierCase,
+                modifierPattern
+              )
             })
+            return
+          }
+
+          if (options.enablePosition && prop === 'position') {
+            const hasChildBlock = selectorInfos.some((info) => info.kind === 'child-block')
+            if (!hasChildBlock) return
+            const parsedPosition = parsePositionValue(decl.value)
+            if (parsedPosition.status === 'skip') return
+            if (parsedPosition.status === 'unknown') {
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: decl,
+                message: messages.positionInChildBlock(
+                  parsedPosition.value,
+                  resolvedSelector,
+                  options.responsiveMixins,
+                  parsedPosition.reason
+                )
+              })
+              return
+            }
+            if (parsedPosition.value === 'static') return
+            if (parsedPosition.value === 'fixed' || parsedPosition.value === 'sticky') {
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: decl,
+                message: messages.positionInChildBlock(
+                  parsedPosition.value,
+                  resolvedSelector,
+                  options.responsiveMixins
+                )
+              })
+              return
+            }
+            if (parsedPosition.value === 'relative' || parsedPosition.value === 'absolute') {
+              const familyKeys = getRuleFamilyKeys(rule)
+              if (!familyKeys) return
+              const wrapperKey = getWrapperContextKey(decl)
+              if (!wrapperKey) return
+              // Require offsets for every selector in a list to avoid partial matches.
+              const offsets = familyOffsetMap.get(wrapperKey)
+              const hasOffsets =
+                Boolean(offsets) && familyKeys.every((key) => offsets?.has(key))
+              if (hasOffsets) return
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: decl,
+                message: messages.positionInChildBlock(
+                  parsedPosition.value,
+                  resolvedSelector,
+                  options.responsiveMixins
+                )
+              })
+            }
           }
         })
       })
+
+      if (selectorState.hasError()) {
+        const targetNode = firstRule || root
+        stylelint.utils.report({
+          ruleName,
+          result,
+          node: targetNode,
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
+          severity: 'warning'
+        })
+      }
+      if (selectorExplosion.example) {
+        const targetNode = firstRule || root
+        stylelint.utils.report({
+          ruleName,
+          result,
+          node: targetNode,
+          message: messages.selectorResolutionSkipped(
+            selectorExplosion.limit,
+            selectorExplosion.example
+          ),
+          severity: 'warning'
+        })
+      }
     }
   },
   meta

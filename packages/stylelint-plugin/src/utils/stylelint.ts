@@ -40,7 +40,7 @@ export const reportInvalidOption = (
 
 export type ArrayOption = { name: string; value: unknown }
 
-export const validateArrayOptions = (
+const validateArrayOptions = (
   options: ArrayOption[],
   isValid: (value: unknown) => boolean,
   reportInvalid?: (optionName: string, value: unknown, detail?: string) => void,

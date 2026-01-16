@@ -30,17 +30,17 @@ describe('spiracss/class-structure - modifier checks', () => {
       {
         code: '.block { .-modifier {} }',
         description: 'Modifiers cannot be written without &',
-        message: 'Write modifier classes inside the Block using "&.<modifier>". Example: ".block { &.-primary { ... } }". Do not use ".block.-primary" or ".-primary" at top level. (spiracss/class-structure)'
+        message: 'Write modifier classes inside the Block using `&.<modifier>`. Example: `.block { &.-primary { ... } }`. Do not use `.block.-primary` or `.-primary` at top level. (spiracss/class-structure)'
       },
       {
         code: '.block.-modifier {}',
         description: 'top-level Block + modifier is not allowed',
-        message: 'Write modifier classes inside the Block using "&.<modifier>". Example: ".block { &.-primary { ... } }". Do not use ".block.-primary" or ".-primary" at top level. (spiracss/class-structure)'
+        message: 'Write modifier classes inside the Block using `&.<modifier>`. Example: `.block { &.-primary { ... } }`. Do not use `.block.-primary` or `.-primary` at top level. (spiracss/class-structure)'
       },
       {
         code: '.block { &.modifier {} }',
         description: 'classes attached to & must use modifierPrefix',
-        message: 'Only modifier classes may be appended to "&". Found "modifier". Use "&.<modifier>". Example: "&.-primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `modifier`. Use `&.<modifier>`. Example: `&.-primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })

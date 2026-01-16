@@ -1,14 +1,14 @@
 import type { CacheSizes, WordCase } from '../types'
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
+import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
   normalizeBoolean,
-  normalizeCommentPattern,
   normalizeKeyList,
-  normalizeSelectorPolicyBase,
-  normalizeString,
-  normalizeStringArray
+  safeNormalizeSelectorPolicyBase,
+  normalizeString
 } from '../utils/normalize'
+import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
+import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type {
   FileNameCase,
   NormalizedSelectorPolicy,
@@ -23,17 +23,16 @@ const defaultValueNaming: ValueNaming = {
   maxWords: 2
 }
 
+const baseSelectorPolicy = createDefaultSelectorPolicyBase()
+
 const defaultSelectorPolicy: NormalizedSelectorPolicy = {
   valueNaming: defaultValueNaming,
   variant: {
-    mode: 'data',
-    dataKeys: ['data-variant'],
+    ...baseSelectorPolicy.variant,
     valueNaming: defaultValueNaming
   },
   state: {
-    mode: 'data',
-    dataKey: 'data-state',
-    ariaKeys: ['aria-expanded', 'aria-selected', 'aria-disabled'],
+    ...baseSelectorPolicy.state,
     valueNaming: defaultValueNaming
   }
 }
@@ -70,14 +69,22 @@ const normalizeFileNameCase = (value: unknown, fallback: FileNameCase): FileName
 const normalizeValueNaming = (
   raw: unknown,
   fallback: ValueNaming,
-  fieldName: string
+  fieldName: string,
+  reportInvalid?: InvalidOptionReporter
 ): ValueNaming => {
   if (!raw || typeof raw !== 'object') return { ...fallback }
   const value = raw as ValueNamingOptions
-  if (value.case !== undefined && !isWordCase(value.case)) {
-    throw new Error(
-      `${ERROR_PREFIX} ${fieldName}.case must be "kebab" | "snake" | "camel" | "pascal".`
-    )
+  const normalized: ValueNaming = { ...fallback }
+  if (value.case !== undefined) {
+    if (!isWordCase(value.case)) {
+      reportInvalid?.(
+        `${fieldName}.case`,
+        value.case,
+        `${ERROR_PREFIX} ${fieldName}.case must be "kebab" | "snake" | "camel" | "pascal".`
+      )
+    } else {
+      normalized.case = value.case
+    }
   }
   if (value.maxWords !== undefined) {
     if (
@@ -85,13 +92,16 @@ const normalizeValueNaming = (
       !Number.isInteger(value.maxWords) ||
       value.maxWords < 1
     ) {
-      throw new Error(`${ERROR_PREFIX} ${fieldName}.maxWords must be a positive integer.`)
+      reportInvalid?.(
+        `${fieldName}.maxWords`,
+        value.maxWords,
+        `${ERROR_PREFIX} ${fieldName}.maxWords must be a positive integer.`
+      )
+    } else {
+      normalized.maxWords = value.maxWords
     }
   }
-  return {
-    case: value.case ?? fallback.case,
-    maxWords: value.maxWords ?? fallback.maxWords
-  }
+  return normalized
 }
 
 const normalizeSelectorPolicy = (
@@ -109,7 +119,7 @@ const normalizeSelectorPolicy = (
       ariaKeys: defaultSelectorPolicy.state.ariaKeys
     }
   }
-  const base = normalizeSelectorPolicyBase(raw, defaults, reportInvalid)
+  const base = safeNormalizeSelectorPolicyBase(raw, defaults, reportInvalid)
   const policy = (raw && typeof raw === 'object' ? raw : {}) as SelectorPolicy
   const variant = policy.variant || {}
   const state = policy.state || {}
@@ -117,17 +127,20 @@ const normalizeSelectorPolicy = (
   const baseValueNaming = normalizeValueNaming(
     policy.valueNaming,
     defaultSelectorPolicy.valueNaming,
-    'selectorPolicy.valueNaming'
+    'selectorPolicy.valueNaming',
+    reportInvalid
   )
   const variantValueNaming = normalizeValueNaming(
     variant.valueNaming,
     baseValueNaming,
-    'selectorPolicy.variant.valueNaming'
+    'selectorPolicy.variant.valueNaming',
+    reportInvalid
   )
   const stateValueNaming = normalizeValueNaming(
     state.valueNaming,
     baseValueNaming,
-    'selectorPolicy.state.valueNaming'
+    'selectorPolicy.state.valueNaming',
+    reportInvalid
   )
 
   return {
@@ -161,28 +174,17 @@ export const normalizeOptions = (
     fallback: string[],
     fieldName: string
   ): string[] => normalizeKeyList(value, fallback, fieldName, reportInvalid)
-  const safeNormalizeSelectorPolicy = (value: unknown): NormalizedSelectorPolicy => {
-    try {
-      return normalizeSelectorPolicy(value, reportInvalid)
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error)
-      reportInvalid?.('selectorPolicy', value, detail)
-      return { ...defaultOptions.selectorPolicy }
-    }
-  }
+  const common = normalizeCommonOptions(
+    opt,
+    pickCommonDefaults(defaultOptions),
+    reportInvalid
+  )
+
   return {
     allowElementChainDepth:
       typeof opt.allowElementChainDepth === 'number'
         ? opt.allowElementChainDepth
         : defaultOptions.allowElementChainDepth,
-    allowExternalClasses: normalizeStringArray(
-      opt.allowExternalClasses,
-      defaultOptions.allowExternalClasses
-    ),
-    allowExternalPrefixes: normalizeStringArray(
-      opt.allowExternalPrefixes,
-      defaultOptions.allowExternalPrefixes
-    ),
     enforceChildCombinator: normalizeBoolean(
       opt.enforceChildCombinator,
       defaultOptions.enforceChildCombinator
@@ -202,22 +204,10 @@ export const normalizeOptions = (
       defaultOptions.componentsDirs,
       'componentsDirs'
     ),
-    naming: opt.naming || defaultOptions.naming,
-    sharedCommentPattern: normalizeCommentPattern(
-      opt.sharedCommentPattern,
-      defaultOptions.sharedCommentPattern,
-      'sharedCommentPattern',
+    selectorPolicy: normalizeSelectorPolicy(
+      (opt as { selectorPolicy?: SelectorPolicy }).selectorPolicy,
       reportInvalid
     ),
-    interactionCommentPattern: normalizeCommentPattern(
-      opt.interactionCommentPattern,
-      defaultOptions.interactionCommentPattern,
-      'interactionCommentPattern',
-      reportInvalid
-    ),
-    selectorPolicy: safeNormalizeSelectorPolicy(
-      (opt as { selectorPolicy?: SelectorPolicy }).selectorPolicy
-    ),
-    cacheSizes: normalizeCacheSizes(opt.cacheSizes, reportInvalid)
+    ...common
   }
 }

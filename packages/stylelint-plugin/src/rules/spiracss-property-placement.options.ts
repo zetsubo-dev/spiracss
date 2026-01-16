@@ -1,29 +1,25 @@
 import type { CacheSizes, NormalizedSelectorPolicyBase } from '../types'
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
+import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
-  normalizeCommentPattern,
-  normalizeSelectorPolicyBase,
+  safeNormalizeSelectorPolicyBase,
   normalizeStringArray
 } from '../utils/normalize'
+import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
+import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type { Options } from './spiracss-property-placement.types'
 
-const defaultSelectorPolicy: NormalizedSelectorPolicyBase = {
-  variant: {
-    mode: 'data',
-    dataKeys: ['data-variant']
-  },
-  state: {
-    mode: 'data',
-    dataKey: 'data-state',
-    ariaKeys: ['aria-expanded', 'aria-selected', 'aria-disabled']
-  }
-}
+const defaultSelectorPolicy: NormalizedSelectorPolicyBase = createDefaultSelectorPolicyBase()
 
 const defaultOptions: Options = {
+  // SpiraCSS recommends up to ~4 levels, so default to 4.
   allowElementChainDepth: 4,
   allowExternalClasses: [],
   allowExternalPrefixes: [],
+  marginSide: 'top',
+  enablePosition: true,
+  enableSizeInternal: true,
+  responsiveMixins: [],
   naming: undefined,
   selectorPolicy: defaultSelectorPolicy,
   sharedCommentPattern: /--shared/i,
@@ -41,17 +37,19 @@ export const normalizeOptions = (
     interactionCommentPattern?: RegExp | string
     cacheSizes?: CacheSizes
   }
+  const common = normalizeCommonOptions(
+    opt,
+    pickCommonDefaults(defaultOptions),
+    reportInvalid
+  )
 
-  const safeNormalizeSelectorPolicy = (
-    value: unknown
-  ): NormalizedSelectorPolicyBase => {
-    try {
-      return normalizeSelectorPolicyBase(value, defaultSelectorPolicy, reportInvalid)
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error)
-      reportInvalid?.('selectorPolicy', value, detail)
-      return { ...defaultOptions.selectorPolicy }
+  const normalizeMarginSide = (value: unknown): Options['marginSide'] => {
+    const lowered = typeof value === 'string' ? value.toLowerCase() : ''
+    if (lowered === 'top' || lowered === 'bottom') return lowered
+    if (value !== undefined) {
+      reportInvalid?.('marginSide', value, 'Expected "top" or "bottom".')
     }
+    return defaultOptions.marginSide
   }
 
   return {
@@ -59,28 +57,24 @@ export const normalizeOptions = (
       typeof opt.allowElementChainDepth === 'number'
         ? opt.allowElementChainDepth
         : defaultOptions.allowElementChainDepth,
-    allowExternalClasses: normalizeStringArray(
-      opt.allowExternalClasses,
-      defaultOptions.allowExternalClasses
+    marginSide: normalizeMarginSide(opt.marginSide),
+    enablePosition:
+      typeof opt.enablePosition === 'boolean'
+        ? opt.enablePosition
+        : defaultOptions.enablePosition,
+    enableSizeInternal:
+      typeof opt.enableSizeInternal === 'boolean'
+        ? opt.enableSizeInternal
+        : defaultOptions.enableSizeInternal,
+    responsiveMixins: normalizeStringArray(
+      opt.responsiveMixins,
+      defaultOptions.responsiveMixins
     ),
-    allowExternalPrefixes: normalizeStringArray(
-      opt.allowExternalPrefixes,
-      defaultOptions.allowExternalPrefixes
-    ),
-    naming: opt.naming ?? defaultOptions.naming,
-    selectorPolicy: safeNormalizeSelectorPolicy(opt.selectorPolicy),
-    sharedCommentPattern: normalizeCommentPattern(
-      opt.sharedCommentPattern,
-      defaultOptions.sharedCommentPattern,
-      'sharedCommentPattern',
+    selectorPolicy: safeNormalizeSelectorPolicyBase(
+      opt.selectorPolicy,
+      defaultSelectorPolicy,
       reportInvalid
     ),
-    interactionCommentPattern: normalizeCommentPattern(
-      opt.interactionCommentPattern,
-      defaultOptions.interactionCommentPattern,
-      'interactionCommentPattern',
-      reportInvalid
-    ),
-    cacheSizes: normalizeCacheSizes(opt.cacheSizes, reportInvalid)
+    ...common
   }
 }

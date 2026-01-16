@@ -1,12 +1,13 @@
 import safeRegex from 'safe-regex'
 
 import type { CacheSizes } from '../types'
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
+import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
   normalizeBoolean,
   normalizeStringArray
 } from '../utils/normalize'
+import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import type { BlockNameSource, Options } from './spiracss-keyframes-naming.types'
 
 const DEFAULT_SHARED_FILES = ['keyframes.scss']
@@ -33,6 +34,7 @@ const defaultOptions: Options = {
   ignoreFiles: [],
   ignorePatterns: [],
   ignorePlacementForIgnored: false,
+  naming: undefined,
   allowExternalClasses: [],
   allowExternalPrefixes: [],
   cacheSizes: DEFAULT_CACHE_SIZES
@@ -146,6 +148,11 @@ export const normalizeOptions = (
   const raw = opt as Partial<Options> & {
     cacheSizes?: CacheSizes
   }
+  const common = normalizeCommonOptions(
+    raw,
+    pickCommonDefaults(defaultOptions),
+    reportInvalid
+  )
   return {
     actionMaxWords: normalizeActionMaxWords(
       raw.actionMaxWords,
@@ -171,15 +178,6 @@ export const normalizeOptions = (
       defaultOptions.ignorePlacementForIgnored,
       { coerce: true }
     ),
-    naming: raw.naming,
-    allowExternalClasses: normalizeStringArray(
-      raw.allowExternalClasses,
-      defaultOptions.allowExternalClasses
-    ),
-    allowExternalPrefixes: normalizeStringArray(
-      raw.allowExternalPrefixes,
-      defaultOptions.allowExternalPrefixes
-    ),
-    cacheSizes: normalizeCacheSizes(raw.cacheSizes, reportInvalid)
+    ...common
   }
 }

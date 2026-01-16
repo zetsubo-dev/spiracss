@@ -144,36 +144,58 @@ const isRequireEsmError = (error: unknown): boolean => {
   return message.includes('ERR_REQUIRE_ESM')
 }
 
+const createEsmPathError = (): Error =>
+  new Error(
+    `In ESM environments, createRules() cannot accept a file path.\n` +
+      `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
+      `Example: import config from './spiracss.config.js'`
+  )
+
+const createConfigLoadError = (source: string, cause?: unknown): Error => {
+  const error = new Error(
+    `Failed to load spiracss.config.js: ${source}\n\n` +
+      `Ensure the config file format is valid.`
+  )
+  if (cause !== undefined) {
+    ;(error as Error & { cause?: unknown }).cause = cause
+  }
+  return error
+}
+
+const createRequireEsmLoadError = (absolutePath: string): Error =>
+  new Error(
+    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
+      `In ESM projects ("type": "module"), require() is unavailable.\n` +
+      `Use createRulesAsync(path) or import the config and pass it to createRules(config).`
+  )
+
+const createDynamicImportError = (absolutePath: string): Error =>
+  new Error(
+    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
+      `Dynamic import is unavailable in this environment.\n` +
+      `Use createRules(config) instead of createRulesAsync(path).`
+  )
+
 const canRequire = typeof require === 'function'
-// Keep dynamic import in CJS output (avoid TS transforming it to require()).
+// Keep dynamic import callable in CJS output (avoid TS rewriting it to require()).
+// Lazy initialization is safe here because module execution is single-threaded.
 let dynamicImport: ((specifier: string) => Promise<unknown>) | null = null
 
 const loadConfigFromPath = (absolutePath: string): SpiracssConfig => {
   if (!canRequire) {
-    throw new Error(
-      `In ESM environments, createRules() cannot accept a file path.\n` +
-        `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
-        `Example: import config from './spiracss.config.js'`
-    )
+    throw createEsmPathError()
   }
   try {
     const loaded = resolveConfigModule(require(absolutePath))
     if (!loaded) {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `Ensure the config file format is valid.`
-      )
+      throw createConfigLoadError(absolutePath)
     }
     return loaded
   } catch (error) {
     if (isRequireEsmError(error)) {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `In ESM projects ("type": "module"), require() is unavailable.\n` +
-          `Use createRulesAsync(path) or import the config and pass it to createRules(config).`
-      )
+      throw createRequireEsmLoadError(absolutePath)
     }
-    throw error
+    throw createConfigLoadError(absolutePath, error)
   }
 }
 
@@ -182,29 +204,27 @@ const loadConfigFromPathAsync = async (absolutePath: string): Promise<SpiracssCo
     try {
       const loaded = resolveConfigModule(require(absolutePath))
       if (!loaded) {
-        throw new Error(
-          `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-            `Ensure the config file format is valid.`
-        )
+        throw createConfigLoadError(absolutePath)
       }
       return loaded
     } catch (error) {
       if (!isRequireEsmError(error)) {
-        throw error
+        throw createConfigLoadError(absolutePath, error)
       }
     }
   }
 
   const moduleUrl = pathToFileURL(absolutePath).href
   if (!canRequire) {
-    const loaded = resolveConfigModule(await import(moduleUrl))
-    if (!loaded) {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `Ensure the config file format is valid.`
-      )
+    try {
+      const loaded = resolveConfigModule(await import(moduleUrl))
+      if (!loaded) {
+        throw createConfigLoadError(absolutePath)
+      }
+      return loaded
+    } catch (error) {
+      throw createConfigLoadError(absolutePath, error)
     }
-    return loaded
   }
 
   if (!dynamicImport) {
@@ -214,145 +234,111 @@ const loadConfigFromPathAsync = async (absolutePath: string): Promise<SpiracssCo
         'return import(specifier)'
       ) as (specifier: string) => Promise<unknown>
     } catch {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `Dynamic import is unavailable in this environment.\n` +
-          `Use createRules(config) instead of createRulesAsync(path).`
-      )
+      throw createDynamicImportError(absolutePath)
     }
   }
 
-  const loaded = resolveConfigModule(await dynamicImport(moduleUrl))
-  if (!loaded) {
+  try {
+    const loaded = resolveConfigModule(await dynamicImport(moduleUrl))
+    if (!loaded) {
+      throw createConfigLoadError(absolutePath)
+    }
+    return loaded
+  } catch (error) {
+    throw createConfigLoadError(absolutePath, error)
+  }
+}
+
+type ConfigTarget = {
+  configSource: string
+  absolutePath?: string
+  spiracss?: SpiracssConfig
+}
+
+const resolveConfigTarget = (
+  configPathOrConfig?: string | SpiracssConfig,
+  options?: { requireSync?: boolean }
+): ConfigTarget => {
+  if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
+    if (options?.requireSync && !canRequire) {
+      throw createEsmPathError()
+    }
+    const resolvedPath = configPathOrConfig || './spiracss.config.js'
+    const absolutePath = path.resolve(resolvedPath)
+    return { configSource: absolutePath, absolutePath }
+  }
+  return { spiracss: configPathOrConfig, configSource: 'spiracss.config.js (object)' }
+}
+
+const ensureConfigFileExists = (absolutePath: string): void => {
+  let hasConfig = false
+  try {
+    hasConfig = fs.existsSync(absolutePath)
+  } catch (error) {
+    const code = getErrorCode(error)
+    if (
+      code === 'EACCES' ||
+      code === 'EPERM' ||
+      code === 'ELOOP' ||
+      code === 'ENOTDIR' ||
+      code === 'EISDIR'
+    ) {
+      throw new Error(
+        `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
+          `Check permissions and path state.`
+      )
+    }
+    throw error
+  }
+  if (!hasConfig) {
     throw new Error(
-      `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-        `Ensure the config file format is valid.`
+      `spiracss.config.js not found: ${absolutePath}\n\n` +
+        `Place spiracss.config.js at the project root.\n` +
+        `You can get a sample config here:\n` +
+        `https://raw.githubusercontent.com/zetsubo-dev/spiracss/master/docs_spira/ja/spiracss.config.example.js\n\n` +
+        `See docs_spira/ja/tooling/spiracss-config.md for details.`
     )
   }
-  return loaded
+}
+
+const finalizeConfig = (
+  spiracss: SpiracssConfig | undefined,
+  configSource: string
+): { spiracss: SpiracssConfig; configSource: string } => {
+  if (!spiracss || typeof spiracss !== 'object') {
+    throw createConfigLoadError(configSource)
+  }
+  return { spiracss, configSource }
 }
 
 const resolveSpiracssConfig = (
   configPathOrConfig?: string | SpiracssConfig
 ): { spiracss: SpiracssConfig; configSource: string } => {
-  let spiracss: SpiracssConfig | undefined
-  let configSource = 'spiracss.config.js'
-
-  if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
-    if (!canRequire) {
-      throw new Error(
-        `In ESM environments, createRules() cannot accept a file path.\n` +
-          `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
-          `Example: import config from './spiracss.config.js'`
-      )
-    }
-    // Default to ./spiracss.config.js in the caller's working directory.
-    const resolvedPath = configPathOrConfig || './spiracss.config.js'
-    const absolutePath = path.resolve(resolvedPath)
-    configSource = absolutePath
-
-    // Check file existence.
-    let hasConfig = false
-    try {
-      hasConfig = fs.existsSync(absolutePath)
-    } catch (error) {
-      const code = getErrorCode(error)
-      if (
-        code === 'EACCES' ||
-        code === 'EPERM' ||
-        code === 'ELOOP' ||
-        code === 'ENOTDIR' ||
-        code === 'EISDIR'
-      ) {
-        throw new Error(
-          `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-            `Check permissions and path state.`
-        )
-      }
-      throw error
-    }
-    if (!hasConfig) {
-      throw new Error(
-        `spiracss.config.js not found: ${absolutePath}\n\n` +
-          `Place spiracss.config.js at the project root.\n` +
-          `You can get a sample config here:\n` +
-          `https://raw.githubusercontent.com/zetsubo-dev/spiracss/master/docs_spira/ja/spiracss.config.example.js\n\n` +
-          `See docs_spira/ja/tooling/spiracss-config.md for details.`
-      )
-    }
-
-    spiracss = loadConfigFromPath(absolutePath)
-  } else {
-    spiracss = configPathOrConfig
-    configSource = 'spiracss.config.js (object)'
+  const target = resolveConfigTarget(configPathOrConfig, { requireSync: true })
+  if (target.spiracss) return finalizeConfig(target.spiracss, target.configSource)
+  const absolutePath = target.absolutePath
+  // Defensive guard: resolveConfigTarget sets absolutePath for path-based configs.
+  if (!absolutePath) {
+    throw new Error('Missing config path for spiracss.config.js.')
   }
-
-  if (!spiracss || typeof spiracss !== 'object') {
-    throw new Error(
-      `Failed to load spiracss.config.js: ${configSource}\n\n` +
-        `Ensure the config file format is valid.`
-    )
-  }
-
-  return { spiracss, configSource }
+  ensureConfigFileExists(absolutePath)
+  const spiracss = loadConfigFromPath(absolutePath)
+  return finalizeConfig(spiracss, target.configSource)
 }
 
 const resolveSpiracssConfigAsync = async (
   configPathOrConfig?: string | SpiracssConfig
 ): Promise<{ spiracss: SpiracssConfig; configSource: string }> => {
-  let spiracss: SpiracssConfig | undefined
-  let configSource = 'spiracss.config.js'
-
-  if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
-    // Default to ./spiracss.config.js in the caller's working directory.
-    const resolvedPath = configPathOrConfig || './spiracss.config.js'
-    const absolutePath = path.resolve(resolvedPath)
-    configSource = absolutePath
-
-    // Check file existence.
-    let hasConfig = false
-    try {
-      hasConfig = fs.existsSync(absolutePath)
-    } catch (error) {
-      const code = getErrorCode(error)
-      if (
-        code === 'EACCES' ||
-        code === 'EPERM' ||
-        code === 'ELOOP' ||
-        code === 'ENOTDIR' ||
-        code === 'EISDIR'
-      ) {
-        throw new Error(
-          `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-            `Check permissions and path state.`
-        )
-      }
-      throw error
-    }
-    if (!hasConfig) {
-      throw new Error(
-        `spiracss.config.js not found: ${absolutePath}\n\n` +
-          `Place spiracss.config.js at the project root.\n` +
-          `You can get a sample config here:\n` +
-          `https://raw.githubusercontent.com/zetsubo-dev/spiracss/master/docs_spira/ja/spiracss.config.example.js\n\n` +
-          `See docs_spira/ja/tooling/spiracss-config.md for details.`
-      )
-    }
-
-    spiracss = await loadConfigFromPathAsync(absolutePath)
-  } else {
-    spiracss = configPathOrConfig
-    configSource = 'spiracss.config.js (object)'
+  const target = resolveConfigTarget(configPathOrConfig)
+  if (target.spiracss) return finalizeConfig(target.spiracss, target.configSource)
+  const absolutePath = target.absolutePath
+  // Defensive guard: resolveConfigTarget sets absolutePath for path-based configs.
+  if (!absolutePath) {
+    throw new Error('Missing config path for spiracss.config.js.')
   }
-
-  if (!spiracss || typeof spiracss !== 'object') {
-    throw new Error(
-      `Failed to load spiracss.config.js: ${configSource}\n\n` +
-        `Ensure the config file format is valid.`
-    )
-  }
-
-  return { spiracss, configSource }
+  ensureConfigFileExists(absolutePath)
+  const spiracss = await loadConfigFromPathAsync(absolutePath)
+  return finalizeConfig(spiracss, target.configSource)
 }
 
 const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): void => {
@@ -406,9 +392,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const classStructure = { ...spiracss.stylelint?.classStructure }
-  if (spiracss.selectorPolicy) {
-    classStructure.selectorPolicy = spiracss.selectorPolicy
-  }
+  withFallback(classStructure, 'selectorPolicy', spiracss.selectorPolicy)
   withFallback(classStructure, 'sharedCommentPattern', sharedCommentPattern)
   withFallback(classStructure, 'interactionCommentPattern', interactionCommentPattern)
   withFallback(classStructure, 'rootFileCase', generator?.rootFileCase)
@@ -416,9 +400,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   withFallback(classStructure, 'cacheSizes', cacheSizes)
 
   const interactionScope = { ...spiracss.stylelint?.interactionScope }
-  if (spiracss.selectorPolicy && interactionScope.selectorPolicy === undefined) {
-    interactionScope.selectorPolicy = spiracss.selectorPolicy
-  }
+  withFallback(interactionScope, 'selectorPolicy', spiracss.selectorPolicy)
   withFallback(interactionScope, 'interactionCommentPattern', interactionCommentPattern)
   withFallback(interactionScope, 'cacheSizes', cacheSizes)
 
@@ -431,9 +413,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   withFallback(interactionProperties, 'cacheSizes', cacheSizes)
 
   const propertyPlacement = { ...spiracss.stylelint?.propertyPlacement }
-  if (spiracss.selectorPolicy && propertyPlacement.selectorPolicy === undefined) {
-    propertyPlacement.selectorPolicy = spiracss.selectorPolicy
-  }
+  withFallback(propertyPlacement, 'selectorPolicy', spiracss.selectorPolicy)
   withFallback(propertyPlacement, 'sharedCommentPattern', sharedCommentPattern)
   withFallback(propertyPlacement, 'interactionCommentPattern', interactionCommentPattern)
   withFallback(propertyPlacement, 'naming', classStructure.naming)

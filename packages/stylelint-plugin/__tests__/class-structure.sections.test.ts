@@ -93,14 +93,14 @@ describe('spiracss/class-structure - --shared section behavior', () => {
   }
 }`,
         description: '--shared section must be directly under the root Block',
-        message: 'Place "// --shared" directly under the root Block (root wrappers like @layer/@supports/@media/@container/@scope are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+        message: 'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
       },
       {
         code: `
 // --shared
 .hero-banner { > .title {} }`,
         description: '--shared comments at the file top level are invalid',
-        message: 'Place "// --shared" directly under the root Block (root wrappers like @layer/@supports/@media/@container/@scope are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+        message: 'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
       }
     ]
   })
@@ -321,11 +321,11 @@ describe('spiracss/class-structure - comment pattern flags', () => {
         warnings: [
           {
             message:
-              'Place "// --shared" directly under the root Block (root wrappers like @layer/@supports/@media/@container/@scope are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+              'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/g`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
           },
           {
             message:
-              'Place "// --shared" directly under the root Block (root wrappers like @layer/@supports/@media/@container/@scope are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+              'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/g`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
           }
         ]
       }

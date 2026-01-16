@@ -107,7 +107,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Place @keyframes at the root level (not inside @media/@layer/etc). (spiracss/keyframes-naming)'
+              'Place `@keyframes` at the root level (not inside `@media`/`@layer`/etc). (spiracss/keyframes-naming)'
           }
         ]
       },
@@ -129,7 +129,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Place @keyframes at the end of the file (only comments/blank lines may follow). (spiracss/keyframes-naming)'
+              'Place `@keyframes` at the end of the file (only comments/blank lines may follow). (spiracss/keyframes-naming)'
           }
         ]
       },
@@ -147,7 +147,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Keyframes "card-list-fade-in-out-more" must follow "card-list-{action}" or "card-list-{element}-{action}" (e.g., "card-list-fade-in" or "card-list-{element}-fade-in"; action: kebab, 1-3 words). (spiracss/keyframes-naming)'
+              'Keyframes `card-list-fade-in-out-more` must follow `card-list-{action}` or `card-list-{element}-{action}` (e.g., `card-list-fade-in` or `card-list-{element}-fade-in`; action: `kebab`, 1-3 words). (spiracss/keyframes-naming)'
           }
         ]
       },
@@ -165,7 +165,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Keyframes "card-list-title-fade-in-out" must follow "card-list-{action}" or "card-list-{element}-{action}" (e.g., "card-list-fade-in" or "card-list-{element}-fade-in"; action: kebab, 1-3 words). (spiracss/keyframes-naming)'
+              'Keyframes `card-list-title-fade-in-out` must follow `card-list-{action}` or `card-list-{element}-{action}` (e.g., `card-list-fade-in` or `card-list-{element}-fade-in`; action: `kebab`, 1-3 words). (spiracss/keyframes-naming)'
           }
         ]
       },
@@ -182,7 +182,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Shared keyframes "kf-loading-spin" (prefix "kf-") must be defined in a shared keyframes file (e.g., "keyframes.scss", or configure "sharedFiles"). (spiracss/keyframes-naming)'
+              'Shared keyframes `kf-loading-spin` (prefix `kf-`) must be defined in a shared keyframes file configured via `sharedFiles` (current: `/keyframes\\.scss$/`). (spiracss/keyframes-naming)'
           }
         ]
       },
@@ -198,7 +198,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Cannot determine the root Block for @keyframes naming. Add a root Block selector or configure blockNameSource. (spiracss/keyframes-naming)'
+              'Cannot determine the root Block for `@keyframes` naming. Add a root Block selector or configure `blockNameSource`. (spiracss/keyframes-naming)'
           }
         ]
       }
@@ -329,7 +329,7 @@ describe('spiracss/keyframes-naming - ignorePatterns placement default', () => {
         warnings: [
           {
             message:
-              'Place @keyframes at the root level (not inside @media/@layer/etc). (spiracss/keyframes-naming)'
+              'Place `@keyframes` at the root level (not inside `@media`/`@layer`/etc). (spiracss/keyframes-naming)'
           }
         ]
       }
@@ -518,7 +518,7 @@ describe('spiracss/keyframes-naming - camel case', () => {
         warnings: [
           {
             message:
-              'Keyframes "cardList-fade-in" must follow "cardList-{action}" or "cardList-{element}-{action}" (e.g., "cardList-fadeIn" or "cardList-{element}-fadeIn"; action: camel, 1-3 words). (spiracss/keyframes-naming)'
+              'Keyframes `cardList-fade-in` must follow `cardList-{action}` or `cardList-{element}-{action}` (e.g., `cardList-fadeIn` or `cardList-{element}-fadeIn`; action: `camel`, 1-3 words). (spiracss/keyframes-naming)'
           }
         ]
       }

@@ -45,7 +45,7 @@ export type Options = {
   sharedCommentPattern: RegExp
   interactionCommentPattern: RegExp
   selectorPolicy: NormalizedSelectorPolicy
-  cacheSizes?: NormalizedCacheSizes
+  cacheSizes: NormalizedCacheSizes
 }
 
 export type Patterns = {

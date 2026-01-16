@@ -6,7 +6,7 @@ import selectorParser, {
   type Selector
 } from 'postcss-selector-parser'
 
-import { createLruCache, DEFAULT_CACHE_SIZE } from './cache'
+import { DEFAULT_CACHE_SIZE, createSharedCacheAccessor } from './cache'
 
 export type SelectorSummary = {
   classes: ClassName[]
@@ -37,21 +37,71 @@ export type SelectorParserCache = {
 export type SelectorParseTracker = {
   cache: SelectorParserCache
   hasError: () => boolean
+  getErrorSelector: () => string | null
 }
 
 const DEFAULT_SAME_ELEMENT_PSEUDOS = new Set([':not', ':is', ':where'])
-type SelectorCacheEntry = { selectors: Selector[]; hasError: boolean }
-const selectorCaches = new Map<number, ReturnType<typeof createLruCache<string, SelectorCacheEntry>>>()
 
-const getSelectorCache = (
-  maxSize: number
-): ReturnType<typeof createLruCache<string, SelectorCacheEntry>> => {
-  const cached = selectorCaches.get(maxSize)
-  if (cached) return cached
-  const created = createLruCache<string, SelectorCacheEntry>(maxSize)
-  selectorCaches.set(maxSize, created)
-  return created
+type SelectorContainer = Node & { nodes?: Node[] }
+
+const isContainer = (node: Node | undefined): node is SelectorContainer =>
+  Boolean(node && 'nodes' in node && Array.isArray((node as SelectorContainer).nodes))
+
+const combinatorCache = new WeakMap<SelectorContainer, boolean>()
+
+const hasCombinator = (container: SelectorContainer | undefined): boolean => {
+  if (!container) return false
+  const cached = combinatorCache.get(container)
+  if (cached !== undefined) return cached
+  const nodes = container.nodes
+  if (!nodes || nodes.length === 0) {
+    combinatorCache.set(container, false)
+    return false
+  }
+  const result = nodes.some((node) => {
+    if (node.type === 'combinator') return true
+    if (isContainer(node)) return hasCombinator(node)
+    return false
+  })
+  combinatorCache.set(container, result)
+  return result
 }
+
+export const isInsideSameElementPseudo = (
+  node: Node,
+  sameElementPseudos: Set<string> = DEFAULT_SAME_ELEMENT_PSEUDOS
+): boolean => {
+  let current = node.parent as Node | undefined
+  while (current) {
+    if (current.type === 'pseudo') {
+      const pseudo = typeof current.value === 'string' ? current.value.toLowerCase() : ''
+      if (sameElementPseudos.has(pseudo)) return true
+    }
+    current = current.parent as Node | undefined
+  }
+  return false
+}
+
+export const isInsideNonSameElementPseudo = (
+  node: Node,
+  sameElementPseudos: Set<string> = DEFAULT_SAME_ELEMENT_PSEUDOS
+): boolean => {
+  let current = node.parent as Node | undefined
+  let selectorInPseudo: Selector | null = null
+  while (current) {
+    if (current.type === 'selector') selectorInPseudo = current as Selector
+    if (current.type === 'pseudo') {
+      const pseudo = typeof current.value === 'string' ? current.value.toLowerCase() : ''
+      if (!sameElementPseudos.has(pseudo)) return true
+      if (selectorInPseudo && hasCombinator(selectorInPseudo)) return true
+      selectorInPseudo = null
+    }
+    current = current.parent as Node | undefined
+  }
+  return false
+}
+type SelectorCacheEntry = { selectors: Selector[]; hasError: boolean }
+const getSelectorCache = createSharedCacheAccessor<string, SelectorCacheEntry>()
 
 export const createSelectorParserCache = (
   onError?: (selector: string, error: unknown) => void,
@@ -89,12 +139,15 @@ export const createSelectorCacheWithErrorFlag = (
   maxSize = DEFAULT_CACHE_SIZE
 ): SelectorParseTracker => {
   let hasError = false
-  const cache = createSelectorParserCache(() => {
+  let errorSelector: string | null = null
+  const cache = createSelectorParserCache((selector) => {
     hasError = true
+    if (!errorSelector) errorSelector = selector
   }, maxSize)
   return {
     cache,
-    hasError: () => hasError
+    hasError: () => hasError,
+    getErrorSelector: () => errorSelector
   }
 }
 
@@ -109,19 +162,6 @@ export const collectSelectorSummary = (sel: Selector): SelectorSummary => {
   let hasNesting = false
   let firstCombinator: string | null = null
   let combinatorCount = 0
-  const sameElementPseudos = DEFAULT_SAME_ELEMENT_PSEUDOS
-
-  const isInsideSameElementPseudo = (node: Node): boolean => {
-    let current = node.parent as Node | undefined
-    while (current) {
-      if (current.type === 'pseudo') {
-        const pseudo = typeof current.value === 'string' ? current.value.toLowerCase() : ''
-        if (sameElementPseudos.has(pseudo)) return true
-      }
-      current = current.parent as Node | undefined
-    }
-    return false
-  }
 
   sel.walk((node) => {
     if (node.type === 'nesting') hasNesting = true
@@ -180,21 +220,6 @@ export const collectCompoundNodes = (
   const sameElementPseudos = options?.sameElementPseudos ?? DEFAULT_SAME_ELEMENT_PSEUDOS
   const compounds: CompoundNodes[] = []
   let current: CompoundNodes = { classes: [], attributes: [], hasNesting: false }
-
-  type SelectorContainer = Node & { nodes?: Node[] }
-
-  const isContainer = (node: Node | undefined): node is SelectorContainer =>
-    Boolean(node && 'nodes' in node && Array.isArray((node as SelectorContainer).nodes))
-
-  const hasCombinator = (container: SelectorContainer | undefined): boolean => {
-    const nodes = container?.nodes
-    if (!nodes || nodes.length === 0) return false
-    return nodes.some((node) => {
-      if (node.type === 'combinator') return true
-      if (isContainer(node)) return hasCombinator(node)
-      return false
-    })
-  }
 
   const collectFromSameElementPseudo = (pseudo: Pseudo | undefined): void => {
     if (!pseudo || !Array.isArray(pseudo.nodes)) return

@@ -43,7 +43,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -56,7 +56,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -101,7 +101,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -114,7 +114,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -159,7 +159,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -172,7 +172,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -219,7 +219,7 @@ describe('spiracss/class-structure - naming.blockMaxWords option', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -249,7 +249,7 @@ describe('spiracss/class-structure - naming default word count', () => {
         description: 'Block names require at least 2 words by default',
         noNormalizeRootBlock: true,
         message:
-          'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+          'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
       }
     ]
   })
@@ -290,7 +290,7 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
       {
         code: `.hero-banner { &.-primary {} }`,
         description: '"-" prefix does not match as modifier in "_" mode (invalid)',
-        message: 'Only modifier classes may be appended to "&". Found "-primary". Use "&.<modifier>". Example: "&._primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&._primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -327,7 +327,7 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
       {
         code: `.hero-banner { &.-primary {} }`,
         description: '"-" prefix does not match as modifier in "--" mode (invalid)',
-        message: 'Only modifier classes may be appended to "&". Found "-primary". Use "&.<modifier>". Example: "&.--primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&.--primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -385,7 +385,7 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
       {
         code: `.hero-banner { &.-primary-large {} }`,
         description: 'kebab-case Modifier is invalid in camelCase mode',
-        message: 'Only modifier classes may be appended to "&". Found "-primary-large". Use "&.<modifier>". Example: "&.-primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primary-large`. Use `&.<modifier>`. Example: `&.-primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -439,7 +439,7 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
       {
         code: `.hero-banner { &.-primaryLarge {} }`,
         description: 'camelCase Modifier is invalid in PascalCase mode',
-        message: 'Only modifier classes may be appended to "&". Found "-primaryLarge". Use "&.<modifier>". Example: "&.-Primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primaryLarge`. Use `&.<modifier>`. Example: `&.-Primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -574,7 +574,7 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },

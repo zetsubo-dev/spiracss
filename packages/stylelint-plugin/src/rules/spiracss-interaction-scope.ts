@@ -2,13 +2,13 @@ import type { AtRule, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
   SELECTOR_POLICY_SCHEMA
 } from '../utils/option-schema'
 import { findParentRule } from '../utils/postcss-helpers'
+import { selectorParseFailedArgs } from '../utils/messages'
 import { safeTestPattern } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
@@ -148,7 +148,7 @@ const rule = createRule(
 
       const checkedTailTargets = new WeakSet<AtRule>()
       let firstRule: Rule | null = null
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
 
@@ -182,11 +182,9 @@ const rule = createRule(
         const reports: string[] = []
 
         if (hasMixedStateVariant) {
-          const formatKeys = (keys: string[]): string =>
-            keys.length > 0 ? keys.map((key) => `"${key}"`).join(', ') : 'configured keys'
-          const variantKeys = formatKeys(Array.from(policySets.variantKeys))
-          const stateKeys = formatKeys([policySets.stateKey, ...Array.from(policySets.ariaKeys)])
-          reports.push(messages.mixedStateVariant(variantKeys, stateKeys))
+          const variantKeys = Array.from(policySets.variantKeys)
+          const stateKeys = [policySets.stateKey, ...Array.from(policySets.ariaKeys)]
+          reports.push(messages.mixedStateVariant(stateKeys, variantKeys))
         }
 
         if (!shouldCheckByComment && !shouldCheckBySelector) {
@@ -207,7 +205,9 @@ const rule = createRule(
 
         if (options.requireComment) {
           if (!hasInteractionComment) {
-            reports.push(messages.needComment())
+            reports.push(
+              messages.needComment(options.interactionCommentPattern)
+            )
           }
         }
 
@@ -237,7 +237,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

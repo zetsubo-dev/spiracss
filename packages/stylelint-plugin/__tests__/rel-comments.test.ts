@@ -85,7 +85,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: 'missing page entry comment (requireInScssDirectories violation)',
         message:
-          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Example: "// @rel/../parent-block.scss" or "// @assets/...". (spiracss/rel-comments)'
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `@rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
       {
         codeFilename: 'pages/home/scss/home.scss',
@@ -100,7 +100,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: '@rel on a root Block inside a root wrapper is treated as misplaced',
         message:
-          'Parent link comment must be at the top of the file (before the root Block). Move it above the root Block as the first line (e.g., @rel or @assets). (spiracss/rel-comments)'
+          'Parent link comment must be at the top of the file (before the root Block). Move it above the root Block as the first line (e.g., `@rel`). Use a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
       {
         code: `
@@ -110,7 +110,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: 'parent link is required even with meta.load-css("scss/child")',
         message:
-          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Example: "// @rel/../parent-block.scss" or "// @assets/...". (spiracss/rel-comments)'
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `@rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
       {
         code: `
@@ -123,7 +123,7 @@ describe('spiracss/rel-comments - basic checks', () => {
   }
 }`,
         description: 'child Block name and @rel file name do not match',
-        message: 'Link comment must include "child-block.scss" for direct child ".child-block". Update the @rel path to match. (spiracss/rel-comments)'
+        message: 'Link comment must include `child-block.scss` for direct child `.child-block`. Update the `@rel` path to match. (spiracss/rel-comments)'
       },
       {
         code: `
@@ -136,7 +136,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: 'missing child Block @rel comment (requireChildRelComments violation)',
         message:
-          'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       }
     ]
   })
@@ -182,7 +182,7 @@ describe('spiracss/rel-comments - root Block must be first rule', () => {
 `,
         description: 'warn if root Block is not first',
         message:
-          'Root Block must be the first rule in its root scope (after @use/@forward/@import). Move it above other rules so the parent link comment can stay at the top. (spiracss/rel-comments)'
+          'Root Block must be the first rule in its root scope (after `@use`/`@forward`/`@import`). Move it above other rules so the parent link comment can stay at the top. (spiracss/rel-comments)'
       },
       {
         codeFilename: 'components/home/scss/home-section.scss',
@@ -195,7 +195,7 @@ describe('spiracss/rel-comments - root Block must be first rule', () => {
 `,
         description: 'warn if root Block is not first even inside wrapper',
         message:
-          'Root Block must be the first rule in its root scope (after @use/@forward/@import). Move it above other rules so the parent link comment can stay at the top. (spiracss/rel-comments)'
+          'Root Block must be the first rule in its root scope (after `@use`/`@forward`/`@import`). Move it above other rules so the parent link comment can stay at the top. (spiracss/rel-comments)'
       }
     ]
   })
@@ -228,7 +228,7 @@ describe('spiracss/rel-comments - selector parse failure', () => {
         warnings: [
           {
             message:
-              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. (spiracss/rel-comments)'
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block > :`. (spiracss/rel-comments)'
           }
         ]
       }
@@ -375,7 +375,7 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
         warnings: [
           {
             message:
-              'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Example: "// @rel/../parent-block.scss" or "// @assets/...". (spiracss/rel-comments)'
+              'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `@rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
           }
         ]
       }
@@ -532,7 +532,7 @@ describe('spiracss/rel-comments - validatePath: true', () => {
   }
 }`,
         description: '@rel path to a missing file (reject)',
-        message: 'Link target not found: non-existent-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `non-existent-block.scss`. Fix the path or `aliasRoots`. (spiracss/rel-comments)'
       },
       {
         code: `
@@ -544,7 +544,7 @@ describe('spiracss/rel-comments - validatePath: true', () => {
   }
 }`,
         description: '@components alias to a missing file (reject)',
-        message: 'Link target not found: @components/non-existent-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. (spiracss/rel-comments)'
       }
     ]
   })
@@ -684,7 +684,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'in normal sections, link comments are required directly under child Blocks',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       },
       {
         code: `
@@ -695,7 +695,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'non-link comments are an error',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       },
       {
         code: `
@@ -707,7 +707,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'link comments are required directly under child Blocks even inside @at-root &',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       },
       {
         code: `
@@ -718,7 +718,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'child Block comments are required inside the shared section',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       }
     ]
   })
@@ -778,7 +778,7 @@ describe('spiracss/rel-comments - child block comments opt-out in shared/interac
   }
 }`,
         description: 'normal sections require child Block comments',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       }
     ]
   })
@@ -841,7 +841,7 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
   }
 }`,
         description: 'error when no file is found in any aliasRoots candidate',
-        message: 'Link target not found: @components/non-existent-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. (spiracss/rel-comments)'
       },
       {
         code: `
@@ -853,7 +853,7 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
   }
 }`,
         description: 'undefined alias key is an error',
-        message: 'Link target not found: @unknown/unknown-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `@unknown/unknown-block.scss`. Fix the path or `aliasRoots`. (spiracss/rel-comments)'
       }
     ]
   })

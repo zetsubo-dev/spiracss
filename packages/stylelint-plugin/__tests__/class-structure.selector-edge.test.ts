@@ -27,7 +27,7 @@ describe('spiracss/class-structure - edge cases', () => {
         code: '.title { .element {} }',
         description: 'error when root Block is not found',
         message:
-          'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+          'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
       },
       {
         code: '.BadBlock > .title {}',
@@ -38,7 +38,7 @@ describe('spiracss/class-structure - edge cases', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -73,14 +73,31 @@ describe('spiracss/class-structure - selector parse failure', () => {
     reject: [
       {
         code: `
-.block > : {
+.block-name > : {
   color: red;
 }`,
         description: 'emit a single warning on selector parse failure',
         warnings: [
           {
             message:
-              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. (spiracss/class-structure)'
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block-name > :`. (spiracss/class-structure)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name > : {
+  color: red;
+}
+
+.foo > : {
+  color: blue;
+}`,
+        description: 'emit a single warning even when multiple selectors fail',
+        warnings: [
+          {
+            message:
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block-name > :`. (spiracss/class-structure)'
           }
         ]
       }

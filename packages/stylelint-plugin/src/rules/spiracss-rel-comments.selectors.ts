@@ -1,6 +1,5 @@
 import type { Selector } from 'postcss-selector-parser'
 
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import { buildBlockPattern } from '../utils/naming'
 import { collectCompoundNodes, type SelectorParserCache } from '../utils/selector'
 import type { Options } from './spiracss-rel-comments.types'
@@ -14,7 +13,7 @@ export const collectRootBlockNames = (
   options: Options
 ): string[] => {
   const names = new Set<string>()
-  const cacheSize = options.cacheSizes?.naming ?? DEFAULT_CACHE_SIZES.naming
+  const cacheSize = options.cacheSizes.naming
   const blockRe = buildBlockPattern(options.naming, cacheSize)
   const rootPseudos = new Set([':is', ':where'])
 
@@ -70,7 +69,7 @@ export const collectDirectChildBlocks = (
   selectorCache: SelectorParserCache
 ): string[] => {
   const names = new Set<string>()
-  const cacheSize = options.cacheSizes?.naming ?? DEFAULT_CACHE_SIZES.naming
+  const cacheSize = options.cacheSizes.naming
   const blockRe = buildBlockPattern(options.naming, cacheSize)
 
   const selectors = selectorCache.parse(selector)

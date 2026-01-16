@@ -31,13 +31,13 @@ describe('spiracss/class-structure - complex nesting structures', () => {
         code: '.hero-banner { .content { .button-group {} } }',
         description: 'Blocks cannot be placed inside Elements',
         message:
-          'Element ".content" cannot contain a Block "button-group". Move the Block to the parent Block level or refactor. (spiracss/class-structure)'
+          'Element `.content` cannot contain a Block `button-group`. Move the Block to the parent Block level or refactor. (spiracss/class-structure)'
       },
       {
         code: '.hero-banner { .wrapper { .inner-banner {} } }',
         description: 'Nesting Blocks inside Elements is discouraged',
         message:
-          'Element ".wrapper" cannot contain a Block "inner-banner". Move the Block to the parent Block level or refactor. (spiracss/class-structure)'
+          'Element `.wrapper` cannot contain a Block `inner-banner`. Move the Block to the parent Block level or refactor. (spiracss/class-structure)'
       }
     ]
   })
@@ -68,7 +68,7 @@ describe('spiracss/class-structure - Block nesting depth limits', () => {
       {
         code: '.page-layout { > .section-box { > .inner-box {} } }',
         description: 'Block > Block > Block (two levels) is too deep',
-        message: 'Block "inner-box" is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via @rel. (spiracss/class-structure)'
+        message: 'Block `inner-box` is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via `@rel`. (spiracss/class-structure)'
       }
     ]
   })
@@ -109,7 +109,7 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
   }
 }`,
         description: 'enforceChildCombinator applies inside @media',
-        message: 'Use a direct-child combinator under the Block: "> .title". Example: ".block { > .title { ... } }". Shared/interaction sections are exempt. (spiracss/class-structure)'
+        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `sharedCommentPattern` (current: `/--shared/i`) or `interactionCommentPattern` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: `
@@ -122,7 +122,7 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
 }`,
         description: 'Element > Block is detected inside @supports',
         message:
-          'Element "> .element" cannot contain a Block "child-block". Move the Block to the parent Block level or refactor. (spiracss/class-structure)'
+          'Element `> .element` cannot contain a Block `child-block`. Move the Block to the parent Block level or refactor. (spiracss/class-structure)'
       },
       {
         code: `
@@ -134,7 +134,7 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
   }
 }`,
         description: 'Block > Block > Block is detected inside @media',
-        message: 'Block "grandchild-block" is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via @rel. (spiracss/class-structure)'
+        message: 'Block `grandchild-block` is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via `@rel`. (spiracss/class-structure)'
       }
     ]
   })

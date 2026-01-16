@@ -17,6 +17,11 @@ import {
   normalizeCommentPattern,
   normalizeKeyList
 } from '../dist/esm/utils/normalize.js'
+import {
+  formatCode,
+  formatList,
+  formatPattern
+} from '../dist/esm/utils/messages.js'
 import { isRuleInRootScope, markSectionRules } from '../dist/esm/utils/section.js'
 import {
   collectCompoundNodes,
@@ -68,6 +73,14 @@ describe('utils/alias', () => {
     fs.writeFileSync(iconPath, '', 'utf8')
     const targets = resolveAliasCandidates('@assets/icons/icon.svg', projectRoot, aliasRoots)
     assert.deepStrictEqual(targets, [iconPath])
+  })
+
+  it('accepts alias targets within project root even if the file is missing', () => {
+    const aliasRoots = { assets: ['assets'] }
+    const missingPath = path.resolve(projectRoot, 'assets/icons/missing.svg')
+    fs.mkdirSync(path.dirname(missingPath), { recursive: true })
+    const targets = resolveAliasCandidates('@assets/icons/missing.svg', projectRoot, aliasRoots)
+    assert.deepStrictEqual(targets, [missingPath])
   })
 
   it('rejects symlink targets that escape project root', function () {
@@ -261,6 +274,73 @@ describe('utils/normalize', () => {
     })
     assert.deepStrictEqual(nonStringResult, fallback)
     assert.strictEqual(called, true)
+  })
+})
+
+describe('utils/messages', () => {
+  it('formats empty lists as `none`', () => {
+    assert.strictEqual(formatList([]), '`none`')
+  })
+
+  it('trims long lists with an ellipsis', () => {
+    assert.strictEqual(
+      formatList(['a', 'b', 'c', 'd'], { maxItems: 2 }),
+      '`a`, `b`, `... (+2 more)`'
+    )
+  })
+
+  it('keeps the remaining count when maxChars is small', () => {
+    assert.strictEqual(
+      formatList(['alpha', 'beta', 'gamma'], {
+        maxItems: 2,
+        maxChars: 20,
+        maxItemChars: 10
+      }),
+      '`alpha`, `beta`, `+1`'
+    )
+  })
+
+  it('keeps the remaining count when maxChars is tiny', () => {
+    assert.strictEqual(
+      formatList(['alpha', 'beta'], {
+        maxItems: 1,
+        maxChars: 4,
+        maxItemChars: 10
+      }),
+      '`+2`'
+    )
+  })
+
+  it('trims long items before adding the remaining count', () => {
+    assert.strictEqual(
+      formatList(['alphabet', 'betatron', 'gamma'], {
+        maxItems: 2,
+        maxChars: 50,
+        maxItemChars: 6
+      }),
+      '`alp...`, `bet...`, `... (+1 more)`'
+    )
+  })
+
+  it('trims inline code content by maxChars', () => {
+    assert.strictEqual(formatCode('alpha', { maxChars: 1 }), '`a`')
+    assert.strictEqual(formatCode('alpha', { maxChars: 2 }), '`al`')
+  })
+
+  it('escapes inline code values', () => {
+    assert.strictEqual(formatCode('a`b\nc'), '`a\\`b\\nc`')
+  })
+
+  it('formats patterns as inline code', () => {
+    assert.strictEqual(formatPattern(/--interaction/i), '`/--interaction/i`')
+  })
+
+  it('trims long patterns', () => {
+    const longPattern = new RegExp('a'.repeat(200))
+    const formatted = formatPattern(longPattern, { maxChars: 20 })
+    assert.ok(formatted.startsWith('`/'))
+    assert.ok(formatted.endsWith('...`'))
+    assert.ok(formatted.length <= 22)
   })
 })
 

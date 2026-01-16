@@ -14,3 +14,17 @@ export const NON_SELECTOR_AT_RULE_NAMES = new Set([
   '-ms-keyframes',
   'property'
 ])
+
+export const PSEUDO_ELEMENTS = new Set([
+  'before',
+  'after',
+  'first-letter',
+  'first-line',
+  'selection',
+  'marker',
+  'backdrop',
+  'placeholder',
+  'file-selector-button',
+  'part',
+  'slotted'
+])

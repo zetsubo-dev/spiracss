@@ -3,9 +3,9 @@ import type { Comment, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES } from '../utils/constants'
 import { formatFileBase } from '../utils/formatting'
+import { selectorParseFailedArgs } from '../utils/messages'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -13,9 +13,12 @@ import {
   SELECTOR_POLICY_SCHEMA,
   SHARED_COMMENT_PATTERN_SCHEMA
 } from '../utils/option-schema'
-import { isRule } from '../utils/postcss-helpers'
+import { findParentRule, isRule } from '../utils/postcss-helpers'
 import { getCommentText, isRuleInsideAtRule, safeTestPattern } from '../utils/section'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import {
+  createSelectorCacheWithErrorFlag,
+  type SelectorParserCache
+} from '../utils/selector'
 import {
   createPlugin,
   createRule,
@@ -45,7 +48,6 @@ import {
 import {
   analyzeRootSelector,
   collectRootBlockNames,
-  findNearestParentRule,
   hasSegmentSequence,
   hasValidSpiraClass,
   mergeRuleKinds,
@@ -117,7 +119,7 @@ const rule = createRule(
           }
         : undefined
       const options = normalizeOptions(rawOptions, handleInvalid)
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       cache = {
         options,
         commentPatterns: {
@@ -181,7 +183,7 @@ const rule = createRule(
       } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const ruleKinds = new WeakMap<Rule, Kind>()
@@ -198,17 +200,22 @@ const rule = createRule(
       const fileName = filePath ? path.basename(filePath) : ''
       const fileBase = fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
 
+      const filterGlobalSelectors = (
+        selectors: ReturnType<SelectorParserCache['parse']>
+      ): ReturnType<SelectorParserCache['parse']> =>
+        selectors.filter((selector) => !selector.toString().includes(':global'))
+
       const allRules: Rule[] = []
       root.walkRules((rule: Rule) => {
         allRules.push(rule)
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (!firstRule) firstRule = rule
-        if (findNearestParentRule(rule)) return
+        if (findParentRule(rule)) return
         topLevelRules.push(rule)
         if (typeof rule.selector !== 'string') return
-        if (rule.selector.includes(':global')) return
 
-        const selectors = selectorCache.parse(rule.selector)
+        const selectors = filterGlobalSelectors(selectorCache.parse(rule.selector))
+        if (selectors.length === 0) return
         const rootBlocks = collectRootBlockNames(selectors, options, patterns)
         if (rootBlocks.length === 0) return
         if (isRootBlockRule(rule)) rootBlockRules.add(rule)
@@ -232,7 +239,7 @@ const rule = createRule(
 
       allRules.forEach((rule: Rule) => {
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
-        const parentRule = findNearestParentRule(rule)
+        const parentRule = findParentRule(rule)
         const parentKind = parentRule ? ruleKinds.get(parentRule) : undefined
         const parentSelector =
           parentRule && typeof parentRule.selector === 'string' ? parentRule.selector : undefined
@@ -240,11 +247,11 @@ const rule = createRule(
         const parentBlockDepth = parentRule ? blockDepths.get(parentRule) || 0 : 0
 
         if (typeof rule.selector !== 'string') return
-        if (rule.selector.includes(':global')) return
 
         const isShared = sharedRules.has(rule)
         const isInteraction = interactionRules.has(rule)
-        const selectors = selectorCache.parse(rule.selector)
+        const selectors = filterGlobalSelectors(selectorCache.parse(rule.selector))
+        if (selectors.length === 0) return
         if (!hasSpiraClassForRootCheck && hasValidSpiraClass(selectors, options, patterns)) {
           hasSpiraClassForRootCheck = true
         }
@@ -316,7 +323,9 @@ const rule = createRule(
           ruleName,
           result,
           node: comment,
-          message: messages.sharedNeedRootBlock()
+          message: messages.sharedNeedRootBlock(
+            options.sharedCommentPattern
+          )
         })
       })
 
@@ -324,9 +333,9 @@ const rule = createRule(
         const resolvedRootBlockName = rootBlockName
         topLevelRules.forEach((rule) => {
           if (typeof rule.selector !== 'string') return
-          if (rule.selector.includes(':global')) return
 
-          const selectors = selectorCache.parse(rule.selector)
+          const selectors = filterGlobalSelectors(selectorCache.parse(rule.selector))
+          if (selectors.length === 0) return
           selectors.forEach((sel) => {
             const { hasSpiraClass, hasRootBlock, hasOtherBlock } = analyzeRootSelector(
               sel,
@@ -383,7 +392,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

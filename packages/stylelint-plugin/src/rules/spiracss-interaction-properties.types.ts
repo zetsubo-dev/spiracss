@@ -6,5 +6,5 @@ export type Options = {
   naming?: NamingOptions
   allowExternalClasses: string[]
   allowExternalPrefixes: string[]
-  cacheSizes?: NormalizedCacheSizes
+  cacheSizes: NormalizedCacheSizes
 }

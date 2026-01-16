@@ -74,4 +74,4 @@ const buildNamingHint = (naming: NamingOptions = {}): string =>
   formatNamingHint({ naming })
 
 export const invalidNameMessage = (cls: string, naming?: NamingOptions) =>
-  `Class "${cls}" is not a valid SpiraCSS Block/Element/Modifier. Rename it to match the configured naming rules. ${buildNamingHint(naming)} (spiracss/class-structure)`
+  `Class \`${cls}\` is not a valid SpiraCSS Block/Element/Modifier. Rename it to match the configured naming rules. ${buildNamingHint(naming)} (spiracss/class-structure)`

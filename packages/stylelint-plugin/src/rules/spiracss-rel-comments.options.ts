@@ -1,11 +1,10 @@
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
+import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
   normalizeBoolean,
-  normalizeCommentPattern,
-  normalizeString,
-  normalizeStringArray
+  normalizeString
 } from '../utils/normalize'
+import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import type { Options } from './spiracss-rel-comments.types'
 
 const defaultOptions: Options = {
@@ -36,6 +35,11 @@ export const normalizeOptions = (
     sharedCommentPattern?: RegExp | string
     interactionCommentPattern?: RegExp | string
   }
+  const common = normalizeCommonOptions(
+    raw,
+    pickCommonDefaults(defaultOptions),
+    reportInvalid
+  )
   const fallbackChildScssDir = defaultOptions.childScssDir ?? 'scss'
 
   return {
@@ -79,27 +83,6 @@ export const normalizeOptions = (
     ),
     childScssDir: normalizeString(raw.childScssDir, fallbackChildScssDir),
     aliasRoots: raw.aliasRoots || defaultOptions.aliasRoots,
-    sharedCommentPattern: normalizeCommentPattern(
-      raw.sharedCommentPattern,
-      defaultOptions.sharedCommentPattern,
-      'sharedCommentPattern',
-      reportInvalid
-    ),
-    interactionCommentPattern: normalizeCommentPattern(
-      raw.interactionCommentPattern,
-      defaultOptions.interactionCommentPattern,
-      'interactionCommentPattern',
-      reportInvalid
-    ),
-    naming: raw.naming || defaultOptions.naming,
-    allowExternalClasses: normalizeStringArray(
-      raw.allowExternalClasses,
-      defaultOptions.allowExternalClasses
-    ),
-    allowExternalPrefixes: normalizeStringArray(
-      raw.allowExternalPrefixes,
-      defaultOptions.allowExternalPrefixes
-    ),
-    cacheSizes: normalizeCacheSizes(raw.cacheSizes, reportInvalid)
+    ...common
   }
 }

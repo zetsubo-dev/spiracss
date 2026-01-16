@@ -2,7 +2,8 @@ import type { Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
+import { normalizeCacheSizes } from '../utils/cache'
+import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SIZES_SCHEMA } from '../utils/option-schema'
 import {
   collectCompoundSegments,
@@ -12,6 +13,7 @@ import {
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
 import { isPlainObject } from '../utils/validate'
 import { ruleName } from './spiracss-pseudo-nesting.constants'
+import { messages } from './spiracss-pseudo-nesting.messages'
 
 // SpiraCSS: pseudo-classes/elements must be nested under &.
 // - Example: .btn { &:hover { ... } } / .btn { &::before { ... } }
@@ -24,13 +26,6 @@ const meta = {
   description: 'Require pseudo selectors to be nested under "&" in SpiraCSS.',
   category: 'stylistic'
 }
-
-const messages = stylelint.utils.ruleMessages(ruleName, {
-  needNesting: () =>
-    'Pseudo selectors must be nested with "&" on the same compound. Example: ".btn { &:hover { ... } }" or ".btn { &::before { ... } }". For child targets, use "> .btn { &:hover { ... } }" (not "> .btn:hover" or "& > .btn:hover").',
-  selectorParseFailed: () =>
-    'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors.'
-})
 
 const collectViolations = (
   selector: string,
@@ -95,9 +90,10 @@ const rule = createRule(
           }
         : undefined
 
-      const cacheSizes = rawOptions
-        ? normalizeCacheSizes((rawOptions as { cacheSizes?: unknown }).cacheSizes, reportInvalid)
-        : DEFAULT_CACHE_SIZES
+      const cacheSizes = normalizeCacheSizes(
+        (rawOptions as { cacheSizes?: unknown } | null | undefined)?.cacheSizes,
+        reportInvalid
+      )
 
       let firstRule: Rule | null = null
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
@@ -127,7 +123,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

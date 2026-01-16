@@ -4,8 +4,8 @@ import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
 import type { NamingOptions, WordCase } from '../types'
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
+import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SIZES_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import {
   isAtRule,
@@ -301,7 +301,7 @@ const rule = createRule(
       if (options.ignoreFiles.length > 0 && matchAny(normalizedPath, options.ignoreFiles)) {
         return
       }
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const patterns = buildPatterns(
@@ -366,7 +366,7 @@ const rule = createRule(
               ruleName,
               result,
               node,
-              message: messages.sharedFileOnly(name, sharedPrefix)
+              message: messages.sharedFileOnly(name, sharedPrefix, sharedFiles)
             })
             return
           }
@@ -420,7 +420,9 @@ const rule = createRule(
           ruleName,
           result,
           node: root,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

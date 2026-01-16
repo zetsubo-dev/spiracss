@@ -8,6 +8,23 @@ import type {
 } from '../types'
 
 const ERROR_PREFIX = '[spiracss]'
+const DEBUG_ENV = 'SPIRACSS_DEBUG'
+
+const shouldReportNormalizeError = (): boolean => {
+  const debug = process.env[DEBUG_ENV]
+  if (!debug) return false
+  if (debug === '1') return true
+  return debug
+    .split(',')
+    .map((entry) => entry.trim())
+    .includes('config')
+}
+
+const reportNormalizeError = (label: string, value: unknown): void => {
+  if (!shouldReportNormalizeError()) return
+  const detail = value instanceof RegExp ? value.toString() : String(value)
+  console.warn(`[spiracss] Invalid ${label}: ${detail}`)
+}
 
 export type InvalidOptionReporter = (
   optionName: string,
@@ -31,6 +48,7 @@ export const normalizeCommentPattern = (
   if (pattern instanceof RegExp) {
     if (!isSafe(pattern)) {
       reportInvalid?.(label, pattern)
+      if (!reportInvalid) reportNormalizeError(label, pattern)
       return fallback
     }
     return pattern
@@ -40,11 +58,13 @@ export const normalizeCommentPattern = (
       const regex = new RegExp(pattern, 'i')
       if (!isSafe(regex)) {
         reportInvalid?.(label, pattern)
+        if (!reportInvalid) reportNormalizeError(label, pattern)
         return fallback
       }
       return regex
     } catch {
       reportInvalid?.(label, pattern)
+      if (!reportInvalid) reportNormalizeError(label, pattern)
       return fallback
     }
   }
@@ -180,5 +200,33 @@ export const normalizeSelectorPolicyBase = (
       dataKey,
       ariaKeys
     }
+  }
+}
+
+const cloneSelectorPolicyBase = (
+  defaults: NormalizedSelectorPolicyBase
+): NormalizedSelectorPolicyBase => ({
+  variant: {
+    mode: defaults.variant.mode,
+    dataKeys: [...defaults.variant.dataKeys]
+  },
+  state: {
+    mode: defaults.state.mode,
+    dataKey: defaults.state.dataKey,
+    ariaKeys: [...defaults.state.ariaKeys]
+  }
+})
+
+export const safeNormalizeSelectorPolicyBase = (
+  raw: unknown,
+  defaults: NormalizedSelectorPolicyBase,
+  reportInvalid?: InvalidOptionReporter
+): NormalizedSelectorPolicyBase => {
+  try {
+    return normalizeSelectorPolicyBase(raw, defaults, reportInvalid)
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    reportInvalid?.('selectorPolicy', raw, detail)
+    return cloneSelectorPolicyBase(defaults)
   }
 }

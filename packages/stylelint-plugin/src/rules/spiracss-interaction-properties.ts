@@ -2,8 +2,9 @@ import type { Container, Declaration, Node, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
+import { PSEUDO_ELEMENTS } from '../utils/constants'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
+import { selectorParseFailedArgs } from '../utils/messages'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -100,20 +101,6 @@ const FORBIDDEN_TRANSITION_KEYWORDS = new Set([
   'revert',
   'revert-layer'
 ])
-const PSEUDO_ELEMENTS = new Set([
-  'before',
-  'after',
-  'first-letter',
-  'first-line',
-  'selection',
-  'marker',
-  'backdrop',
-  'placeholder',
-  'file-selector-button',
-  'part',
-  'slotted'
-])
-
 type TransitionParseError = 'missing' | 'all' | 'none' | 'invalid'
 
 const splitTopLevel = (value: string, separator: string): string[] => {
@@ -288,7 +275,7 @@ const rule = createRule(
       if (shouldValidate && hasInvalid) return
 
       const options = normalizeOptions(rawOptions, reportInvalid)
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const patterns = buildPatterns(
@@ -440,7 +427,10 @@ const rule = createRule(
             ruleName,
             result,
             node: decl,
-            message: messages.needInteraction(prop)
+            message: messages.needInteraction(
+              prop,
+              options.interactionCommentPattern
+            )
           })
         }
 
@@ -476,7 +466,11 @@ const rule = createRule(
             ruleName,
             result,
             node: decl,
-            message: messages.initialOutsideInteraction(prop, formatTargetLabel(key))
+            message: messages.initialOutsideInteraction(
+              prop,
+              formatTargetLabel(key),
+              options.interactionCommentPattern
+            )
           })
         })
       })
@@ -486,7 +480,9 @@ const rule = createRule(
           ruleName,
           result,
           node: root,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

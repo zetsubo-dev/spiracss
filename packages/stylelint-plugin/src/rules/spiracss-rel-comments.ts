@@ -4,9 +4,10 @@ import type { Comment, Node, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { createLruCache, DEFAULT_CACHE_SIZES } from '../utils/cache'
+import { createLruCache } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { normalizeCustomPattern } from '../utils/naming'
+import { selectorParseFailedArgs } from '../utils/messages'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -37,6 +38,7 @@ import {
 import {
   extractLinkTargets,
   normalizeRelPath,
+  resolveAliasCandidates,
   resolvePathCandidates
 } from './spiracss-rel-comments.alias'
 import { ruleName } from './spiracss-rel-comments.constants'
@@ -71,6 +73,8 @@ const meta = {
   description: 'Validate @rel and alias link comments in SpiraCSS files.',
   category: 'stylistic'
 }
+
+const ALIAS_KEY_PATTERN = /^[a-z][a-z0-9-]*$/
 
 const optionSchema = {
   requireInScssDirectories: [isBoolean],
@@ -196,8 +200,7 @@ const rule = createRule(
       const { options, aliasRoots, childScssDir, commentPatterns, hasInvalidOptions } =
         getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
-
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const pathExistsCache = createLruCache<string, boolean>(cacheSizes.path)
@@ -209,6 +212,19 @@ const rule = createRule(
       const firstRule = getFirstRuleNode(root)
       const projectRoot =
         (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
+      const aliasKeys = Object.keys(aliasRoots).filter((key) => {
+        if (!ALIAS_KEY_PATTERN.test(key) || key === 'rel') return false
+        const bases = Array.isArray(aliasRoots[key]) ? aliasRoots[key] : []
+        if (bases.length === 0) return false
+        const hasExistingBase = bases.some((base) => {
+          const resolvedBase = path.isAbsolute(base)
+            ? base
+            : path.resolve(projectRoot, base)
+          return fs.existsSync(resolvedBase)
+        })
+        if (!hasExistingBase) return false
+        return resolveAliasCandidates(`@${key}`, projectRoot, aliasRoots).length > 0
+      })
       const hasMetaLoad = hasMetaLoadCss(root, childScssDir)
       const sharedRules = markSharedRules(root, commentPatterns)
       const interactionRules = markInteractionRules(root, commentPatterns)
@@ -257,7 +273,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: comment,
-                message: messages.misplacedParentRel()
+                message: messages.misplacedParentRel(aliasKeys)
               })
               hasMisplacedParentRel = true
             }
@@ -268,7 +284,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: comment,
-                message: messages.misplacedParentRel()
+                message: messages.misplacedParentRel(aliasKeys)
               })
               hasMisplacedParentRel = true
               return
@@ -281,7 +297,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: comment,
-                message: messages.misplacedParentRel()
+                message: messages.misplacedParentRel(aliasKeys)
               })
             }
           }
@@ -314,7 +330,7 @@ const rule = createRule(
             ruleName,
             result,
             node: targetNode,
-            message: messages.missingParentRel()
+            message: messages.missingParentRel(aliasKeys)
           })
         }
       }
@@ -339,7 +355,7 @@ const rule = createRule(
               ruleName,
               result,
               node: rule,
-              message: messages.missingChildRel()
+              message: messages.missingChildRel(aliasKeys)
             })
             return
           }
@@ -352,7 +368,7 @@ const rule = createRule(
               ruleName,
               result,
               node: rule,
-              message: messages.missingChildRel()
+              message: messages.missingChildRel(aliasKeys)
             })
             return
           }
@@ -435,7 +451,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

@@ -1,47 +1,143 @@
 import stylelint from 'stylelint'
 
 import { ruleName } from './spiracss-class-structure.constants'
+import {
+  formatList,
+  formatPattern,
+  formatCode,
+  formatSelectorParseFailed,
+  type RuleMessageArgs
+} from '../utils/messages'
 
 export const messages = stylelint.utils.ruleMessages(ruleName, {
   invalidName: (cls: string, namingHint: string) =>
     // Naming style is configurable, so only state that it violates SpiraCSS Block/Element/Modifier rules.
-    `Class "${cls}" is not a valid SpiraCSS Block/Element/Modifier. Rename it to match the configured naming rules. ${namingHint}`,
+    `Class ${formatCode(
+      cls
+    )} is not a valid SpiraCSS Block/Element/Modifier. Rename it to match the configured naming rules. ${namingHint}`,
   elementChainTooDeep: (parent: string, child: string, depth: number, limit: number) =>
-    `Element chain is too deep: "${parent}" -> "${child}" (depth ${depth}, max ${limit}). Promote a segment to a Block or simplify the structure.`,
+    `Element chain is too deep: ${formatCode(parent)} -> ${formatCode(
+      child
+    )} (depth ${depth}, max ${limit}). Promote a segment to a Block or simplify the structure.`,
   elementCannotOwnBlock: (parent: string, child: string) =>
-    `Element "${parent}" cannot contain a Block "${child}". Move the Block to the parent Block level or refactor.`,
+    `Element ${formatCode(parent)} cannot contain a Block ${formatCode(
+      child
+    )}. Move the Block to the parent Block level or refactor.`,
   blockDescendantSelector: (parent: string, child: string) =>
-    `Avoid chained selectors under "${parent}". Only target direct children ("> .child"). Move "${child}" styles into the child Block/Element file.`,
+    `Avoid chained selectors under ${formatCode(
+      parent
+    )}. Only target direct children (${formatCode(
+      '> .child'
+    )}). Move ${formatCode(
+      `.${child}`
+    )} styles into the child Block/Element file.`,
   blockTargetsGrandchildElement: (parent: string, child: string) =>
-    `Do not style grandchild Elements from "${parent}". Move ".${child}" styles into the child Block file.`,
+    `Do not style grandchild Elements from ${formatCode(
+      parent
+    )}. Move ${formatCode(
+      `.${child}`
+    )} styles into the child Block file.`,
   tooDeepBlockNesting: (cls: string) =>
-    `Block "${cls}" is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via @rel.`,
+    `Block ${formatCode(
+      cls
+    )} is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via ${formatCode(
+      '@rel'
+    )}.`,
   multipleRootBlocks: (root: string, extras: string[]) =>
-    `Only one root Block is allowed per file. Found ${extras
-      .map((name) => `"${name}"`)
-      .join(', ')} in addition to "${root}". Split into separate SCSS files or move extra Blocks under the root.`,
-  needChild: (child: string) =>
-    `Use a direct-child combinator under the Block: "> .${child}". Example: ".block { > .${child} { ... } }". Shared/interaction sections are exempt.`,
-  sharedNeedRootBlock: () =>
-    'Place "// --shared" directly under the root Block (root wrappers like @layer/@supports/@media/@container/@scope are allowed). Do not nest inside child rules.',
+    `Only one root Block is allowed per file. Found ${formatList(extras, {
+      maxItems: extras.length
+    })} in addition to ${formatCode(
+      root
+    )}. Split into separate SCSS files or move extra Blocks under the root.`,
+  needChild: (
+    child: string,
+    sharedPattern: RegExp,
+    interactionPattern: RegExp
+  ) =>
+    `Use a direct-child combinator under the Block: ${formatCode(
+      `> .${child}`
+    )}. ` +
+    `Sections marked by ${formatCode(
+      'sharedCommentPattern'
+    )} (current: ${formatPattern(
+      sharedPattern
+    )}) ` +
+    `or ${formatCode(
+      'interactionCommentPattern'
+    )} (current: ${formatPattern(
+      interactionPattern
+    )}) are exempt.`,
+  sharedNeedRootBlock: (sharedPattern: RegExp) =>
+    `Place the shared section comment matching ${formatCode(
+      'sharedCommentPattern'
+    )} (current: ${formatPattern(
+      sharedPattern
+    )}) directly under the root Block ` +
+    `(root wrappers like ${formatCode('@layer')}/${formatCode(
+      '@supports'
+    )}/${formatCode('@media')}/${formatCode(
+      '@container'
+    )}/${formatCode('@scope')} are allowed). Do not nest inside child rules.`,
   needAmpForMod: (example: string) =>
-    `Write modifier classes inside the Block using "&.<modifier>". Example: ".block { &.${example} { ... } }". Do not use ".block.${example}" or ".${example}" at top level.`,
+    `Write modifier classes inside the Block using ${formatCode(
+      '&.<modifier>'
+    )}. Example: ${formatCode(
+      `.block { &.${example} { ... } }`
+    )}. Do not use ${formatCode(
+      `.block.${example}`
+    )} or ${formatCode(`.${example}`)} at top level.`,
   needModifierPrefix: (cls: string, example: string) =>
-    `Only modifier classes may be appended to "&". Found "${cls}". Use "&.<modifier>". Example: "&.${example}". If not a modifier, move it to its own selector.`,
-  disallowedModifier: () =>
-    'Modifier classes are disabled because selectorPolicy uses data mode. Use configured data attributes or enable class mode in selectorPolicy.',
+    `Only modifier classes may be appended to ${formatCode(
+      '&'
+    )}. Found ${formatCode(cls)}. Use ${formatCode(
+      '&.<modifier>'
+    )}. Example: ${formatCode(
+      `&.${example}`
+    )}. If not a modifier, move it to its own selector.`,
+  disallowedModifier: (variantKeys: string[], stateKeys: string[]) =>
+    `Modifier classes are disabled because ${formatCode(
+      'selectorPolicy.variant.mode'
+    )} and ${formatCode(
+      'selectorPolicy.state.mode'
+    )} are both ${formatCode('data')}. ` +
+    `Use variant attributes (current: ${formatList(
+      variantKeys
+    )}) or state attributes (current: ${formatList(
+      stateKeys
+    )}) instead, or enable class mode in ${formatCode('selectorPolicy')}.`,
   invalidVariantAttribute: (attr: string, example: string) =>
-    `Attribute "${attr}" is disabled because selectorPolicy.variant.mode is "class". Use modifier classes instead (e.g., "&.${example}").`,
+    `Attribute ${formatCode(attr)} is disabled because ${formatCode(
+      'selectorPolicy.variant.mode'
+    )} is ${formatCode('class')}. Use modifier classes instead (e.g., ${formatCode(
+      `&.${example}`
+    )}).`,
   invalidStateAttribute: (attr: string, example: string) =>
-    `Attribute "${attr}" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.${example}").`,
-  invalidDataValue: (attr: string, value: string) =>
-    `Attribute "${attr}" value "${value}" does not match selectorPolicy valueNaming. Rename it to match the configured case/word rules.`,
+    `Attribute ${formatCode(attr)} is disabled because ${formatCode(
+      'selectorPolicy.state.mode'
+    )} is ${formatCode('class')}. Use modifier classes instead (e.g., ${formatCode(
+      `&.${example}`
+    )}).`,
+  invalidDataValue: (attr: string, value: string, caseName: string, maxWords: number) =>
+    `Attribute ${formatCode(attr)} value ${formatCode(
+      value
+    )} does not match ${formatCode(
+      'selectorPolicy'
+    )} valueNaming (case: ${formatCode(caseName)}, maxWords: ${formatCode(
+      String(maxWords)
+    )}). Rename it to match the configured rules.`,
   rootSelectorMissingBlock: (block: string, selector: string) =>
-    `Root selector "${selector}" must include the root Block ".${block}". Include it in the selector or move this rule under the root Block.`,
+    `Root selector ${formatCode(
+      selector
+    )} must include the root Block ${formatCode(
+      `.${block}`
+    )}. Include it in the selector or move this rule under the root Block.`,
   missingRootBlock: () =>
-    'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }").',
-  selectorParseFailed: () =>
-    'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors.',
+    'No root Block found. Define a top-level Block selector that matches the naming rules.',
+  selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0]),
   fileNameMismatch: (block: string, expected: string, actual: string) =>
-    `Root Block ".${block}" must be defined in "${expected}.scss" (found "${actual}.scss"). Rename the file or the Block.`
+    `Root Block ${formatCode(
+      `.${block}`
+    )} must be defined in ${formatCode(
+      `${expected}.scss`
+    )} (found ${formatCode(`${actual}.scss`)}). Rename the file or the Block.`
 })

@@ -288,6 +288,17 @@ When unsure, decide based on “whose responsibility is this property?”
 - **Item-side**: change a child’s size/position/spacing due to the parent’s needs → write on the parent’s `> .child`
 - **Child gets complex**: the child starts “arranging its own children” → extract it as a new Block
 
+**Note on `:global(...)`:** The linter strips global-only selectors and validates only the remaining local portion.
+If the rightmost target becomes global (e.g. `.block :global(.foo)` / `.block:is(:global(.foo))`), that selector is treated as out-of-scope and placement checks are skipped.
+Global-only selectors are out-of-scope, so `@at-root` / `@extend` restrictions do not apply.
+If a selector becomes ambiguous after removing `:global(...)` (e.g., some pseudo selectors lose their selector list),
+placement checks are skipped for that rule, but `@at-root` / `@extend` restrictions still apply.
+
+**Note on placement approximations:** Placement checks use a selector “family” heuristic.
+Variant/state *values* are not distinguished, and `@media` / `@supports` / `@container` / `@layer` wrappers are treated
+as the same context. Extremely complex selectors (or selector explosions from deep nesting) are skipped to avoid false
+positives and performance issues.
+
 ### 2. --shared section
 
 The `--shared` section is where you collect shared classes reused only within the Block’s tree (including descendants).

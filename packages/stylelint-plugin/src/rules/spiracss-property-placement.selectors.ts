@@ -12,7 +12,9 @@ import type { ClassifyOptions } from './spiracss-class-structure.types'
 import type { Options } from './spiracss-property-placement.types'
 import { messages } from './spiracss-property-placement.messages'
 
-type SelectorNode = ReturnType<SelectorParserCache['parse']>[number]['nodes'][number]
+type ParsedSelector = ReturnType<SelectorParserCache['parse']>[number]
+type SelectorNode = ParsedSelector['nodes'][number]
+type SelectorNodeLike = SelectorNode | ParsedSelector
 type SegmentNodes = SelectorNode[]
 type TagNode = SelectorNode & { type: 'tag'; value: string }
 type IdNode = SelectorNode & { type: 'id'; value: string }
@@ -45,6 +47,10 @@ const SIMPLE_SCOPE_SELECTOR_PATTERN = /^[^,\s>+~&()\[\]:]+$/
 // Extract the leading token from @include params.
 const SCOPE_HEAD_PATTERN = /^([^\s(]+)/
 const ALLOWED_COMBINATORS = new Set(['>', '+', '~'])
+const GLOBAL_PSEUDO = ':global'
+const FUNCTIONAL_PSEUDOS = new Set([':is', ':where', ':not'])
+const LEADING_COMBINATOR_PATTERN = /^[>+~]/
+const TRAILING_COMBINATOR_PATTERN = /[>+~]$/
 // Guard against selector explosion during nested resolution.
 const MAX_RESOLVED_SELECTORS = 1000
 
@@ -63,7 +69,7 @@ const getExternalClassCache = (options: Options): { classSet: Set<string>; prefi
   if (cached) return cached
   const entry = {
     classSet: new Set(options.allowExternalClasses),
-    prefixes: [...options.allowExternalPrefixes]
+    prefixes: options.allowExternalPrefixes
   }
   externalClassCache.set(options, entry)
   return entry
@@ -95,32 +101,88 @@ export const buildPolicySets = (policy: Options['selectorPolicy']): PolicySets =
   modifiersAllowed: !(policy.variant.mode === 'data' && policy.state.mode === 'data')
 })
 
-const normalizeStrippedSelector = (selectorText: string): string | null => {
-  const normalized = selectorText.replace(/\s+/g, ' ').trim()
-  if (!normalized) return null
-  // Leading/trailing combinators mean we lost context after stripping :global.
-  if (/^[>+~]/.test(normalized)) return null
-  if (/[>+~]$/.test(normalized)) return null
-  return normalized
+type StrippedSelector = {
+  selector: string
+  leadingCombinator: '>' | '+' | '~' | null
 }
 
-type StrippedSelectorCacheEntry = { value: string | null }
-const getStrippedSelectorCache =
-  createSharedCacheAccessor<string, StrippedSelectorCacheEntry>()
-type GlobalOnlyCacheEntry = { value: boolean }
-const getGlobalOnlySelectorCache =
-  createSharedCacheAccessor<string, GlobalOnlyCacheEntry>()
+const normalizeStrippedSelector = (selectorText: string): StrippedSelector | null => {
+  let normalized = selectorText.replace(/\s+/g, ' ').trim()
+  if (!normalized) return null
+  // Strip dangling combinators left after removing :global(...) segments.
+  // Descendant combinators are treated as root; only explicit child/sibling intent is preserved.
+  const match = normalized.match(LEADING_COMBINATOR_PATTERN)
+  const leadingCombinator = match ? (match[0] as '>' | '+' | '~') : null
+  while (LEADING_COMBINATOR_PATTERN.test(normalized)) {
+    normalized = normalized.slice(1).trim()
+  }
+  while (TRAILING_COMBINATOR_PATTERN.test(normalized)) {
+    normalized = normalized.slice(0, -1).trim()
+  }
+  return normalized.length > 0 ? { selector: normalized, leadingCombinator } : null
+}
 
-const hasLocalNodes = (
-  nodes: SelectorNode[] | undefined,
-  state: { globalMode: boolean }
-): boolean => {
-  if (!nodes || nodes.length === 0) return false
-  for (const node of nodes) {
+type GlobalSelectorAnalysis = {
+  stripped: string | null
+  strippedSelectors: StrippedSelector[]
+  globalOnly: boolean
+  selectorCount: number
+}
+type GlobalSelectorCacheEntry = { value: GlobalSelectorAnalysis }
+const getGlobalSelectorCache =
+  createSharedCacheAccessor<string, GlobalSelectorCacheEntry>()
+
+type GlobalSelectorScan = {
+  hasLocal: boolean
+  hasGlobal: boolean
+  hasGlobalOutsideNegation: boolean
+  rightmostGlobal: boolean
+} & (
+  | { hasBareGlobal: false; bareIndex: null }
+  | { hasBareGlobal: true; bareIndex: number }
+)
+
+type GlobalSelectorFlags = {
+  hasLocal: boolean
+  hasGlobal: boolean
+  hasGlobalOutsideNegation: boolean
+} & (
+  | { hasBareGlobal: false; bareIndex: null }
+  | { hasBareGlobal: true; bareIndex: number }
+)
+
+const scanSelectorGlobalFlags = (
+  selector: ReturnType<SelectorParserCache['parse']>[number],
+  cache: WeakMap<
+    ReturnType<SelectorParserCache['parse']>[number],
+    GlobalSelectorFlags & { lastIndex: number | null }
+  > = new WeakMap()
+): GlobalSelectorFlags & { lastIndex: number | null } => {
+  const cached = cache.get(selector)
+  if (cached) return cached
+  const nodes = selector.nodes ?? []
+  let hasLocal = false
+  let hasGlobal = false
+  let hasGlobalOutsideNegation = false
+  let hasBareGlobal = false
+  let bareIndex: number | null = null
+  let lastIndex: number | null = null
+
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index]
+    if (node.type === 'comment' || node.type === 'combinator') continue
+    lastIndex = index
+    break
+  }
+
+  for (let index = 0; index < nodes.length; index += 1) {
+    const node = nodes[index]
     if (node.type === 'comment' || node.type === 'combinator') continue
     if (node.type === 'pseudo') {
       const value = typeof node.value === 'string' ? node.value.toLowerCase() : ''
-      if (value === ':global') {
+      if (value === GLOBAL_PSEUDO) {
+        hasGlobal = true
+        hasGlobalOutsideNegation = true
         const nestedSelectors = Array.isArray(node.nodes)
           ? node.nodes.filter(
               (
@@ -129,74 +191,397 @@ const hasLocalNodes = (
                 child.type === 'selector'
             )
           : []
-        if (nestedSelectors.length > 0) {
-          // Treat nodes inside :global(...) as out-of-scope.
-          continue
+        if (nestedSelectors.length === 0) {
+          hasBareGlobal = true
+          bareIndex = index
+          break
         }
-        // Bare :global switches to global mode for the remainder of the selector.
-        state.globalMode = true
         continue
       }
+      const selectorNodes = Array.isArray(node.nodes)
+        ? node.nodes.filter(
+            (
+              child
+            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+              child.type === 'selector'
+          )
+        : []
+      if (FUNCTIONAL_PSEUDOS.has(value)) {
+        const isNegation = value === ':not'
+        let hasNestedLocal = false
+        selectorNodes.forEach((selectorNode) => {
+          const nested = scanSelectorGlobalFlags(selectorNode, cache)
+          if (nested.hasLocal) hasNestedLocal = true
+          if (nested.hasGlobal) hasGlobal = true
+          if (!isNegation && nested.hasGlobalOutsideNegation) {
+            hasGlobalOutsideNegation = true
+          }
+        })
+        if (hasNestedLocal) hasLocal = true
+        continue
+      }
+      if (selectorNodes.length > 0) {
+        selectorNodes.forEach((selectorNode) => {
+          const nested = scanSelectorGlobalFlags(selectorNode, cache)
+          if (nested.hasGlobal) hasGlobal = true
+          if (nested.hasGlobalOutsideNegation) hasGlobalOutsideNegation = true
+        })
+        hasLocal = true
+      }
+      // Non-global pseudos do not make the selector local by themselves.
+      continue
     }
-    if (state.globalMode) continue
-    return true
+    hasLocal = true
   }
-  return false
+
+  let result: GlobalSelectorFlags & { lastIndex: number | null }
+  if (hasBareGlobal && bareIndex !== null) {
+    result = {
+      hasLocal,
+      hasGlobal,
+      hasGlobalOutsideNegation,
+      hasBareGlobal: true,
+      bareIndex,
+      lastIndex
+    }
+  } else {
+    result = {
+      hasLocal,
+      hasGlobal,
+      hasGlobalOutsideNegation,
+      hasBareGlobal: false,
+      bareIndex: null,
+      lastIndex
+    }
+  }
+  cache.set(selector, result)
+  return result
 }
 
-const selectorHasLocalNodes = (
-  selector: ReturnType<SelectorParserCache['parse']>[number]
+const isSelectorGlobalOnly = (
+  selector: ReturnType<SelectorParserCache['parse']>[number],
+  cache?: WeakMap<
+    ReturnType<SelectorParserCache['parse']>[number],
+    GlobalSelectorFlags & { lastIndex: number | null }
+  >
 ): boolean => {
-  const state = { globalMode: false }
-  return hasLocalNodes(selector.nodes, state)
+  const scan = scanSelectorGlobalFlags(selector, cache)
+  return scan.hasGlobalOutsideNegation && !scan.hasLocal
+}
+
+const getRightmostSegment = (nodes: SelectorNode[]): SelectorNode[] => {
+  let start = 0
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    if (nodes[index].type === 'combinator') {
+      start = index + 1
+      break
+    }
+  }
+  return nodes.slice(start)
+}
+
+const isGlobalOnlySegment = (
+  segment: SelectorNode[],
+  cache: WeakMap<
+    ReturnType<SelectorParserCache['parse']>[number],
+    GlobalSelectorFlags & { lastIndex: number | null }
+  >
+): boolean => {
+  let hasNodes = false
+  let hasGlobalReference = false
+  for (const node of segment) {
+    if (node.type === 'comment' || node.type === 'combinator') continue
+    hasNodes = true
+    if (
+      node.type === 'class' ||
+      node.type === 'tag' ||
+      node.type === 'id' ||
+      node.type === 'attribute' ||
+      node.type === 'nesting' ||
+      node.type === 'universal' ||
+      node.type === 'string'
+    ) {
+      return false
+    }
+    if (node.type === 'pseudo') {
+      const value = typeof node.value === 'string' ? node.value.toLowerCase() : ''
+      const selectorNodes = Array.isArray(node.nodes)
+        ? node.nodes.filter(
+            (
+              child
+            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+              child.type === 'selector'
+          )
+        : []
+      if (value === GLOBAL_PSEUDO) {
+        if (selectorNodes.length === 0) return false
+        hasGlobalReference = true
+        continue
+      }
+      if (FUNCTIONAL_PSEUDOS.has(value)) {
+        if (selectorNodes.length === 0) return false
+        if (value === ':not') return false
+        if (!selectorNodes.every((selector) => isSelectorGlobalOnly(selector, cache))) {
+          return false
+        }
+        hasGlobalReference = true
+        continue
+      }
+      if (selectorNodes.length > 0) return false
+      // Other pseudos are allowed as long as the segment is otherwise global-only.
+      continue
+    }
+    return false
+  }
+  return hasNodes && hasGlobalReference
+}
+
+/**
+ * Tracks local/global nodes inside a selector.
+ *
+ * CSS Modules :global semantics:
+ * - :global(.foo) → only .foo is global; nodes after it are local
+ * - :global .foo  → .foo and all subsequent nodes are global (bare :global)
+ */
+const scanSelectorGlobalState = (
+  selector: ReturnType<SelectorParserCache['parse']>[number],
+  cache: WeakMap<
+    ReturnType<SelectorParserCache['parse']>[number],
+    GlobalSelectorFlags & { lastIndex: number | null }
+  >
+): GlobalSelectorScan => {
+  const nodes = selector.nodes ?? []
+  const scan = scanSelectorGlobalFlags(selector, cache)
+  let rightmostGlobal = false
+  if (
+    scan.hasBareGlobal &&
+    scan.bareIndex !== null &&
+    scan.lastIndex !== null &&
+    scan.lastIndex > scan.bareIndex
+  ) {
+    rightmostGlobal = true
+  } else {
+    const rightmostSegment = getRightmostSegment(nodes)
+    rightmostGlobal = isGlobalOnlySegment(rightmostSegment, cache)
+  }
+  // Keep the explicit branch to help TypeScript narrow hasBareGlobal/bareIndex.
+  if (scan.hasBareGlobal && scan.bareIndex !== null) {
+    return {
+      hasLocal: scan.hasLocal,
+      hasGlobal: scan.hasGlobal,
+      hasGlobalOutsideNegation: scan.hasGlobalOutsideNegation,
+      hasBareGlobal: true,
+      bareIndex: scan.bareIndex,
+      rightmostGlobal
+    }
+  }
+  return {
+    hasLocal: scan.hasLocal,
+    hasGlobal: scan.hasGlobal,
+    hasGlobalOutsideNegation: scan.hasGlobalOutsideNegation,
+    hasBareGlobal: false,
+    bareIndex: null,
+    rightmostGlobal
+  }
+}
+
+const analyzeGlobalSelector = (
+  selectorText: string,
+  cache: SelectorParserCache,
+  cacheSize: number
+): GlobalSelectorAnalysis => {
+  const globalCache = getGlobalSelectorCache(cacheSize)
+  const cached = globalCache.get(selectorText)
+  if (cached) {
+    // Keep parse-error tracking consistent even when global analysis is cached.
+    cache.parse(selectorText)
+    return cached.value
+  }
+  const selectors = cache.parse(selectorText)
+  if (selectors.length === 0) {
+    const value = {
+      stripped: null,
+      strippedSelectors: [],
+      globalOnly: false,
+      selectorCount: 0
+    }
+    globalCache.set(selectorText, { value })
+    return value
+  }
+  const selectorCount = selectors.length
+  const flagsCache = new WeakMap<
+    ReturnType<SelectorParserCache['parse']>[number],
+    GlobalSelectorFlags & { lastIndex: number | null }
+  >()
+  let allGlobalOnly = selectors.length > 0
+  const stripped: StrippedSelector[] = []
+  selectors.forEach((sel) => {
+    const scan = scanSelectorGlobalState(sel, flagsCache)
+    let selectorGlobalOnly =
+      scan.rightmostGlobal ||
+      (scan.hasGlobalOutsideNegation && !scan.hasLocal)
+    if (!scan.hasGlobal) {
+      const normalized = normalizeStrippedSelector(sel.toString())
+      if (normalized) stripped.push(normalized)
+      allGlobalOnly = false
+      return
+    }
+    if (scan.rightmostGlobal) {
+      // Treat selectors whose rightmost target is global as out-of-scope.
+      allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+      return
+    }
+    if (scan.hasBareGlobal) {
+      const cloned = sel.clone()
+      const nodes = cloned.nodes ?? []
+      nodes.splice(scan.bareIndex)
+      const normalized = normalizeStrippedSelector(cloned.toString())
+      if (normalized) stripped.push(normalized)
+      if (!normalized) selectorGlobalOnly = true
+      allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+      return
+    }
+    const cloned = sel.clone()
+    const globalOnlySelectors = new WeakSet<ParsedSelector>()
+    let hasEmptySelectorList = false
+    let hasGlobalOnlySelectorList = false
+    cloned.walkPseudos((pseudo) => {
+      const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+      if (value === GLOBAL_PSEUDO) {
+        const parent = pseudo.parent
+        if (parent && parent.type === 'selector') {
+          const parentSelector = parent as ParsedSelector
+          const scan = scanSelectorGlobalState(parentSelector, flagsCache)
+          if (scan.rightmostGlobal || (scan.hasGlobalOutsideNegation && !scan.hasLocal)) {
+            globalOnlySelectors.add(parentSelector)
+          }
+        }
+        // Drop :global(...) entirely so global context doesn't affect placement checks.
+        pseudo.remove()
+      }
+    })
+    cloned.walkPseudos((pseudo) => {
+      const selectorNodes = Array.isArray(pseudo.nodes)
+        ? pseudo.nodes.filter(
+            (
+              child
+            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+              child.type === 'selector'
+          )
+        : []
+      if (selectorNodes.length === 0) return
+      let removedGlobalOnly = false
+      selectorNodes.forEach((selector) => {
+        if (globalOnlySelectors.has(selector)) {
+          selector.remove()
+          removedGlobalOnly = true
+        }
+      })
+      const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+      selectorNodes.forEach((selector) => {
+        const hasMeaningfulNodes = (selector.nodes ?? []).some(
+          (node) => node.type !== 'comment' && node.type !== 'combinator'
+        )
+        if (!hasMeaningfulNodes) selector.remove()
+      })
+      const remainingSelectors = Array.isArray(pseudo.nodes)
+        ? pseudo.nodes.filter(
+            (
+              child
+            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+              child.type === 'selector'
+          )
+        : []
+      if (remainingSelectors.length === 0) {
+        if (FUNCTIONAL_PSEUDOS.has(value)) {
+          if (value !== ':not' && removedGlobalOnly) {
+            hasGlobalOnlySelectorList = true
+            return
+          }
+          pseudo.remove()
+          return
+        }
+        hasEmptySelectorList = true
+        return
+      }
+      const pseudoNodes = (pseudo.nodes ?? []) as SelectorNodeLike[]
+      const hasContent = pseudoNodes.some((node) => {
+        if (node.type === 'comment') return false
+        if (node.type !== 'selector') return true
+        return (node.nodes ?? []).some(
+          (child) => child.type !== 'comment' && child.type !== 'combinator'
+        )
+      })
+      if (!hasContent) pseudo.remove()
+    })
+    if (hasGlobalOnlySelectorList) {
+      selectorGlobalOnly = true
+      allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+      return
+    }
+    if (hasEmptySelectorList) {
+      // Treat non-functional pseudos with empty selector lists as unverified:
+      // skip placement, but keep @at-root/@extend checks in scope.
+      allGlobalOnly = false
+      return
+    }
+    const normalized = normalizeStrippedSelector(cloned.toString())
+    if (normalized) stripped.push(normalized)
+    if (!normalized) selectorGlobalOnly = true
+    allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+  })
+  const strippedText = stripped.length > 0 ? stripped.map((item) => item.selector).join(', ') : null
+  const value: GlobalSelectorAnalysis = {
+    stripped: allGlobalOnly ? null : strippedText,
+    strippedSelectors: allGlobalOnly ? [] : stripped,
+    globalOnly: allGlobalOnly,
+    selectorCount
+  }
+  globalCache.set(selectorText, { value })
+  return value
 }
 
 export const stripGlobalSelector = (
   selectorText: string,
   cache: SelectorParserCache,
-  cacheSize: number
+  cacheSize: number,
+  options?: { preserveCombinator?: boolean }
 ): string | null => {
-  const strippedCache = getStrippedSelectorCache(cacheSize)
-  const cached = strippedCache.get(selectorText)
-  if (cached) return cached.value
-  const selectors = cache.parse(selectorText)
-  if (selectors.length === 0) {
-    strippedCache.set(selectorText, { value: null })
-    return null
+  const analysis = analyzeGlobalSelector(selectorText, cache, cacheSize)
+  // `null` means the selector is either global-only or unverified after stripping :global.
+  // Use stripGlobalSelectorForRoot() to keep unverified selectors in-scope for root anchoring.
+  // Use isGlobalOnlySelector() to distinguish global-only (skip @at-root/@extend).
+  if (!options?.preserveCombinator) return analysis.stripped
+  if (analysis.strippedSelectors.length === 0) return null
+  return analysis.strippedSelectors
+    .map((item) =>
+      item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector
+    )
+    .join(', ')
+}
+
+export const stripGlobalSelectorForRoot = (
+  selectorText: string,
+  cache: SelectorParserCache,
+  cacheSize: number,
+  options?: { preserveCombinator?: boolean }
+): string | null => {
+  // Expect a single selector (splitSelectors output), not a selector list with commas.
+  // For unverified selectors, return the original text to keep root anchoring in-scope.
+  const analysis = analyzeGlobalSelector(selectorText, cache, cacheSize)
+  if (analysis.globalOnly) return null
+  if (!options?.preserveCombinator) {
+    return analysis.stripped ?? selectorText
   }
-  const stripped: string[] = []
-  selectors.forEach((sel) => {
-    let hasGlobal = false
-    let hasBareGlobal = false
-    sel.walkPseudos((pseudo) => {
-      const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
-      if (value === ':global') {
-        hasGlobal = true
-        if (!Array.isArray(pseudo.nodes) || pseudo.nodes.length === 0) {
-          hasBareGlobal = true
-        }
-      }
-    })
-    if (!hasGlobal) {
-      const normalized = normalizeStrippedSelector(sel.toString())
-      if (normalized) stripped.push(normalized)
-      return
-    }
-    if (hasBareGlobal) return
-    const cloned = sel.clone()
-    cloned.walkPseudos((pseudo) => {
-      const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
-      if (value === ':global') {
-        // Drop :global(...) entirely so global context doesn't affect placement checks.
-        pseudo.remove()
-      }
-    })
-    const normalized = normalizeStrippedSelector(cloned.toString())
-    if (normalized) stripped.push(normalized)
-  })
-  const result = stripped.length === 0 ? null : stripped.join(', ')
-  strippedCache.set(selectorText, { value: result })
-  return result
+  if (analysis.strippedSelectors.length === 0) {
+    // Keep unverified selectors in-scope for root anchoring.
+    return selectorText
+  }
+  return analysis.strippedSelectors
+    .map((item) =>
+      item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector
+    )
+    .join(', ')
 }
 
 export const isGlobalOnlySelector = (
@@ -204,17 +589,7 @@ export const isGlobalOnlySelector = (
   cache: SelectorParserCache,
   cacheSize: number
 ): boolean => {
-  const globalOnlyCache = getGlobalOnlySelectorCache(cacheSize)
-  const cached = globalOnlyCache.get(selectorText)
-  if (cached) return cached.value
-  const selectors = cache.parse(selectorText)
-  if (selectors.length === 0) {
-    globalOnlyCache.set(selectorText, { value: false })
-    return false
-  }
-  const result = selectors.every((sel) => !selectorHasLocalNodes(sel))
-  globalOnlyCache.set(selectorText, { value: result })
-  return result
+  return analyzeGlobalSelector(selectorText, cache, cacheSize).globalOnly
 }
 
 export const splitSelectors = (
@@ -225,13 +600,13 @@ export const splitSelectors = (
   return selectors.map((sel) => sel.toString().trim()).filter((text) => text.length > 0)
 }
 
-const combineSelectors = (parent: string, child: string): string[] => {
+const combineSelectors = (parent: string, child: string): string | null => {
   const trimmedChild = child.trim()
-  if (!trimmedChild) return []
+  if (!trimmedChild) return null
   if (trimmedChild.includes('&')) {
-    return [trimmedChild.replace(/&/g, parent)]
+    return trimmedChild.replace(/&/g, parent)
   }
-  return [`${parent} ${trimmedChild}`.trim()]
+  return `${parent} ${trimmedChild}`.trim()
 }
 
 export const resolveSelectors = (
@@ -288,7 +663,9 @@ export const resolveSelectors = (
       if (exceeded) return
       currentSelectors.forEach((child) => {
         if (exceeded) return
-        combined.push(...combineSelectors(parent, child))
+        const combinedSelector = combineSelectors(parent, child)
+        if (!combinedSelector) return
+        combined.push(combinedSelector)
         if (combined.length > MAX_RESOLVED_SELECTORS) {
           exceeded = true
         }
@@ -472,6 +849,8 @@ const analyzeSegmentInfo = (
 ): SegmentKindInfo | SegmentBase | null => {
   let baseKind: 'block' | 'element' | null = null
   let baseClass: string | null = null
+  // Only enforce single base-class segments when building family keys.
+  const countBaseClasses = mode === 'base'
   let baseCount = 0
   let pseudoKind: 'block' | 'element' | null = null
   let pseudoClass: string | null = null
@@ -486,7 +865,7 @@ const analyzeSegmentInfo = (
     }
     if (node.type === 'pseudo') {
       const pseudoValue = typeof node.value === 'string' ? node.value.toLowerCase() : ''
-      if (![':is', ':where', ':not'].includes(pseudoValue)) return null
+      if (!FUNCTIONAL_PSEUDOS.has(pseudoValue)) return null
       const parsed = analyzePseudoBase(node, options, policy, patterns, classifyOptions)
       if (!parsed) return null
       if (parsed.baseKind) {
@@ -512,7 +891,7 @@ const analyzeSegmentInfo = (
       continue
     }
     if (kind === 'block' || kind === 'element') {
-      baseCount += 1
+      if (countBaseClasses) baseCount += 1
       if (!baseKind) {
         baseKind = kind
         baseClass = className
@@ -525,6 +904,7 @@ const analyzeSegmentInfo = (
   if (!baseKind || !baseClass) return null
   if (pseudoKind && baseKind !== pseudoKind) return null
   if (mode === 'base') {
+    // Family keys require exactly one base class per segment.
     if (baseCount > 1) return null
     if (pseudoClass && baseClass !== pseudoClass) return null
     return { kind: baseKind, baseClass }
@@ -700,9 +1080,9 @@ export const analyzeSelectorList = (
   if (selectorList.length === 0) return { status: 'skip' }
   const normalizedSelectors = selectorList.filter((selector) => selector.length > 0)
   if (normalizedSelectors.length === 0) return { status: 'skip' }
-  const strippedSelectors = normalizedSelectors
-    .map((selector) => stripGlobalSelector(selector, cache, options.cacheSizes.selector))
-    .filter((selector): selector is string => Boolean(selector))
+  const strippedSelectors = normalizedSelectors.flatMap((selector) =>
+    analyzeGlobalSelector(selector, cache, options.cacheSizes.selector).strippedSelectors
+  )
   if (strippedSelectors.length === 0) return { status: 'skip' }
 
   let hasPageRootSelector = false
@@ -712,14 +1092,15 @@ export const analyzeSelectorList = (
   const selectors: SelectorInfo[] = []
   const familyKeys: string[] = []
 
-  for (const selectorText of strippedSelectors) {
+  for (const { selector: selectorText, leadingCombinator } of strippedSelectors) {
     const analysis = analyzeSelectorWithFamilyKey(
       selectorText,
       cache,
       options,
       policy,
       patterns,
-      classifyOptions
+      classifyOptions,
+      leadingCombinator
     )
     if (analysis.status === 'error') return analysis
     if (analysis.status === 'skip') {
@@ -786,7 +1167,8 @@ const analyzeSelectorWithFamilyKey = (
   options: Options,
   policy: PolicySets,
   patterns: ReturnType<typeof buildPatterns>,
-  classifyOptions: ClassifyOptions
+  classifyOptions: ClassifyOptions,
+  leadingCombinator: '>' | '+' | '~' | null = null
 ): SelectorAnalysisResult => {
   // Only evaluate simple chain selectors; complex patterns are treated as unverified.
   const parsed = parseSelectorSegments(selectorText, cache)
@@ -821,6 +1203,10 @@ const analyzeSelectorWithFamilyKey = (
     selector = { kind: 'child-block', tailCombinator: chain.tailCombinator }
   } else {
     selector = { kind: 'element', tailCombinator: chain.tailCombinator }
+  }
+  if (leadingCombinator && selector.kind === 'root') {
+    // Preserve child/sibling intent when the global prefix is stripped away.
+    selector = { kind: 'child-block', tailCombinator: leadingCombinator }
   }
 
   // Second pass: extract family key using strict validation (requires exactly one

@@ -79,6 +79,10 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
       {
         code: '.tab-panels {}\n.u-hidden {}',
         description: 'selectors with only external classes are excluded'
+      },
+      {
+        code: '.tab-panels:has(:global(.foo)), .tab-panels:has(:global(.bar)) {}',
+        description: 'unverified :global selectors still anchor the root Block'
       }
     ],
 

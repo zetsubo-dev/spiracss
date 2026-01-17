@@ -97,12 +97,21 @@ export const formatList = (
 
   const softMaxChars = maxChars + 2
   const maxItemCharsForList = Math.max(1, Math.min(maxItemChars, softMaxChars))
+  const codeOverhead = 2
+  const minimumItemChars = 3
+  const minItemFootprint = minimumItemChars + codeOverhead
 
   if (items.length === 0) {
     return formatCode(emptyValue, { maxChars: maxItemCharsForList })
   }
 
-  const maxCount = Math.max(1, maxItems)
+  const maxCount = Math.max(
+    1,
+    Math.min(
+      maxItems,
+      Math.floor((softMaxChars + separator.length) / (minItemFootprint + separator.length))
+    )
+  )
   const totalCount = items.length
   const values: string[] = []
   for (let i = 0; i < Math.min(totalCount, maxCount); i += 1) {
@@ -123,7 +132,6 @@ export const formatList = (
   const tryBuildOutput = (count: number): string | null => {
     const remaining = totalCount - count
     const separatorsLength = separator.length * Math.max(0, count - 1)
-    const minimumItemChars = 3
     const variants = remaining > 0 ? suffixVariants(remaining) : ['']
 
     for (const suffixText of variants) {
@@ -136,7 +144,8 @@ export const formatList = (
             ? `${separator}${suffixToken}`
             : suffixToken
           : ''
-      const availableForItems = softMaxChars - suffixPart.length - separatorsLength
+      const availableForItems =
+        softMaxChars - suffixPart.length - separatorsLength - codeOverhead * count
       if (count === 0) {
         // When no items fit, return only the remaining-count suffix.
         if (suffixPart.length <= softMaxChars) {

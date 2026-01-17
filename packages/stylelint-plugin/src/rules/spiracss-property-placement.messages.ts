@@ -98,6 +98,7 @@ const internalInChildBlockStateHint = (
 
 type PositionUnknownReason = 'dynamic' | 'unknown'
 
+// stylelint RuleMessage args accept broader types; keep runtime guard for supported reasons.
 const isPositionUnknownReason = (
   value: RuleMessageArg | undefined
 ): value is PositionUnknownReason => value === 'dynamic' || value === 'unknown'

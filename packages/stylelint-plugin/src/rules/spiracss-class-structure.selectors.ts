@@ -99,6 +99,7 @@ type ProcessContext = {
 const MAX_BLOCK_NESTING_DEPTH = 1
 
 const getModifierExample = (options: Options): string => {
+  if (options.naming?.customPatterns?.modifier) return ''
   const naming = options.naming ?? {}
   const prefix = naming.modifierPrefix ?? '-'
   const modifierCase = naming.modifierCase ?? 'kebab'
@@ -122,6 +123,7 @@ const reportAttributeViolations = (
     stateValuePattern
   } = policyData
   const modifierExample = getModifierExample(options)
+  const customModifierPattern = options.naming?.customPatterns?.modifier
 
   compounds.forEach((compound) => {
     if (compound.attributes.length === 0) return
@@ -138,7 +140,13 @@ const reportAttributeViolations = (
       if (name.startsWith('data-')) {
         if (reservedVariantKeys.has(name)) {
           if (policy.variant.mode === 'class') {
-            report(messages.invalidVariantAttribute(name, modifierExample))
+            report(
+              messages.invalidVariantAttribute(
+                name,
+                modifierExample,
+                customModifierPattern
+              )
+            )
             return
           }
           if (attrValue && !variantValuePattern.test(attrValue)) {
@@ -153,7 +161,13 @@ const reportAttributeViolations = (
           }
         } else if (name === reservedStateKey) {
           if (policy.state.mode !== 'data') {
-            report(messages.invalidStateAttribute(name, modifierExample))
+            report(
+              messages.invalidStateAttribute(
+                name,
+                modifierExample,
+                customModifierPattern
+              )
+            )
             return
           }
           if (attrValue && !stateValuePattern.test(attrValue)) {
@@ -169,7 +183,13 @@ const reportAttributeViolations = (
         }
       } else if (name.startsWith('aria-')) {
         if (reservedAriaKeys.has(name) && policy.state.mode !== 'data') {
-          report(messages.invalidStateAttribute(name, modifierExample))
+          report(
+            messages.invalidStateAttribute(
+              name,
+              modifierExample,
+              customModifierPattern
+            )
+          )
         }
       }
     })

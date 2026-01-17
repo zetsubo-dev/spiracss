@@ -7,7 +7,6 @@ import type {
   VariantMode
 } from '../types'
 
-const ERROR_PREFIX = '[spiracss]'
 const DEBUG_ENV = 'SPIRACSS_DEBUG'
 
 const shouldReportNormalizeError = (): boolean => {
@@ -23,7 +22,7 @@ const shouldReportNormalizeError = (): boolean => {
 const reportNormalizeError = (label: string, value: unknown): void => {
   if (!shouldReportNormalizeError()) return
   const detail = value instanceof RegExp ? value.toString() : String(value)
-  console.warn(`${ERROR_PREFIX} Invalid ${label}: ${detail}`)
+  console.warn(`[spiracss] Invalid ${label}: ${detail}`)
 }
 
 export type InvalidOptionReporter = (
@@ -116,7 +115,7 @@ export const normalizeKeyList = (
   fieldName: string,
   reportInvalid?: InvalidOptionReporter
 ): string[] => {
-  const message = `${ERROR_PREFIX} ${fieldName} must be an array of non-empty strings.`
+  const message = `[spiracss] ${fieldName} must be an array of non-empty strings.`
   if (!Array.isArray(value)) {
     if (value !== undefined) {
       reportInvalid?.(fieldName, value, message)
@@ -162,7 +161,7 @@ export const normalizeSelectorPolicyBase = (
   const hasVariantMode = Object.prototype.hasOwnProperty.call(variant, 'mode')
   if (hasVariantMode && variantModeRaw !== 'data' && variantModeRaw !== 'class') {
     throw new Error(
-      `${ERROR_PREFIX} selectorPolicy.variant.mode must be "data" or "class".`
+      `[spiracss] selectorPolicy.variant.mode must be "data" or "class".`
     )
   }
   const variantMode: VariantMode = variantModeRaw ?? defaults.variant.mode
@@ -171,7 +170,7 @@ export const normalizeSelectorPolicyBase = (
   const hasStateMode = Object.prototype.hasOwnProperty.call(state, 'mode')
   if (hasStateMode && stateModeRaw !== 'data' && stateModeRaw !== 'class') {
     throw new Error(
-      `${ERROR_PREFIX} selectorPolicy.state.mode must be "data" or "class".`
+      `[spiracss] selectorPolicy.state.mode must be "data" or "class".`
     )
   }
   const stateMode: StateMode = stateModeRaw ?? defaults.state.mode

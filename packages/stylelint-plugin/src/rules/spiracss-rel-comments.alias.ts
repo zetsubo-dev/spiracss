@@ -43,7 +43,27 @@ const realpathCache = createLruCache<string, RealpathCacheEntry>(DEFAULT_CACHE_S
 const resolveRealpath = (target: string): string | null => {
   const cached = realpathCache.get(target)
   if (cached) {
-    return cached.status === 'ok' ? cached.value : null
+    // Re-resolve on cache hits to keep watch-mode accuracy (not a performance optimization).
+    const targetExists = fs.existsSync(target)
+    if (cached.status === 'ok') {
+      if (!targetExists) {
+        realpathCache.delete(target)
+        return null
+      }
+      try {
+        const resolved = fs.realpathSync(target)
+        if (resolved === cached.value && fs.existsSync(resolved)) return resolved
+        realpathCache.set(target, { status: 'ok', value: resolved })
+        return resolved
+      } catch {
+        realpathCache.delete(target)
+        return null
+      }
+    } else {
+      // Re-check on cache hit in case a previously failing path becomes available.
+      if (!targetExists) return null
+      realpathCache.delete(target)
+    }
   }
   try {
     const resolved = fs.realpathSync(target)

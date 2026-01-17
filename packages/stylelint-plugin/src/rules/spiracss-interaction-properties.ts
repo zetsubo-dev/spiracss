@@ -1,10 +1,12 @@
-import type { Container, Declaration, Node, Root, Rule } from 'postcss'
+import type { Container, Declaration, Node as PostcssNode, Root, Rule } from 'postcss'
+import type { Node as SelectorNode } from 'postcss-selector-parser'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
 import { PSEUDO_ELEMENTS } from '../utils/constants'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
+import { isInsideNonSameElementPseudo } from '../utils/selector'
 import {
   CACHE_SIZES_SCHEMA,
   INTERACTION_COMMENT_PATTERN_SCHEMA,
@@ -33,7 +35,11 @@ import {
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
-import type { Options as ClassStructureOptions } from './spiracss-class-structure.types'
+import type { ClassifyOptions } from './spiracss-class-structure.types'
+import {
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 import { ruleName } from './spiracss-interaction-properties.constants'
 import { messages } from './spiracss-interaction-properties.messages'
 import { normalizeOptions } from './spiracss-interaction-properties.options'
@@ -215,6 +221,27 @@ const isPseudoElement = (value: string): string | null => {
   return null
 }
 
+const isInsidePseudo = (node: SelectorNode): boolean => {
+  let current = node.parent as SelectorNode | undefined
+  while (current) {
+    if (current.type === 'pseudo') return true
+    current = current.parent as SelectorNode | undefined
+  }
+  return false
+}
+
+const isInsideGlobalPseudo = (node: SelectorNode): boolean => {
+  let current = node as SelectorNode | undefined
+  while (current) {
+    if (current.type === 'pseudo') {
+      const value = typeof current.value === 'string' ? current.value.toLowerCase() : ''
+      if (value === ':global') return true
+    }
+    current = current.parent as SelectorNode | undefined
+  }
+  return false
+}
+
 const formatTargetLabel = (key: string): string => {
   const [basePart, pseudo] = key.split('::')
   const [block, element] = basePart.split('>')
@@ -278,11 +305,12 @@ const rule = createRule(
       const cacheSizes = options.cacheSizes
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
-      const patterns = buildPatterns(
-        options as ClassStructureOptions,
-        options.cacheSizes,
-        reportInvalid
-      )
+      const classifyOptions: ClassifyOptions = {
+        allowExternalClasses: options.allowExternalClasses,
+        allowExternalPrefixes: options.allowExternalPrefixes,
+        naming: options.naming
+      }
+      const patterns = buildPatterns(classifyOptions, options.cacheSizes, reportInvalid)
       const commentPatterns = {
         sharedCommentPattern: options.sharedCommentPattern,
         interactionCommentPattern: options.interactionCommentPattern
@@ -292,8 +320,8 @@ const rule = createRule(
         commentPatterns,
         (_comment, parent) => isRule(parent) && isRuleInRootScope(parent, ROOT_WRAPPER_NAMES)
       )
-      const isInInteractionSection = (node: Node): boolean => {
-        let current: Node | undefined = node.parent ?? undefined
+      const isInInteractionSection = (node: PostcssNode): boolean => {
+        let current: PostcssNode | undefined = node.parent ?? undefined
         while (current) {
           if (interactionContainers.has(current as Container)) return true
           current = current.parent ?? undefined
@@ -302,11 +330,11 @@ const rule = createRule(
       }
 
       // Cache node index lookups within containers to avoid repeated O(n) findIndex calls.
-      const nodeIndexCache = new WeakMap<Container, Map<Node, number>>()
-      const getNodeIndex = (container: Container, node: Node): number => {
+      const nodeIndexCache = new WeakMap<Container, Map<PostcssNode, number>>()
+      const getNodeIndex = (container: Container, node: PostcssNode): number => {
         let indexMap = nodeIndexCache.get(container)
         if (!indexMap) {
-          indexMap = new Map<Node, number>()
+          indexMap = new Map<PostcssNode, number>()
           const nodes = container.nodes ?? []
           nodes.forEach((item, index) => indexMap?.set(item, index))
           nodeIndexCache.set(container, indexMap)
@@ -342,7 +370,7 @@ const rule = createRule(
         return sectionMap.get(nodeIndex) ?? null
       }
 
-      const isInInteractionByComment = (node: Node): boolean => {
+      const isInInteractionByComment = (node: PostcssNode): boolean => {
         const parent = node.parent
         if (!isContainer(parent) || !isRule(parent)) return false
         if (!isRuleInRootScope(parent, ROOT_WRAPPER_NAMES)) return false
@@ -356,68 +384,122 @@ const rule = createRule(
         if (rootBlockName) return
         if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
         if (typeof rule.selector !== 'string') return
-        if (rule.selector.includes(':global')) return
-        const selectors = selectorCache.parse(rule.selector)
+        const selectorTexts = splitSelectors(rule.selector, selectorCache)
+        const localSelectors = selectorTexts
+          .map((selectorText) =>
+            stripGlobalSelectorForRoot(
+              selectorText,
+              selectorCache,
+              cacheSizes.selector,
+              { preserveCombinator: true }
+            )
+          )
+          .filter((selector): selector is string => Boolean(selector))
+        if (localSelectors.length === 0) return
+        const selectors = localSelectors.flatMap((selector) =>
+          selectorCache.parse(selector)
+        )
         const rootBlocks = collectRootBlockNames(
           selectors,
-          options as ClassStructureOptions,
+          classifyOptions,
           patterns
         )
         if (rootBlocks.length === 0) return
         rootBlockName = rootBlocks[0]
       })
 
+      const keySameElementPseudos = new Set([':is', ':where', ':not'])
       const ruleKeys = new WeakMap<Rule, string[]>()
       const resolveKeys = (rule: Rule): string[] => {
         const cached = ruleKeys.get(rule)
         if (cached) return cached
         const selector = typeof rule.selector === 'string' ? rule.selector : ''
-        const selectors = selectorCache.parse(selector)
+        const stripped = stripGlobalSelectorForRoot(
+          selector,
+          selectorCache,
+          cacheSizes.selector,
+          { preserveCombinator: true }
+        )
+        if (!stripped) {
+          ruleKeys.set(rule, [])
+          return []
+        }
+        const selectorTexts = splitSelectors(stripped, selectorCache)
         const keys = new Set<string>()
-        selectors.forEach((sel) => {
-          const classes: string[] = []
-          let hasNesting = false
-          let pseudoElement: string | null = null
-          sel.walk((node) => {
-            if (node.type === 'class') classes.push(node.value)
-            if (node.type === 'nesting') hasNesting = true
-            if (node.type === 'pseudo') {
-              const name = isPseudoElement(node.value)
-              if (name) pseudoElement = name
-            }
-          })
-          const pickBaseClass = (): { name: string; kind: string } | null => {
-            for (let i = classes.length - 1; i >= 0; i -= 1) {
-              const name = classes[i]
-              const kind = classify(name, options as ClassStructureOptions, patterns)
-              if (kind === 'block' || kind === 'element') return { name, kind }
-            }
-            return null
-          }
-          const base = pickBaseClass()
-          if (!base) {
-            if (hasNesting) {
-              const parentRule = findParentRule(rule)
-              if (parentRule) {
-                const parentKeys = resolveKeys(parentRule)
-                parentKeys.forEach((parentKey) => {
-                  const key = pseudoElement ? `${parentKey}::${pseudoElement}` : parentKey
-                  keys.add(key)
-                })
+        selectorTexts.forEach((selectorText) => {
+          const selectors = selectorCache.parse(selectorText)
+          selectors.forEach((sel) => {
+            const directClasses: string[] = []
+            const pseudoClasses: string[] = []
+            let hasNesting = false
+            let hasNonSameElementClass = false
+            let pseudoElement: string | null = null
+            sel.walk((node) => {
+              if (isInsideGlobalPseudo(node)) return
+              if (
+                node.type === 'class' &&
+                !isInsideNonSameElementPseudo(node, keySameElementPseudos)
+              ) {
+                if (isInsidePseudo(node)) {
+                  pseudoClasses.push(node.value)
+                } else {
+                  directClasses.push(node.value)
+                }
               }
+              if (
+                node.type === 'class' &&
+                isInsideNonSameElementPseudo(node, keySameElementPseudos)
+              ) {
+                hasNonSameElementClass = true
+              }
+              if (node.type === 'nesting') hasNesting = true
+              if (node.type === 'pseudo') {
+                if (isInsideNonSameElementPseudo(node, keySameElementPseudos)) return
+                const name = isPseudoElement(node.value)
+                if (name) pseudoElement = name
+              }
+            })
+            const pickBaseClass = (
+              classList: string[]
+            ): { name: string; kind: string } | null => {
+              for (let i = classList.length - 1; i >= 0; i -= 1) {
+                const name = classList[i]
+                const kind = classify(name, classifyOptions, patterns)
+                if (kind === 'block' || kind === 'element') return { name, kind }
+              }
+              return null
             }
-            return
-          }
-          if (base.kind === 'element') {
-            if (!rootBlockName) return
-            const keyBase = `${rootBlockName}>${base.name}`
+            const base = pickBaseClass(directClasses) ?? pickBaseClass(pseudoClasses)
+            if (!base) {
+              if (hasNesting) {
+                const parentRule = findParentRule(rule)
+                if (parentRule) {
+                  const parentKeys = resolveKeys(parentRule)
+                  parentKeys.forEach((parentKey) => {
+                    const key = pseudoElement
+                      ? `${parentKey}::${pseudoElement}`
+                      : parentKey
+                    keys.add(key)
+                  })
+                }
+              }
+              if (hasNonSameElementClass) {
+                // Selectors that only target non-same-element pseudos are out-of-scope.
+                return
+              }
+              return
+            }
+            if (base.kind === 'element') {
+              if (!rootBlockName) return
+              const keyBase = `${rootBlockName}>${base.name}`
+              const key = pseudoElement ? `${keyBase}::${pseudoElement}` : keyBase
+              keys.add(key)
+              return
+            }
+            const keyBase = base.name
             const key = pseudoElement ? `${keyBase}::${pseudoElement}` : keyBase
             keys.add(key)
-            return
-          }
-          const keyBase = base.name
-          const key = pseudoElement ? `${keyBase}::${pseudoElement}` : keyBase
-          keys.add(key)
+          })
         })
         const list = [...keys]
         ruleKeys.set(rule, list)
@@ -449,14 +531,36 @@ const rule = createRule(
         stylelint.utils.report({ ruleName, result, node: decl, message })
       }
 
-      const outsideInteractionDecls: Declaration[] = []
+      const outsideDeclsByKey = new Map<string, Map<string, Declaration[]>>()
+      const addOutsideDecls = (
+        keys: string[],
+        prop: string,
+        decl: Declaration
+      ): void => {
+        keys.forEach((key) => {
+          let propMap = outsideDeclsByKey.get(key)
+          if (!propMap) {
+            propMap = new Map<string, Declaration[]>()
+            outsideDeclsByKey.set(key, propMap)
+          }
+          const list = propMap.get(prop)
+          if (list) {
+            list.push(decl)
+          } else {
+            propMap.set(prop, [decl])
+          }
+        })
+      }
       root.walkDecls((decl: Declaration) => {
         if (isInsideKeyframes(decl)) return
         const prop = decl.prop.toLowerCase()
         const parentRule = findParentRule(decl)
         if (!parentRule) return
         const inInteraction = isInInteractionSection(decl) || isInInteractionByComment(decl)
-        if (!inInteraction) outsideInteractionDecls.push(decl)
+        if (!inInteraction) {
+          const keys = resolveKeys(parentRule)
+          if (keys.length > 0) addOutsideDecls(keys, prop, decl)
+        }
         if (!TRANSITION_PROPERTIES.has(prop) && !ANIMATION_PROPERTIES.has(prop)) return
         if (!inInteraction) {
           stylelint.utils.report({
@@ -486,25 +590,23 @@ const rule = createRule(
         }
 
       })
-
-      outsideInteractionDecls.forEach((decl) => {
-        const parentRule = findParentRule(decl)
-        if (!parentRule) return
-        const prop = decl.prop.toLowerCase()
-        const keys = resolveKeys(parentRule)
-        if (keys.length === 0) return
-        keys.forEach((key) => {
-          const targets = transitionedProps.get(key)
-          if (!targets || !targets.has(prop)) return
-          stylelint.utils.report({
-            ruleName,
-            result,
-            node: decl,
-            message: messages.initialOutsideInteraction(
-              prop,
-              formatTargetLabel(key),
-              options.interactionCommentPattern
-            )
+      outsideDeclsByKey.forEach((propMap, key) => {
+        const targets = transitionedProps.get(key)
+        if (!targets) return
+        const label = formatTargetLabel(key)
+        propMap.forEach((decls, prop) => {
+          if (!targets.has(prop)) return
+          decls.forEach((decl) => {
+            stylelint.utils.report({
+              ruleName,
+              result,
+              node: decl,
+              message: messages.initialOutsideInteraction(
+                prop,
+                label,
+                options.interactionCommentPattern
+              )
+            })
           })
         })
       })

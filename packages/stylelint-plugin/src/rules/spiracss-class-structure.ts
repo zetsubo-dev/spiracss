@@ -53,6 +53,10 @@ import {
   mergeRuleKinds,
   processSelector
 } from './spiracss-class-structure.selectors'
+import {
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 import type { Kind } from './spiracss-class-structure.types'
 
 export { ruleName }
@@ -200,10 +204,26 @@ const rule = createRule(
       const fileName = filePath ? path.basename(filePath) : ''
       const fileBase = fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
 
-      const filterGlobalSelectors = (
-        selectors: ReturnType<SelectorParserCache['parse']>
-      ): ReturnType<SelectorParserCache['parse']> =>
-        selectors.filter((selector) => !selector.toString().includes(':global'))
+      const parseStrippedSelectors = (
+        selectorText: string
+      ): ReturnType<SelectorParserCache['parse']> => {
+        const selectorTexts = splitSelectors(selectorText, selectorCache)
+        const localSelectors = selectorTexts
+          .map((selector) =>
+            stripGlobalSelectorForRoot(
+              selector,
+              selectorCache,
+              cacheSizes.selector,
+              { preserveCombinator: true }
+            )
+          )
+          .filter((selector): selector is string => Boolean(selector))
+        // Preserve leading combinators so relative selectors (e.g. :global(...) > .block)
+        // do not count as root Block definitions.
+        return localSelectors.flatMap((selector) =>
+          selectorCache.parse(selector)
+        )
+      }
 
       const allRules: Rule[] = []
       root.walkRules((rule: Rule) => {
@@ -214,7 +234,7 @@ const rule = createRule(
         topLevelRules.push(rule)
         if (typeof rule.selector !== 'string') return
 
-        const selectors = filterGlobalSelectors(selectorCache.parse(rule.selector))
+        const selectors = parseStrippedSelectors(rule.selector)
         if (selectors.length === 0) return
         const rootBlocks = collectRootBlockNames(selectors, options, patterns)
         if (rootBlocks.length === 0) return
@@ -250,7 +270,7 @@ const rule = createRule(
 
         const isShared = sharedRules.has(rule)
         const isInteraction = interactionRules.has(rule)
-        const selectors = filterGlobalSelectors(selectorCache.parse(rule.selector))
+        const selectors = parseStrippedSelectors(rule.selector)
         if (selectors.length === 0) return
         if (!hasSpiraClassForRootCheck && hasValidSpiraClass(selectors, options, patterns)) {
           hasSpiraClassForRootCheck = true
@@ -334,7 +354,7 @@ const rule = createRule(
         topLevelRules.forEach((rule) => {
           if (typeof rule.selector !== 'string') return
 
-          const selectors = filterGlobalSelectors(selectorCache.parse(rule.selector))
+          const selectors = parseStrippedSelectors(rule.selector)
           if (selectors.length === 0) return
           selectors.forEach((sel) => {
             const { hasSpiraClass, hasRootBlock, hasOtherBlock } = analyzeRootSelector(

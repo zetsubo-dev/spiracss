@@ -85,7 +85,20 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: 'missing page entry comment (requireInScssDirectories violation)',
         message:
-          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `@rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
+      },
+      {
+        code: `
+@use 'sass:meta';
+.home-section:has(:global(.foo)) {
+  > .child-block {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'missing page entry comment even with unverified :global selectors',
+        message:
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
       {
         codeFilename: 'pages/home/scss/home.scss',
@@ -100,7 +113,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: '@rel on a root Block inside a root wrapper is treated as misplaced',
         message:
-          'Parent link comment must be at the top of the file (before the root Block). Move it above the root Block as the first line (e.g., `@rel`). Use a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
+          'Parent link comment must be at the top of the file (before the root Block). Move it above the root Block as the first line (e.g., `// @rel/...`). Use a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
       {
         code: `
@@ -110,7 +123,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: 'parent link is required even with meta.load-css("scss/child")',
         message:
-          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `@rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
       {
         code: `
@@ -375,7 +388,7 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
         warnings: [
           {
             message:
-              'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `@rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
+              'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
           }
         ]
       }

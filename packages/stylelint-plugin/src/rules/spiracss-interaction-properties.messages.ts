@@ -12,7 +12,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
   needInteraction: (prop: string, pattern: RegExp) =>
     `${formatCode(
       prop
-    )} must be declared inside the SpiraCSS interaction section under the root Block ` +
+    )} must be declared inside the SpiraCSS interaction section in root scope ` +
     `(comment matching ${formatCode(
       'interactionCommentPattern'
     )}, current: ${formatPattern(

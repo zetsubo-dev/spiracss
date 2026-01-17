@@ -18,13 +18,13 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
   // Summarizes missing/incorrect link comment placement (top-of-file, child Block, or inside root Block).
   missingParentRel: (aliases: string[]) =>
     'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. ' +
-    `Use ${formatCode('@rel/...')} or a configured alias from ${formatCode(
+    `Use ${formatCode('// @rel/...')} or a configured alias from ${formatCode(
       'aliasRoots'
     )}${formatAliasHint(aliases)}.`,
   misplacedParentRel: (aliases: string[]) =>
     'Parent link comment must be at the top of the file (before the root Block). ' +
     `Move it above the root Block as the first line (e.g., ${formatCode(
-      '@rel'
+      '// @rel/...'
     )}). ` +
     `Use a configured alias from ${formatCode(
       'aliasRoots'

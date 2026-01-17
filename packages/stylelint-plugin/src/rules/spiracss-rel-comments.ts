@@ -45,6 +45,10 @@ import { ruleName } from './spiracss-rel-comments.constants'
 import { messages } from './spiracss-rel-comments.messages'
 import { normalizeOptions } from './spiracss-rel-comments.options'
 import {
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
+import {
   findFirstBodyNode,
   findTopRelComment,
   getFirstRuleNode,
@@ -245,9 +249,22 @@ const rule = createRule(
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
         if (typeof rule.selector !== 'string') return
-        if (rule.selector.includes(':global')) return
+        const selectorTexts = splitSelectors(rule.selector, selectorCache)
+        const localSelectors = selectorTexts
+          .map((selectorText) =>
+            stripGlobalSelectorForRoot(
+              selectorText,
+              selectorCache,
+              cacheSizes.selector,
+              { preserveCombinator: true }
+            )
+          )
+          .filter((selector): selector is string => Boolean(selector))
+        if (localSelectors.length === 0) return
 
-        const selectors = selectorCache.parse(rule.selector)
+        const selectors = localSelectors.flatMap((selector) =>
+          selectorCache.parse(selector)
+        )
         const rootBlocks = collectRootBlockNames(selectors, options)
         if (rootBlocks.length === 0) return
 

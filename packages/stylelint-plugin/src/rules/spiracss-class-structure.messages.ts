@@ -79,22 +79,27 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     )}/${formatCode('@media')}/${formatCode(
       '@container'
     )}/${formatCode('@scope')} are allowed). Do not nest inside child rules.`,
-  needAmpForMod: (example: string) =>
-    `Write modifier classes inside the Block using ${formatCode(
+  needAmpForMod: (example: string) => {
+    const exampleHint = example
+      ? ` Example: ${formatCode(`.block { &.${example} { ... } }`)}.`
+      : ''
+    const invalidExample = example
+      ? ` Do not use ${formatCode(`.block.${example}`)} or ${formatCode(
+          `.${example}`
+        )} at top level.`
+      : ' Do not use modifier classes at the top level.'
+    return `Write modifier classes inside the Block using ${formatCode(
       '&.<modifier>'
-    )}. Example: ${formatCode(
-      `.block { &.${example} { ... } }`
-    )}. Do not use ${formatCode(
-      `.block.${example}`
-    )} or ${formatCode(`.${example}`)} at top level.`,
-  needModifierPrefix: (cls: string, example: string) =>
-    `Only modifier classes may be appended to ${formatCode(
+    )}.${exampleHint}${invalidExample}`
+  },
+  needModifierPrefix: (cls: string, example: string) => {
+    const exampleHint = example ? ` Example: ${formatCode(`&.${example}`)}.` : ''
+    return `Only modifier classes may be appended to ${formatCode(
       '&'
     )}. Found ${formatCode(cls)}. Use ${formatCode(
       '&.<modifier>'
-    )}. Example: ${formatCode(
-      `&.${example}`
-    )}. If not a modifier, move it to its own selector.`,
+    )}.${exampleHint} If not a modifier, move it to its own selector.`
+  },
   disallowedModifier: (variantKeys: string[], stateKeys: string[]) =>
     `Modifier classes are disabled because ${formatCode(
       'selectorPolicy.variant.mode'
@@ -106,18 +111,50 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     )}) or state attributes (current: ${formatConfigList(
       stateKeys
     )}) instead, or enable class mode in ${formatCode('selectorPolicy')}.`,
-  invalidVariantAttribute: (attr: string, example: string) =>
-    `Attribute ${formatCode(attr)} is disabled because ${formatCode(
-      'selectorPolicy.variant.mode'
-    )} is ${formatCode('class')}. Use modifier classes instead (e.g., ${formatCode(
-      `&.${example}`
-    )}).`,
-  invalidStateAttribute: (attr: string, example: string) =>
-    `Attribute ${formatCode(attr)} is disabled because ${formatCode(
-      'selectorPolicy.state.mode'
-    )} is ${formatCode('class')}. Use modifier classes instead (e.g., ${formatCode(
-      `&.${example}`
-    )}).`,
+  invalidVariantAttribute: (
+    attr: string,
+    example: string,
+    customModifierPattern?: RuleMessageArgs[number]
+  ) => {
+    const pattern =
+      customModifierPattern instanceof RegExp || typeof customModifierPattern === 'string'
+        ? customModifierPattern
+        : undefined
+    const hint = pattern
+      ? `Use modifier classes matching ${formatCode(
+          'naming.customPatterns.modifier'
+        )} (current: ${formatPattern(pattern)}).`
+      : example
+      ? `Use modifier classes instead (e.g., ${formatCode(`&.${example}`)}).`
+      : 'Use modifier classes that match the configured naming rules.'
+    return (
+      `Attribute ${formatCode(attr)} is disabled because ${formatCode(
+        'selectorPolicy.variant.mode'
+      )} is ${formatCode('class')}. ` + hint
+    )
+  },
+  invalidStateAttribute: (
+    attr: string,
+    example: string,
+    customModifierPattern?: RuleMessageArgs[number]
+  ) => {
+    const pattern =
+      customModifierPattern instanceof RegExp || typeof customModifierPattern === 'string'
+        ? customModifierPattern
+        : undefined
+    const hint = pattern
+      ? `Use modifier classes matching ${formatCode(
+          'naming.customPatterns.modifier'
+        )} (current: ${formatPattern(pattern)}).`
+      : example
+      ? `Use modifier classes instead (e.g., ${formatCode(`&.${example}`)}).`
+      : 'Use modifier classes that match the configured naming rules.'
+    return (
+      `Attribute ${formatCode(attr)} is disabled because ${formatCode(
+        'selectorPolicy.state.mode'
+      )} is ${formatCode('class')}. ` + hint
+    )
+  },
   invalidDataValue: (attr: string, value: string, caseName: string, maxWords: number) =>
     `Attribute ${formatCode(attr)} value ${formatCode(
       value

@@ -152,8 +152,70 @@ describe('spiracss/property-placement', () => {
       },
       {
         code: `
+:global .block-name {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
 :global(.foo) {
   @extend %placeholder;
+}`
+      },
+      {
+        code: `
+:global(.foo) > .block-name {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name:has(:global(.foo)) {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name:nth-child(2n of :global(.foo)) {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name :global .foo {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name:is(:global(.foo)) {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name:is(.block-name :global(.foo)) {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name:is(:global(.foo)) {
+  @at-root & {
+    color: inherit;
+  }
+}`
+      },
+      {
+        code: `
+.block-name:is(:global(.foo)) {
+  @extend %placeholder;
+}`
+      },
+      {
+        code: `
+.block-name > :global(.foo) {
+  margin-top: 8px;
 }`
       },
       {
@@ -878,6 +940,66 @@ body {
       },
       {
         code: `
+.block-name, :global .foo {
+  margin-top: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :global .foo`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name, :is(:global(.foo)) {
+  margin-top: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name, :is(:global(.foo), .bar) {
+  margin-top: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo), .bar)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:not(:global(.foo)) {
+  margin-top: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name:not(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+:global(.foo):global(.bar) .block-name {
+  margin-top: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `:global(.foo):global(.bar) .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
 .block-name {
   > .child-block {
     padding: 8px;
@@ -1097,6 +1219,20 @@ body {
           {
             message:
               '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global(.foo) > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name, :global .foo {
+  > .child-block {
+    position: absolute;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global .foo > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
           }
         ]
       },
@@ -1480,6 +1616,62 @@ body {
       },
       {
         code: `
+.block-name:has(:global(.foo)) {
+  @at-root & {
+    margin-top: 8px;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:has(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:is(:global(.foo), .bar) {
+  @at-root & {
+    margin-top: 8px;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:is(:global(.foo), .bar)`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:not(:global(.foo)) {
+  @at-root & {
+    margin-top: 8px;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:not(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:nth-child(2n of :global(.foo)) {
+  @at-root & {
+    margin-top: 8px;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:nth-child(2n of :global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
 .block-name {
   > .title {
     @at-root & {
@@ -1503,6 +1695,54 @@ body {
           {
             message:
               '`@extend` is not allowed in SpiraCSS. Context: `.block-name` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:has(:global(.foo)) {
+  @extend %placeholder;
+}`,
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `.block-name:has(:global(.foo))` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:is(:global(.foo), .bar) {
+  @extend %placeholder;
+}`,
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `.block-name:is(:global(.foo), .bar)` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:not(:global(.foo)) {
+  @extend %placeholder;
+}`,
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `.block-name:not(:global(.foo))` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:nth-child(2n of :global(.foo)) {
+  @extend %placeholder;
+}`,
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `.block-name:nth-child(2n of :global(.foo))` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
           }
         ]
       },

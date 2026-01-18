@@ -8,10 +8,10 @@ import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { isInsideNonSameElementPseudo } from '../utils/selector'
 import {
-  CACHE_SIZES_SCHEMA,
-  INTERACTION_COMMENT_PATTERN_SCHEMA,
-  NAMING_SCHEMA,
-  SHARED_COMMENT_PATTERN_SCHEMA
+  CACHE_SCHEMA,
+  COMMENTS_SCHEMA,
+  EXTERNAL_SCHEMA,
+  NAMING_SCHEMA
 } from '../utils/option-schema'
 import {
   findParentRule,
@@ -32,6 +32,7 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
@@ -47,19 +48,17 @@ import { normalizeOptions } from './spiracss-interaction-properties.options'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracssinteraction-properties',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Require transition/animation declarations to live in SpiraCSS interaction sections.',
   category: 'stylistic'
 }
 
 const optionSchema = {
-  allowExternalClasses: [isString],
-  allowExternalPrefixes: [isString],
   ...NAMING_SCHEMA,
-  ...SHARED_COMMENT_PATTERN_SCHEMA,
-  ...INTERACTION_COMMENT_PATTERN_SCHEMA,
-  ...CACHE_SIZES_SCHEMA
+  ...COMMENTS_SCHEMA,
+  ...EXTERNAL_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const TRANSITION_PROPERTIES = new Set([
@@ -294,7 +293,7 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowExternalClasses', 'allowExternalPrefixes'],
+        ['external.classes', 'external.prefixes'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
@@ -302,18 +301,17 @@ const rule = createRule(
       if (shouldValidate && hasInvalid) return
 
       const options = normalizeOptions(rawOptions, reportInvalid)
-      const cacheSizes = options.cacheSizes
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const classifyOptions: ClassifyOptions = {
-        allowExternalClasses: options.allowExternalClasses,
-        allowExternalPrefixes: options.allowExternalPrefixes,
+        external: options.external,
         naming: options.naming
       }
-      const patterns = buildPatterns(classifyOptions, options.cacheSizes, reportInvalid)
+      const patterns = buildPatterns(classifyOptions, options.cache, reportInvalid)
       const commentPatterns = {
-        sharedCommentPattern: options.sharedCommentPattern,
-        interactionCommentPattern: options.interactionCommentPattern
+        sharedCommentPattern: options.comments.shared,
+        interactionCommentPattern: options.comments.interaction
       }
       const interactionContainers = markInteractionContainers(
         root,
@@ -569,7 +567,7 @@ const rule = createRule(
             node: decl,
             message: messages.needInteraction(
               prop,
-              options.interactionCommentPattern
+              options.comments.interaction
             )
           })
         }
@@ -604,7 +602,7 @@ const rule = createRule(
               message: messages.initialOutsideInteraction(
                 prop,
                 label,
-                options.interactionCommentPattern
+                options.comments.interaction
               )
             })
           })

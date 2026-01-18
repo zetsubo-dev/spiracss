@@ -7,7 +7,7 @@ import {
   normalizeBoolean,
   normalizeStringArray
 } from '../utils/normalize'
-import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
+import { normalizeCommonOptions } from '../utils/options'
 import type { BlockNameSource, Options } from './spiracss-keyframes-naming.types'
 
 const DEFAULT_SHARED_FILES = ['keyframes.scss']
@@ -26,18 +26,28 @@ const DEFAULT_SHARED_FILE_PATTERNS = DEFAULT_SHARED_FILES.map((file) =>
 )
 
 const defaultOptions: Options = {
-  actionMaxWords: 3,
-  blockNameSource: 'selector',
-  warnOnMissingBlock: true,
-  sharedPrefixes: ['kf-'],
-  sharedFiles: DEFAULT_SHARED_FILE_PATTERNS,
-  ignoreFiles: [],
-  ignorePatterns: [],
-  ignorePlacementForIgnored: false,
+  action: {
+    maxWords: 3
+  },
+  block: {
+    source: 'selector',
+    warnMissing: true
+  },
+  shared: {
+    prefixes: ['kf-'],
+    files: DEFAULT_SHARED_FILE_PATTERNS
+  },
+  ignore: {
+    files: [],
+    patterns: [],
+    skipPlacement: false
+  },
   naming: undefined,
-  allowExternalClasses: [],
-  allowExternalPrefixes: [],
-  cacheSizes: DEFAULT_CACHE_SIZES
+  external: {
+    classes: [],
+    prefixes: []
+  },
+  cache: DEFAULT_CACHE_SIZES
 }
 
 const normalizeActionMaxWords = (
@@ -62,9 +72,9 @@ const normalizeBlockNameSource = (
   if (value === 'selector' || value === 'file' || value === 'selector-or-file') return value
   if (value !== undefined) {
     reportInvalid?.(
-      'blockNameSource',
+      'blockSource',
       value,
-      '[spiracss] blockNameSource must be "selector", "file", or "selector-or-file".'
+      '[spiracss] blockSource must be "selector", "file", or "selector-or-file".'
     )
   }
   return fallback
@@ -145,39 +155,78 @@ export const normalizeOptions = (
   reportInvalid?: InvalidOptionReporter
 ): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
-  const raw = opt as Partial<Options> & {
-    cacheSizes?: CacheSizes
+  const raw = opt as {
+    actionMaxWords?: number
+    blockSource?: BlockNameSource
+    blockWarnMissing?: boolean
+    sharedPrefixes?: string[]
+    sharedFiles?: Array<string | RegExp>
+    ignoreFiles?: Array<string | RegExp>
+    ignorePatterns?: Array<string | RegExp>
+    ignoreSkipPlacement?: boolean
+    naming?: Options['naming']
+    external?: Options['external']
+    cache?: CacheSizes
   }
   const common = normalizeCommonOptions(
     raw,
-    pickCommonDefaults(defaultOptions),
+    {
+      naming: defaultOptions.naming,
+      external: defaultOptions.external,
+      cache: defaultOptions.cache
+    },
     reportInvalid
   )
   return {
-    actionMaxWords: normalizeActionMaxWords(
-      raw.actionMaxWords,
-      defaultOptions.actionMaxWords,
-      reportInvalid
-    ),
-    blockNameSource: normalizeBlockNameSource(
-      raw.blockNameSource,
-      defaultOptions.blockNameSource,
-      reportInvalid
-    ),
-    warnOnMissingBlock: normalizeBoolean(
-      raw.warnOnMissingBlock,
-      defaultOptions.warnOnMissingBlock,
-      { coerce: true }
-    ),
-    sharedPrefixes: normalizeSharedPrefixes(raw.sharedPrefixes, defaultOptions.sharedPrefixes),
-    sharedFiles: normalizeFilePatterns(raw.sharedFiles, DEFAULT_SHARED_FILES, reportInvalid),
-    ignoreFiles: normalizeFilePatterns(raw.ignoreFiles, undefined, reportInvalid, 'ignoreFiles'),
-    ignorePatterns: normalizePatternList(raw.ignorePatterns, reportInvalid, 'ignorePatterns'),
-    ignorePlacementForIgnored: normalizeBoolean(
-      raw.ignorePlacementForIgnored,
-      defaultOptions.ignorePlacementForIgnored,
-      { coerce: true }
-    ),
+    action: {
+      maxWords: normalizeActionMaxWords(
+        raw.actionMaxWords,
+        defaultOptions.action.maxWords,
+        reportInvalid
+      )
+    },
+    block: {
+      source: normalizeBlockNameSource(
+        raw.blockSource,
+        defaultOptions.block.source,
+        reportInvalid
+      ),
+      warnMissing: normalizeBoolean(
+        raw.blockWarnMissing,
+        defaultOptions.block.warnMissing,
+        { coerce: true }
+      )
+    },
+    shared: {
+      prefixes: normalizeSharedPrefixes(
+        raw.sharedPrefixes,
+        defaultOptions.shared.prefixes
+      ),
+      files: normalizeFilePatterns(
+        raw.sharedFiles,
+        DEFAULT_SHARED_FILES,
+        reportInvalid,
+        'sharedFiles'
+      )
+    },
+    ignore: {
+      files: normalizeFilePatterns(
+        raw.ignoreFiles,
+        undefined,
+        reportInvalid,
+        'ignoreFiles'
+      ),
+      patterns: normalizePatternList(
+        raw.ignorePatterns,
+        reportInvalid,
+        'ignorePatterns'
+      ),
+      skipPlacement: normalizeBoolean(
+        raw.ignoreSkipPlacement,
+        defaultOptions.ignore.skipPlacement,
+        { coerce: true }
+      )
+    },
     ...common
   }
 }

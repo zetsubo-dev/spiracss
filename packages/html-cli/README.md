@@ -11,7 +11,7 @@ Overview: [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/b
 Key points:
 - Structural decisions can be derived from class names and HTML structure.
 - `shared`/`interaction`/`rel` comment conventions can be treated as tool-verifiable contracts.
-- SpiraCSS projects should place [spiracss.config.js](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) at the project root so that generation and validation follow the same policy.
+- SpiraCSS projects should place [spiracss.config.js](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) at the project root so that generation and validation follow the same selectorPolicy.
 - Download [spiracss-ai-agent-doc.md](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ai/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
 
 This CLI provides the same SCSS starting point for both humans and AI.

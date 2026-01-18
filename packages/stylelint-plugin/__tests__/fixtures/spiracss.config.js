@@ -3,9 +3,9 @@ export default {
     components: ['src/components']
   },
   stylelint: {
-    classStructure: {},
+    class: {},
     interactionScope: {},
-    pseudoNesting: {},
-    relComments: {}
+    pseudo: {},
+    rel: {}
   }
 }

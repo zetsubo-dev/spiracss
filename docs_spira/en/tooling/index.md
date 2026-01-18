@@ -21,6 +21,10 @@ If any of these are missing, AI outputs and tool behavior become unreliable and 
 
 **Note**: `spiracss-html-to-scss` is also a CLI command name, so be careful to distinguish it from the VS Code extension by context.
 
+## Stylelint rule reference
+
+- [Stylelint rule reference](stylelint-rules/index.md)
+
 ## Workflow
 
 ```

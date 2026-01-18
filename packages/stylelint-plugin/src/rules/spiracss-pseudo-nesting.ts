@@ -4,13 +4,14 @@ import stylelint from 'stylelint'
 
 import { normalizeCacheSizes } from '../utils/cache'
 import { selectorParseFailedArgs } from '../utils/messages'
-import { CACHE_SIZES_SCHEMA } from '../utils/option-schema'
+import { CACHE_SCHEMA } from '../utils/option-schema'
 import {
   collectCompoundSegments,
   createSelectorCacheWithErrorFlag,
   type SelectorParserCache
 } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isPlainObject } from '../utils/validate'
 import { ruleName } from './spiracss-pseudo-nesting.constants'
 import { messages } from './spiracss-pseudo-nesting.messages'
@@ -21,7 +22,7 @@ import { messages } from './spiracss-pseudo-nesting.messages'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracsspseudo-nesting',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Require pseudo selectors to be nested under "&" in SpiraCSS.',
   category: 'stylistic'
@@ -77,7 +78,7 @@ const rule = createRule(
           },
           {
             actual: rawOptions,
-            possible: CACHE_SIZES_SCHEMA,
+            possible: CACHE_SCHEMA,
             optional: true
           }
         )
@@ -91,7 +92,7 @@ const rule = createRule(
         : undefined
 
       const cacheSizes = normalizeCacheSizes(
-        (rawOptions as { cacheSizes?: unknown } | null | undefined)?.cacheSizes,
+        (rawOptions as { cache?: unknown } | null | undefined)?.cache,
         reportInvalid
       )
 

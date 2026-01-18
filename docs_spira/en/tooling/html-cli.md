@@ -130,7 +130,7 @@ npx spiracss-html-lint --root path/to/file.html --json
 - In `--selection` mode, only elements with a `class` attribute are validated (if none, `INVALID_BASE_CLASS`)
 - `data-*` / `aria-*` are validated only when they match the reserved keys (`variant.dataKeys` / `state.dataKey` / `state.ariaKeys`)
 - Data value naming is validated against `selectorPolicy.valueNaming` and `variant/state.valueNaming`
-- Classes matching `allowExternalClasses` / `allowExternalPrefixes` are treated as external (excluded from base checks)
+- Classes matching `stylelint.base.external.classes` / `stylelint.base.external.prefixes` are treated as external (excluded from base checks)
 - If the first token is an external class and a non-external class appears later, it results in `INVALID_BASE_CLASS` (Block/Element must come first). Elements with only external classes are allowed
 - When `variant.mode=class` and `state.mode=class`, state cannot be separated, so **all modifiers are treated as variants**
 - Error message text can change; do not depend on exact strings

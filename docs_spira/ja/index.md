@@ -4,6 +4,7 @@ SpiraCSS は、HTML/CSS から導かれる最小限の構造原則に基づい�
 
 主なポイント：
 - 構造の意思決定は、クラス名と HTML 構造から導ける
+- プロパティ配置（コンテナ/アイテム/内部）に構造的な意味があり、細則は Stylelint が教えるため暗記が不要
 - `shared`/`interaction`/`rel` のコメント規約は、ツールで検証できる契約として扱える
 - [`spiracss.config.js`](tooling/spiracss-config.md) をプロジェクトルートに置き、共通ポリシーに従うようにする
 - [`spiracss-ai-agent-doc.md`](../ai/spiracss-ai-agent-doc.md) をダウンロードし、AIエージェントワークフローの参照ドキュメントにする

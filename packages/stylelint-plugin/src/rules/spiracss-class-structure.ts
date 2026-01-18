@@ -3,15 +3,15 @@ import type { Comment, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { NON_SELECTOR_AT_RULE_NAMES } from '../utils/constants'
+import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { formatFileBase } from '../utils/formatting'
 import { selectorParseFailedArgs } from '../utils/messages'
 import {
-  CACHE_SIZES_SCHEMA,
-  INTERACTION_COMMENT_PATTERN_SCHEMA,
+  CACHE_SCHEMA,
+  COMMENTS_SCHEMA,
+  EXTERNAL_SCHEMA,
   NAMING_SCHEMA,
-  SELECTOR_POLICY_SCHEMA,
-  SHARED_COMMENT_PATTERN_SCHEMA
+  POLICY_SCHEMA
 } from '../utils/option-schema'
 import { findParentRule, isRule } from '../utils/postcss-helpers'
 import { getCommentText, isRuleInsideAtRule, safeTestPattern } from '../utils/section'
@@ -25,6 +25,7 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   isBoolean,
   isNumber,
@@ -55,6 +56,7 @@ import {
 } from './spiracss-class-structure.selectors'
 import {
   splitSelectors,
+  isGlobalOnlySelector,
   stripGlobalSelectorForRoot
 } from './spiracss-property-placement.selectors'
 import type { Kind } from './spiracss-class-structure.types'
@@ -65,27 +67,26 @@ export { ruleName }
 // Validates class naming, Block/Element/Modifier structure, child selectors, and shared sections.
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracssclass-structure',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Enforce SpiraCSS class structure and naming rules.',
   category: 'stylistic'
 }
 
 const optionSchema = {
-  allowElementChainDepth: [isNumber],
-  allowExternalClasses: [isString],
-  allowExternalPrefixes: [isString],
-  enforceChildCombinator: [isBoolean],
-  enforceSingleRootBlock: [isBoolean],
-  enforceRootFileName: [isBoolean],
-  rootFileCase: ['preserve', 'kebab', 'snake', 'camel', 'pascal'],
-  childScssDir: [isString],
+  elementDepth: [isNumber],
+  childCombinator: [isBoolean],
+  childNesting: [isBoolean],
+  rootSingle: [isBoolean],
+  rootFile: [isBoolean],
+  rootCase: [isString],
+  childDir: [isString],
   componentsDirs: [isString],
   ...NAMING_SCHEMA,
-  ...SHARED_COMMENT_PATTERN_SCHEMA,
-  ...INTERACTION_COMMENT_PATTERN_SCHEMA,
-  ...SELECTOR_POLICY_SCHEMA,
-  ...CACHE_SIZES_SCHEMA
+  ...COMMENTS_SCHEMA,
+  ...POLICY_SCHEMA,
+  ...EXTERNAL_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const rule = createRule(
@@ -123,12 +124,12 @@ const rule = createRule(
           }
         : undefined
       const options = normalizeOptions(rawOptions, handleInvalid)
-      const cacheSizes = options.cacheSizes
+      const cacheSizes = options.cache
       cache = {
         options,
         commentPatterns: {
-          sharedCommentPattern: options.sharedCommentPattern,
-          interactionCommentPattern: options.interactionCommentPattern
+          sharedCommentPattern: options.comments.shared,
+          interactionCommentPattern: options.comments.interaction
         },
         patterns: buildPatterns(options, cacheSizes, handleInvalid),
         policyData: buildSelectorPolicyData(options.selectorPolicy),
@@ -170,7 +171,7 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowExternalClasses', 'allowExternalPrefixes', 'componentsDirs'],
+        ['external.classes', 'external.prefixes', 'componentsDirs'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
@@ -187,7 +188,7 @@ const rule = createRule(
       } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
-      const cacheSizes = options.cacheSizes
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const ruleKinds = new WeakMap<Rule, Kind>()
@@ -225,12 +226,52 @@ const rule = createRule(
         )
       }
 
+      const isGlobalWrapperRule = (rule: Rule): boolean => {
+        if (typeof rule.selector !== 'string') return false
+        return isGlobalOnlySelector(
+          rule.selector,
+          selectorCache,
+          cacheSizes.selector
+        )
+      }
+
+      const findParentRuleSkippingGlobal = (rule: Rule): Rule | null => {
+        let current = findParentRule(rule)
+        while (current && isGlobalWrapperRule(current)) {
+          current = findParentRule(current)
+        }
+        return current
+      }
+
+      const isRuleInRootScopeWithGlobal = (rule: Rule): boolean => {
+        let current = rule.parent
+        while (current) {
+          if (current.type === 'root') return true
+          if (current.type === 'atrule') {
+            const name = current.name ? current.name.toLowerCase() : ''
+            if (!ROOT_WRAPPER_NAMES.has(name)) return false
+            current = current.parent
+            continue
+          }
+          if (current.type === 'rule') {
+            const parentRule = current as Rule
+            if (isGlobalWrapperRule(parentRule)) {
+              current = parentRule.parent
+              continue
+            }
+            return false
+          }
+          return false
+        }
+        return false
+      }
+
       const allRules: Rule[] = []
       root.walkRules((rule: Rule) => {
         allRules.push(rule)
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (!firstRule) firstRule = rule
-        if (findParentRule(rule)) return
+        if (findParentRuleSkippingGlobal(rule)) return
         topLevelRules.push(rule)
         if (typeof rule.selector !== 'string') return
 
@@ -238,10 +279,10 @@ const rule = createRule(
         if (selectors.length === 0) return
         const rootBlocks = collectRootBlockNames(selectors, options, patterns)
         if (rootBlocks.length === 0) return
-        if (isRootBlockRule(rule)) rootBlockRules.add(rule)
+        if (isRuleInRootScopeWithGlobal(rule)) rootBlockRules.add(rule)
         const rootName = rootBlockName || rootBlocks[0]
         if (!rootBlockName) rootBlockName = rootName
-        if (options.enforceSingleRootBlock) {
+        if (options.root.single) {
           const extras = rootBlocks.filter((name) => name !== rootName)
           if (extras.length > 0) {
             stylelint.utils.report({
@@ -259,8 +300,16 @@ const rule = createRule(
 
       allRules.forEach((rule: Rule) => {
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
-        const parentRule = findParentRule(rule)
+        const parentRule = findParentRuleSkippingGlobal(rule)
         const parentKind = parentRule ? ruleKinds.get(parentRule) : undefined
+        const hasBlockAncestor = (() => {
+          let current = parentRule
+          while (current) {
+            if (ruleKinds.get(current) === 'block') return true
+            current = findParentRuleSkippingGlobal(current)
+          }
+          return false
+        })()
         const parentSelector =
           parentRule && typeof parentRule.selector === 'string' ? parentRule.selector : undefined
         const parentDepth = parentRule ? elementDepths.get(parentRule) || 0 : 0
@@ -301,7 +350,8 @@ const rule = createRule(
             policyData,
             namingHint,
             isShared,
-            isInteraction
+            isInteraction,
+            hasBlockAncestor
           })
           if (structuralKind) structuralKinds.push(structuralKind)
         })
@@ -323,7 +373,7 @@ const rule = createRule(
         }
       })
 
-      if (options.enforceSingleRootBlock && !rootBlockName && hasSpiraClassForRootCheck) {
+      if (options.root.single && !rootBlockName && hasSpiraClassForRootCheck) {
         const targetNode = firstRule || root
         stylelint.utils.report({
           ruleName,
@@ -335,7 +385,7 @@ const rule = createRule(
 
       root.walkComments((comment: Comment) => {
         const text = getCommentText(comment)
-        if (!safeTestPattern(options.sharedCommentPattern, text)) return
+        if (!safeTestPattern(options.comments.shared, text)) return
         const parent = comment.parent
         const isRootShared = Boolean(parent && isRule(parent) && rootBlockRules.has(parent))
         if (isRootShared) return
@@ -344,12 +394,12 @@ const rule = createRule(
           result,
           node: comment,
           message: messages.sharedNeedRootBlock(
-            options.sharedCommentPattern
+            options.comments.shared
           )
         })
       })
 
-      if (options.enforceSingleRootBlock && rootBlockName) {
+      if (options.root.single && rootBlockName) {
         const resolvedRootBlockName = rootBlockName
         topLevelRules.forEach((rule) => {
           if (typeof rule.selector !== 'string') return
@@ -377,8 +427,8 @@ const rule = createRule(
         })
       }
 
-      if (options.enforceRootFileName && rootBlockName && fileBase) {
-        const isComponentsLayer = options.componentsDirs.some((dir) => {
+      if (options.root.file && rootBlockName && fileBase) {
+        const isComponentsLayer = options.paths.components.some((dir) => {
           const normalizedDir = path.normalize(dir)
           const dirSegments = normalizedDir.split(path.sep).filter(Boolean)
           if (dirSegments.length === 0) return false
@@ -388,12 +438,12 @@ const rule = createRule(
         const assetsIndex = pathSegments.indexOf('assets')
         const isAssetsCss = assetsIndex >= 0 && pathSegments[assetsIndex + 1] === 'css'
         const isExcludedFile = fileName === 'index.scss' || fileName.startsWith('_')
-        const isChildScss = pathSegments.includes(options.childScssDir)
+        const isChildScss = pathSegments.includes(options.paths.childDir)
 
         if (isComponentsLayer && !isAssetsCss && !isExcludedFile) {
           const expectedBase = isChildScss
             ? rootBlockName
-            : formatFileBase(rootBlockName, options.rootFileCase)
+            : formatFileBase(rootBlockName, options.root.case)
           if (expectedBase && expectedBase !== fileBase) {
             const targetNode = firstRule || root
             stylelint.utils.report({

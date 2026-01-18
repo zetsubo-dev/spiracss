@@ -8,8 +8,8 @@ describe('spiracss/class-structure - complex nesting structures', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -50,8 +50,8 @@ describe('spiracss/class-structure - Block nesting depth limits', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -81,8 +81,8 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        childCombinator: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -108,8 +108,8 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
     .title {}
   }
 }`,
-        description: 'enforceChildCombinator applies inside @media',
-        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `sharedCommentPattern` (current: `/--shared/i`) or `interactionCommentPattern` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
+        description: 'childCombinator applies inside @media',
+        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: `

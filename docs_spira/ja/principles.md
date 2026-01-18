@@ -4,6 +4,12 @@ SpiraCSS は、HTML/CSS の構造的特徴を最小の原則に整理した CSS 
 
 このページは SpiraCSS の入口として、**デフォルト運用**の要点だけをまとめたクイックリファレンスです。例外・設定・コード例の詳細は各ドキュメントを正とします。
 
+## 原則の一文
+
+SpiraCSS の設計原則は、親子をセットで考え、親が並びを決め、親の直下で子を調整し、子自身は内部だけを書くという、たったそれだけのシンプルなルールです。
+
+以降のルールはこの一文を具体化したものです。
+
 ## 概要
 
 ### CSS レイヤー
@@ -79,6 +85,8 @@ SCSS は基本的に次の 3 セクションで整理します（`--shared` / `-
 - **基本構造**: Block の構造 + Variant
 - **`--shared`**: Block 配下専用の共通クラス（必要なときだけ）
 - **`--interaction`**: State / hover / ARIA 状態＋transition/animation 関連（必要なときだけ）
+
+基本構造の責務分離は「原則の一文」を具体化したものです。プロパティ配置の細則は Stylelint が検証するため、暗記より Stylelint の指摘に従う運用を想定しています（[property-placement](tooling/stylelint-rules/property-placement.md)）。
 
 書き方やコード例の詳細は [コンポーネント](component.md) を参照してください。
 

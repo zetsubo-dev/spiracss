@@ -12,7 +12,7 @@ describe('spiracss/keyframes-naming - basics', () => {
     config: [
       true,
       {
-        warnOnMissingBlock: true
+        blockWarnMissing: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -198,7 +198,7 @@ describe('spiracss/keyframes-naming - basics', () => {
         warnings: [
           {
             message:
-              'Cannot determine the root Block for `@keyframes` naming. Add a root Block selector or configure `blockNameSource`. (spiracss/keyframes-naming)'
+              'Cannot determine the root Block for `@keyframes` naming. Add a root Block selector or configure `blockSource`. (spiracss/keyframes-naming)'
           }
         ]
       }
@@ -268,7 +268,7 @@ describe('spiracss/keyframes-naming - ignorePatterns (global flag)', () => {
   })
 })
 
-describe('spiracss/keyframes-naming - ignorePlacementForIgnored', () => {
+describe('spiracss/keyframes-naming - ignoreSkipPlacement', () => {
   testRule({
     plugins: [keyframesNaming],
     ruleName: keyframesNaming.ruleName,
@@ -276,7 +276,7 @@ describe('spiracss/keyframes-naming - ignorePlacementForIgnored', () => {
       true,
       {
         ignorePatterns: [/^vendor-/],
-        ignorePlacementForIgnored: true
+        ignoreSkipPlacement: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -414,15 +414,15 @@ describe('spiracss/keyframes-naming - ignoreFiles (string suffix)', () => {
   })
 })
 
-describe('spiracss/keyframes-naming - blockNameSource', () => {
+describe('spiracss/keyframes-naming - blockSource', () => {
   testRule({
     plugins: [keyframesNaming],
     ruleName: keyframesNaming.ruleName,
     config: [
       true,
       {
-        blockNameSource: 'file',
-        warnOnMissingBlock: false
+        blockSource: 'file',
+        blockWarnMissing: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -437,7 +437,7 @@ describe('spiracss/keyframes-naming - blockNameSource', () => {
 }
         `,
         codeFilename: 'components/card-list/card-list.scss',
-        description: 'blockNameSource: file resolves Block from file name'
+        description: 'blockSource: file resolves Block from file name'
       }
     ],
 
@@ -450,8 +450,8 @@ describe('spiracss/keyframes-naming - blockNameSource', () => {
     config: [
       true,
       {
-        blockNameSource: 'selector-or-file',
-        warnOnMissingBlock: false
+        blockSource: 'selector-or-file',
+        blockWarnMissing: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -466,7 +466,7 @@ describe('spiracss/keyframes-naming - blockNameSource', () => {
 }
         `,
         codeFilename: 'components/hero-banner/hero-banner.scss',
-        description: 'blockNameSource: selector-or-file fallback'
+        description: 'blockSource: selector-or-file fallback'
       }
     ],
 

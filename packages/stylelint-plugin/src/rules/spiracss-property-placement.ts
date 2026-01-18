@@ -7,11 +7,11 @@ import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import {
-  CACHE_SIZES_SCHEMA,
-  INTERACTION_COMMENT_PATTERN_SCHEMA,
+  CACHE_SCHEMA,
+  COMMENTS_SCHEMA,
+  EXTERNAL_SCHEMA,
   NAMING_SCHEMA,
-  SELECTOR_POLICY_SCHEMA,
-  SHARED_COMMENT_PATTERN_SCHEMA
+  POLICY_SCHEMA
 } from '../utils/option-schema'
 import { findParentRule, isAtRule, isRule } from '../utils/postcss-helpers'
 import { isRuleInsideAtRule, markInteractionContainers } from '../utils/section'
@@ -22,6 +22,7 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
@@ -50,25 +51,23 @@ import { createValueTokenHelpers } from './spiracss-property-placement.values'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracssproperty-placement',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Enforce SpiraCSS property placement rules (container/item/internal).',
   category: 'stylistic'
 }
 
 const optionSchema = {
-  allowElementChainDepth: [isNumber],
-  allowExternalClasses: [isString],
-  allowExternalPrefixes: [isString],
+  elementDepth: [isNumber],
   marginSide: [isString],
-  enablePosition: [isBoolean],
-  enableSizeInternal: [isBoolean],
+  position: [isBoolean],
+  sizeInternal: [isBoolean],
   responsiveMixins: [isString],
   ...NAMING_SCHEMA,
-  ...SHARED_COMMENT_PATTERN_SCHEMA,
-  ...INTERACTION_COMMENT_PATTERN_SCHEMA,
-  ...SELECTOR_POLICY_SCHEMA,
-  ...CACHE_SIZES_SCHEMA
+  ...COMMENTS_SCHEMA,
+  ...POLICY_SCHEMA,
+  ...EXTERNAL_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const CONTAINER_PROP_NAMES = new Set([
@@ -219,8 +218,7 @@ const rule = createRule(
         : undefined
       const options = normalizeOptions(rawOptions, handleInvalid)
       const classifyOptions: ClassifyOptions = {
-        allowExternalClasses: options.allowExternalClasses,
-        allowExternalPrefixes: options.allowExternalPrefixes,
+        external: options.external,
         naming: options.naming
       }
       const customModifierPattern = normalizeCustomPattern(
@@ -229,7 +227,7 @@ const rule = createRule(
       )
       cache = {
         options,
-        patterns: buildPatterns(classifyOptions, options.cacheSizes, handleInvalid),
+        patterns: buildPatterns(classifyOptions, options.cache, handleInvalid),
         policySets: buildPolicySets(options.selectorPolicy),
         classifyOptions,
         customModifierPattern,
@@ -270,7 +268,7 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowExternalClasses', 'allowExternalPrefixes', 'responsiveMixins'],
+        ['external.classes', 'external.prefixes', 'responsiveMixins'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
@@ -287,7 +285,7 @@ const rule = createRule(
       } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
-      const cacheSizes = options.cacheSizes
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const resolvedSelectorsCache = new WeakMap<Rule, string[]>()
@@ -306,7 +304,7 @@ const rule = createRule(
       let atRuleIdSeed = 0
       let firstRule: Rule | null = null
       const responsiveMixins = new Set(
-        options.responsiveMixins.map((name) => name.toLowerCase())
+        options.responsive.mixins.map((name) => name.toLowerCase())
       )
       const { checkMarginSide, parsePositionValue, isZeroMinSize } =
         createValueTokenHelpers()
@@ -346,7 +344,7 @@ const rule = createRule(
               stripGlobalSelectorForRoot(
                 selector,
                 selectorCache,
-                options.cacheSizes.selector,
+                options.cache.selector,
                 {
                   preserveCombinator: true
                 }
@@ -377,8 +375,8 @@ const rule = createRule(
       })
 
       const commentPatterns = {
-        sharedCommentPattern: options.sharedCommentPattern,
-        interactionCommentPattern: options.interactionCommentPattern
+        sharedCommentPattern: options.comments.shared,
+        interactionCommentPattern: options.comments.interaction
       }
       const interactionContainers = markInteractionContainers(
         root,
@@ -415,7 +413,7 @@ const rule = createRule(
               isGlobalOnlySelector(
                 selector,
                 selectorCache,
-                options.cacheSizes.selector
+                options.cache.selector
               )
           )
         globalOnlyRuleCache.set(rule, value)
@@ -518,7 +516,7 @@ const rule = createRule(
       }
 
       const familyOffsetMap = new Map<string, boolean>()
-      if (options.enablePosition) {
+      if (options.position) {
         for (const [rule, decls] of declsByRule) {
           if (interactionContainers.has(rule)) continue
           if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) continue
@@ -562,7 +560,7 @@ const rule = createRule(
             node: atRule,
             message: messages.forbiddenAtRoot(
               parentSelector,
-              options.interactionCommentPattern
+              options.comments.interaction
             )
           })
         }
@@ -642,9 +640,9 @@ const rule = createRule(
               return
             }
             if (isMarginSideProp(prop)) {
-              const marginSideResult = checkMarginSide(prop, decl.value, options.marginSide)
+              const marginSideResult = checkMarginSide(prop, decl.value, options.margin.side)
               if (marginSideResult === 'error') {
-                const disallowedSide = options.marginSide === 'top' ? 'bottom' : 'top'
+                const disallowedSide = options.margin.side === 'top' ? 'bottom' : 'top'
                 stylelint.utils.report({
                   ruleName,
                   result,
@@ -656,9 +654,9 @@ const rule = createRule(
             return
           }
 
-          if (isInternalProp(prop, options.enableSizeInternal)) {
+          if (isInternalProp(prop, options.size.internal)) {
             // Allow min-* = 0 everywhere (self/item-side exception) before internal checks.
-            if (options.enableSizeInternal && isZeroMinSize(prop, decl.value)) return
+            if (options.size.internal && isZeroMinSize(prop, decl.value)) return
             const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
             if (hasPageRoot) {
               stylelint.utils.report({
@@ -690,7 +688,7 @@ const rule = createRule(
             return
           }
 
-          if (options.enablePosition && prop === 'position') {
+          if (options.position && prop === 'position') {
             const hasChildBlock = selectorInfos.some((info) => info.kind === 'child-block')
             if (!hasChildBlock) return
             const parsedPosition = parsePositionValue(decl.value)
@@ -703,7 +701,7 @@ const rule = createRule(
                 message: messages.positionInChildBlock(
                   parsedPosition.value,
                   resolvedSelector,
-                  options.responsiveMixins,
+                  options.responsive.mixins,
                   parsedPosition.reason
                 )
               })
@@ -718,7 +716,7 @@ const rule = createRule(
                 message: messages.positionInChildBlock(
                   parsedPosition.value,
                   resolvedSelector,
-                  options.responsiveMixins
+                  options.responsive.mixins
                 )
               })
               return
@@ -732,7 +730,7 @@ const rule = createRule(
                   message: messages.positionInChildBlock(
                     parsedPosition.value,
                     resolvedSelector,
-                    options.responsiveMixins
+                    options.responsive.mixins
                   )
                 })
                 return
@@ -753,7 +751,7 @@ const rule = createRule(
                 message: messages.positionInChildBlock(
                   parsedPosition.value,
                   resolvedSelector,
-                  options.responsiveMixins
+                  options.responsive.mixins
                 )
               })
             }

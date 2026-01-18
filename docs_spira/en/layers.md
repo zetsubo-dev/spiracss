@@ -84,7 +84,7 @@ For typography/text helpers, place only single-purpose helpers that do not depen
 
 - Utility classes always start with the `u-` prefix (e.g. `.u-hidden`, `.u-sr-only`).
 - This prefix clearly distinguishes “structural classes (Block/Element) and class-mode Modifiers” from utility classes.
-- Utility classes starting with `.u-*` are treated as a separate category from Block/Element (and class-mode Modifiers). **Including `u-` in `allowExternalPrefixes` to allow standalone utilities is the recommended practice**. Strict constraints like "two words / one word" apply only to structural classes; utilities are treated as an auxiliary layer.
+- Utility classes starting with `.u-*` are treated as a separate category from Block/Element (and class-mode Modifiers). **Including `u-` in `stylelint.base.external.prefixes` to allow standalone utilities is the recommended practice**. Strict constraints like "two words / one word" apply only to structural classes; utilities are treated as an auxiliary layer.
 
 Examples:
 

@@ -4,6 +4,12 @@ SpiraCSS is a CSS architecture that distills the structural characteristics of H
 
 This page is the entry point to SpiraCSS. It is a quick reference that summarizes only the key points of the **default practice**. For exceptions, configuration, and detailed code examples, treat the dedicated documents as the source of truth.
 
+## One-sentence principle
+
+SpiraCSS's design principle is simple: treat parent and child as a pair; the parent decides layout, the parent's immediate child rule adjusts the child, and the child itself writes only internal styling.
+
+The rules below are concrete applications of this sentence.
+
 ## Overview
 
 ### CSS Layers
@@ -54,7 +60,7 @@ In **data mode** (default), represent Variant with `data-variant` and State with
 - Put `data-state` and ARIA states in the interaction section.
 - If state changes the appearance, implement it on the State side.
 
-Note: The default is data mode, but you can choose class mode or hybrid per project policy (see [Components](component.md) / [spiracss.config.js](tooling/spiracss-config.md)).
+Note: The default is data mode, but you can choose class mode or hybrid per project selectorPolicy (see [Components](component.md) / [spiracss.config.js](tooling/spiracss-config.md)).
 
 #### 3. Structure rules (parent-child)
 
@@ -80,6 +86,8 @@ SCSS is generally organized into these three sections (use `--shared` / `--inter
 - **`--shared`**: local shared classes under the Block (only when needed)
 - **`--interaction`**: State / hover / ARIA states, plus transition/animation-related declarations (only when needed)
 
+The responsibility split in the base structure is a concrete application of the one-sentence principle. Detailed placement rules are validated by Stylelint, so rely on its feedback rather than memorization ([property-placement](tooling/stylelint-rules/property-placement.md)).
+
 See [Components](component.md) for details, including writing rules and code examples.
 
 ### Configuration and tooling
@@ -88,9 +96,9 @@ Standardize your workflow with a shared config ([spiracss.config.js](tooling/spi
 
 - **Generate**: automate tedious parts (e.g. `@rel` comments and structural SCSS) with CLIs / VS Code extensions
 - **Validate**: Stylelint detects violations with the same criteria for both humans and AI
-- **Customize via config**: adjust naming, comment formats, validation strength, etc. in [spiracss.config.js](tooling/spiracss-config.md) to match project/team policy
+- **Customize via config**: adjust naming, comment formats, validation strength, etc. in [spiracss.config.js](tooling/spiracss-config.md) to match project/team selectorPolicy
 
-Because generation and validation both read the same config file, changing policy in config keeps tools aligned. You can still hand-author styles, but the architecture is especially compatible with a “generate and validate” workflow.
+Because generation and validation both read the same config file, changing selectorPolicy in config keeps tools aligned. You can still hand-author styles, but the architecture is especially compatible with a “generate and validate” workflow.
 
 ## Next steps
 

@@ -227,8 +227,8 @@ export const classify = (
   options: ClassifyOptions,
   patterns: Patterns
 ): Kind => {
-  const { allowExternalClasses, allowExternalPrefixes } = options
-  if (allowExternalClasses.includes(name) || allowExternalPrefixes.some((p) => name.startsWith(p))) {
+  const external = options.external
+  if (external.classes.includes(name) || external.prefixes.some((p) => name.startsWith(p))) {
     return 'external'
   }
   if (patterns.modifierRe.test(name)) return 'modifier'

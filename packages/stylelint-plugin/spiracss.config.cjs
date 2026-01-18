@@ -18,21 +18,24 @@ module.exports = {
 
   // stylelint plugin rules
   stylelint: {
-    // Shared section comment patterns
-    sectionCommentPatterns: {
-      shared: /--shared/i,
-      interaction: /--interaction/i
+    // Shared defaults across rules.
+    base: {
+      comments: {
+        shared: /--shared/i,
+        interaction: /--interaction/i
+      },
+      external: {
+        classes: [],
+        prefixes: []
+      }
     },
+
     // SpiraCSS core structure rules
-    classStructure: {
+    class: {
       // How many Element > Element chains to allow (SpiraCSS recommends 4).
-      allowElementChainDepth: 4,
-      // Allow class names outside SpiraCSS naming (e.g., from libraries).
-      allowExternalClasses: [],
-      // Allow external class prefixes (e.g., swiper-).
-      allowExternalPrefixes: [],
+      elementDepth: 4,
       // Require the '>' child combinator for direct children of a Block.
-      enforceChildCombinator: true
+      childCombinator: true
       // If naming is not specified, SpiraCSS defaults are used.
       // (Block = two-word kebab / Element = one word / Modifier = 1-2 words with '-'.)
       // naming: {
@@ -46,40 +49,33 @@ module.exports = {
     // Rules for the interaction section
     interactionScope: {
       // Allowed interaction pseudo-classes
-      allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+      pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
       // Require grouping inside an @at-root & { ... } block.
       requireAtRoot: true,
-      // Require a preceding `// --interaction` comment.
       requireComment: true,
-      // Require the interaction block at the end of the file (last non-comment node).
       requireTail: true,
       // When true, only blocks explicitly marked by comments are checked.
-      enforceWithCommentOnly: false
+      commentOnly: false
     },
 
     // Write pseudo-classes/elements nested under &.
-    pseudoNesting: {},
+    pseudo: {},
 
     // Link comment/path validation rules between parent/child Blocks
-    relComments: {
+    rel: {
       // Require @rel under scss directories.
-      requireInScssDirectories: true,
-      // Require @rel when meta.load-css('scss') is present.
-      requireWhenMetaLoadCss: true,
+      requireScss: true,
+      requireMeta: true,
+      requireParent: true,
+      requireChild: true,
+      requireChildShared: true,
+      requireChildInteraction: true,
       // Validate that the referenced path exists.
       validatePath: true,
       // Skip files without rules.
-      skipFilesWithoutRules: true,
-      // Require child link comments from the parent (@rel/scss/child.scss, etc.).
-      requireChildRelComments: true,
-      // Require child @rel even in the shared section.
-      requireChildRelCommentsInShared: true,
-      // Require child @rel even in the interaction section.
-      requireChildRelCommentsInInteraction: true,
-      // Require parent link comments on the child side (@rel/../Parent.scss, etc.).
-      requireParentRelComment: true,
+      skipNoRules: true,
       // Directory name for child Block SCSS (default 'scss').
-      childScssDir: 'scss'
+      childDir: 'scss'
     }
   },
 

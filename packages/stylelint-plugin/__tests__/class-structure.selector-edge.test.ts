@@ -8,8 +8,8 @@ describe('spiracss/class-structure - edge cases', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -30,7 +30,7 @@ describe('spiracss/class-structure - edge cases', () => {
           'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
       },
       {
-        code: '.BadBlock > .title {}',
+        code: '.BadBlock { > .title {} }',
         description: 'detect invalid class names in compound selectors (avoid missing non-base)',
         warnings: [
           {
@@ -63,8 +63,8 @@ describe('spiracss/class-structure - selector parse failure', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -73,31 +73,37 @@ describe('spiracss/class-structure - selector parse failure', () => {
     reject: [
       {
         code: `
-.block-name > : {
-  color: red;
+.block-name {
+  > : {
+    color: red;
+  }
 }`,
         description: 'emit a single warning on selector parse failure',
         warnings: [
           {
             message:
-              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block-name > :`. (spiracss/class-structure)'
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `> :`. (spiracss/class-structure)'
           }
         ]
       },
       {
         code: `
-.block-name > : {
-  color: red;
+.block-name {
+  > : {
+    color: red;
+  }
 }
 
-.foo > : {
-  color: blue;
+.block {
+  > : {
+    color: blue;
+  }
 }`,
         description: 'emit a single warning even when multiple selectors fail',
         warnings: [
           {
             message:
-              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block-name > :`. (spiracss/class-structure)'
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `> :`. (spiracss/class-structure)'
           }
         ]
       }
@@ -112,8 +118,8 @@ describe('spiracss/class-structure - special patterns', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -152,8 +158,8 @@ describe('spiracss/class-structure - :global skip', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -179,8 +185,8 @@ describe('spiracss/class-structure - pseudo element/class combinations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],

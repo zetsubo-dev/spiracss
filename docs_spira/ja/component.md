@@ -268,14 +268,20 @@ shared / interaction はルート Block 直下に配置します（@layer/@suppo
 ### 1. 基本構造セクション
 
 「基本構造セクション」に何を書くかを整理します。
+このセクションは [設計原則](principles.md) の一文を具体化したものです。プロパティ配置の細則は Stylelint が検証するため、暗記より Stylelint の指摘に従う運用を想定しています。
 
 #### プロパティ配置の早見表
 
 | カテゴリ                         | 代表的なプロパティ例                                                                                      | 書く場所                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | コンテナ側のレイアウト           | `display:flex/grid`, `gap`, `justify-*`, `align-*`, `grid-template-*`              | Block 本体（例: `.sample-block { ... }`）             |
-| 親から見たアイテム側のレイアウト | `margin-top`（縦方向の余白）, 親基準の `width/height/max-*`, `flex`, `order`, `align-self` | 親 Block の直下（例: `.sample-block > .child { ... }`）          |
+| 親から見たアイテム側のレイアウト | `margin-top`（縦方向の余白）, `flex`, `order`, `align-self` | 親 Block の直下（例: `.sample-block > .child { ... }`）          |
 | 子 Block 内部のレイアウト        | `text-align`, `line-height`, `padding`, 子内部の `gap` など                                               | 子 Block / Element 自身   |
+
+> **内部プロパティの制限（Stylelint `spiracss/property-placement` で検証）:**
+> - `padding`/`padding-*`, `overflow`/`overflow-*`, `width`, `height`, `min-*`, `max-*`, `inline-size`, `block-size` は**内部プロパティ**として扱われ、子 Block（親 Block の `> .child-block` として配置されるセレクタ）では原則禁止です
+> - 例外: `min-width: 0` など `min-*` の値が `0` の場合は子 Block でも許可されます（flex/grid のアイテム側で必要になるケース）
+> - `sizeInternal: false` を設定すると、サイズ系プロパティ（`width` / `height` / `min-*` / `max-*` / `inline-size` / `block-size`）を内部プロパティから除外できます
 
 #### 判断基準
 
@@ -290,9 +296,18 @@ shared / interaction はルート Block 直下に配置します（@layer/@suppo
 :global-only のセレクタは out-of-scope のため、`@at-root` / `@extend` の禁止も適用されません。  
 `:global(...)` を除去した結果、擬似内のセレクタが空になるなど曖昧な場合も配置チェックをスキップしますが、`@at-root` / `@extend` の禁止は引き続き適用されます。
 
-**配置判定の近似について:** 配置チェックは selector の「family」単位で判定します。  
-Variant/State の*値*は区別されず、`@media` / `@supports` / `@container` / `@layer` は同一コンテキスト扱いです。  
-また、極端に複雑なセレクタ（またはネスト展開が爆発するケース）は、誤検知と負荷を避けるためスキップします。
+**配置判定の近似について:** 配置チェックは selector の「family」単位で判定します。
+Variant/State の*値*は区別されず、`@media` / `@supports` / `@container` / `@layer` は同一コンテキスト扱いです。
+`@scope` は文脈境界として扱い、異なる `@scope` 内の宣言は別文脈とみなします。
+`@include` は通常は別文脈ですが、`responsiveMixins` で指定した mixin 名は透過扱いになり、同一文脈として認識されます。
+極端に複雑なセレクタ（またはネスト展開が爆発するケース）は、誤検知と負荷を避けるためスキップします。
+ただし `position: relative` / `absolute` は例外で、family key が確定できない場合はエラーになります（offset の有無を判定できないため）。
+
+**position の制限（Stylelint `spiracss/property-placement` で検証、`position: true` 時）:**
+- 子 Block で `position: fixed` / `sticky` は禁止（親のレイアウトコンテキストから外れるため）
+- `position: relative` / `absolute` は、同一セレクタファミリー・同一ラッパー文脈で offset プロパティ（`top` / `right` / `bottom` / `left` / `inset-*`）が宣言されている場合のみ許可
+- offset が別の `@scope` 内にある場合は別文脈とみなされ、エラーになります
+- `responsiveMixins` に含まれる `@include` 内の offset は同一文脈として認識されます
 
 ### 2. shared セクション
 
@@ -386,7 +401,7 @@ interaction セクションは、Block の状態変化や `:hover` / `:focus-vis
 
 **命名ルール:**
 - `{block}-{action}` または `{block}-{element}-{action}`
-- block / element のケースは `classStructure.naming` に従う
+- block / element のケースは `stylelint.base.naming` に従う
 - element は **そのファイル内に実在する element 名のみ許可**
 - action は `blockCase` のケースで **1〜3語**（`actionMaxWords` で変更可）
 - block と action の区切りは **常に `-` で固定**（例: `cardList-fadeIn` / `CardList-fadeIn`）
@@ -457,7 +472,7 @@ SCSS を生成する際は HTML 構造から VS Code 拡張 / CLI が適切な�
 - **親 → ページ**: 親 Block のファイル先頭付近に、ページエントリへのリンクを書く
   - ページエントリ側は `> .block` ルール内に `@components/...` を書くと往復でたどれる
 
-> `@components` などのエイリアス解決は `spiracss.config.js` の `aliasRoots` で行います。リンクコメントの必須/任意や存在チェックは `stylelint.relComments`（= `spiracss/rel-comments` ルール）で設定できます。
+> `@components` などのエイリアス解決は `spiracss.config.js` の `aliasRoots` で行います。リンクコメントの必須/任意や存在チェックは `stylelint.rel`（= `spiracss/rel-comments` ルール）で設定できます。
 
 ## 次のステップ
 

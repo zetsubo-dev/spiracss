@@ -5,22 +5,36 @@ import type { NamingOptions, NormalizedCacheSizes } from '../types'
 export type AliasRoots = Record<string, string[]>
 
 export type Options = {
-  requireInScssDirectories: boolean
-  requireWhenMetaLoadCss: boolean
-  validatePath: boolean
-  skipFilesWithoutRules: boolean
-  requireChildRelComments: boolean
-  requireChildRelCommentsInShared: boolean
-  requireChildRelCommentsInInteraction: boolean
-  requireParentRelComment: boolean
-  childScssDir?: string
-  aliasRoots?: AliasRoots
-  sharedCommentPattern: RegExp
-  interactionCommentPattern: RegExp
+  require: {
+    scss: boolean
+    meta: boolean
+    parent: boolean
+    child: {
+      enabled: boolean
+      shared: boolean
+      interaction: boolean
+    }
+  }
+  validate: {
+    path: boolean
+  }
+  skip: {
+    noRules: boolean
+  }
+  paths: {
+    childDir: string
+    aliases?: AliasRoots
+  }
+  comments: {
+    shared: RegExp
+    interaction: RegExp
+  }
   naming?: NamingOptions
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-  cacheSizes: NormalizedCacheSizes
+  external: {
+    classes: string[]
+    prefixes: string[]
+  }
+  cache: NormalizedCacheSizes
 }
 
 export type RelComment = {

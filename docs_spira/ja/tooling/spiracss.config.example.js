@@ -24,38 +24,26 @@ const config = {
 
   // stylelint 用 SpiraCSS ルールの推奨設定（プロジェクトに合わせて変更）
   stylelint: {
-    // キャッシュサイズ（LRU / デフォルト: 1000）
-    cacheSizes: {
-      selector: 1000,
-      patterns: 1000,
-      naming: 1000,
-      path: 1000
-    },
-    // セクションコメントの共通設定（デフォルト: { shared: /--shared/i, interaction: /--interaction/i }）
-    sectionCommentPatterns: {
-      shared: /--shared/i,
-      interaction: /--interaction/i
-    },
-
-    classStructure: {
-      // Element > Element の連鎖を何段まで許容するか（デフォルト: 4）
-      allowElementChainDepth: 4,
+    // 複数ルールに共通で使う設定（省略時は各ルールのデフォルト）
+    base: {
+      // キャッシュサイズ（LRU / デフォルト: 1000）
+      cache: {
+        selector: 1000,
+        patterns: 1000,
+        naming: 1000,
+        path: 1000
+      },
+      // セクションコメントの共通設定（デフォルト: { shared: /--shared/i, interaction: /--interaction/i }）
+      comments: {
+        shared: /--shared/i,
+        interaction: /--interaction/i
+      },
       // 命名/構造チェックから除外するクラス名（完全一致 / デフォルト: []）
-      allowExternalClasses: [],
-      // 命名/構造チェックから除外するクラス名の接頭辞（前方一致 / 例: u- / swiper- / デフォルト: []）
-      allowExternalPrefixes: ['u-'],
-      // Block 直下の子に対して `>` 子セレクタを必須にするか（デフォルト: true）
-      enforceChildCombinator: true,
-      // 1 ファイル内のルート Block を 1 つに制限するか（デフォルト: true）
-      enforceSingleRootBlock: true,
-      // ルート Block 名と SCSS ファイル名の一致を必須にするか（デフォルト: true）
-      enforceRootFileName: true,
-      // ルート Block の SCSS ファイル名ケース（デフォルト: 'preserve'）
-      rootFileCase: 'preserve', // generator.rootFileCase と合わせる
-      // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）
-      childScssDir: 'scss',
-      // コンポーネント層のディレクトリ名（デフォルト: ['components']）
-      componentsDirs: ['components'],
+      external: {
+        classes: [],
+        // 命名/構造チェックから除外するクラス名の接頭辞（前方一致 / 例: u- / swiper- / デフォルト: []）
+        prefixes: ['u-']
+      },
       // 命名スタイルのカスタマイズ（省略時は SpiraCSS デフォルト）
       naming: {
         // Block の単語ケース（kebab / snake / camel / pascal / デフォルト: 'kebab'）
@@ -77,9 +65,41 @@ const config = {
       }
     },
 
+    class: {
+      // Element > Element の連鎖を何段まで許容するか（デフォルト: 4）
+      elementDepth: 4,
+      // Block 直下の子に対して `>` 子セレクタを必須にするか（デフォルト: true）
+      childCombinator: true,
+      // 子要素は Block 内でネスト必須にするか（デフォルト: true）
+      childNesting: true,
+      // 1 ファイル内のルート Block を 1 つに制限するか（デフォルト: true）
+      rootSingle: true,
+      // ルート Block 名と SCSS ファイル名の一致を必須にするか（デフォルト: true）
+      rootFile: true,
+      // ルート Block の SCSS ファイル名ケース（デフォルト: 'preserve'）
+      rootCase: 'preserve', // generator.rootFileCase と合わせる
+      // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）
+      // コンポーネント層のディレクトリ名（デフォルト: ['components']）
+      childDir: 'scss',
+      componentsDirs: ['components']
+    },
+
+    placement: {
+      // Element 連鎖の段数上限（デフォルト: class.elementDepth / 未指定なら 4）
+      elementDepth: 4,
+      // 縦方向マージンの許可側（top / bottom / デフォルト: 'top'）
+      marginSide: 'top',
+      // child Block の position 制限を有効にするか（デフォルト: true）
+      position: true,
+      // width/height/min/max を内部プロパティとして扱うか（デフォルト: true）
+      sizeInternal: true,
+      // 透過扱いにする @include の Mixin 名（デフォルト: []）
+      responsiveMixins: []
+    },
+
     interactionScope: {
       // 検査対象の擬似クラス（デフォルト: [':hover', ':focus', ':focus-visible', ':active', ':visited']）
-      allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+      pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
       // @at-root & { ... } と & 起点の必須化（デフォルト: true）
       requireAtRoot: true,
       // --interaction コメントの必須化（デフォルト: true）
@@ -87,27 +107,25 @@ const config = {
       // interaction ブロックを末尾に置くか（デフォルト: true）
       requireTail: true,
       // コメントがあるブロックだけ検査するか（デフォルト: false）
-      enforceWithCommentOnly: false,
+      commentOnly: false
       // selectorPolicy は top-level を参照（明示的に上書きしたい場合のみ指定）
       // selectorPolicy: { ... }
     },
-
-    interactionProperties: {
+    interactionProps: {
       // transition/animation を interaction セクションに集約するルール
-      // sharedCommentPattern / interactionCommentPattern は必要なら上書き
-      // sharedCommentPattern: /--shared/i,
-      // interactionCommentPattern: /--interaction/i
+      // comments.shared / comments.interaction は必要なら上書き
+      // comments: { shared: /--shared/i, interaction: /--interaction/i }
     },
 
-    keyframesNaming: {
+    keyframes: {
       // このルールを有効にするか（デフォルト: true）
       enabled: true,
       // action の語数上限（1〜3 / デフォルト: 3）
       actionMaxWords: 3,
       // Block 名の取得元（selector / file / selector-or-file / デフォルト: selector）
-      blockNameSource: 'selector',
+      blockSource: 'selector',
       // Block 判定できない場合に警告（デフォルト: true）
-      warnOnMissingBlock: true,
+      blockWarnMissing: true,
       // 共有 keyframes の prefix（デフォルト: ['kf-']）
       sharedPrefixes: ['kf-'],
       // 共有 keyframes を許可するファイル名（文字列は suffix 判定 / デフォルト: ['keyframes.scss']）
@@ -117,28 +135,31 @@ const config = {
       // ルール対象外にする keyframes 名（文字列は RegExp として扱う / デフォルト: []）
       ignorePatterns: [],
       // ignorePatterns に一致した keyframes の配置チェックをスキップするか（デフォルト: false）
-      ignorePlacementForIgnored: false
+      ignoreSkipPlacement: false
     },
 
-    relComments: {
+    // 擬似クラス/擬似要素は & の中でネストして書く
+    pseudo: {},
+
+    rel: {
       // scss ディレクトリ配下で @rel を必須にするか（デフォルト: true）
-      requireInScssDirectories: true,
+      requireScss: true,
       // meta.load-css がある場合に @rel を必須にするか（デフォルト: true）
-      requireWhenMetaLoadCss: true,
+      requireMeta: true,
+      // 子→親の @rel を必須にするか（デフォルト: true）
+      requireParent: true,
+      // 親→子の @rel を必須にするか（デフォルト: true）
+      requireChild: true,
+      // shared セクション内でも子 @rel を必須にするか（デフォルト: true）
+      requireChildShared: true,
+      // interaction セクション内でも子 @rel を必須にするか（デフォルト: false）
+      requireChildInteraction: false,
       // @rel のパス存在チェックを行うか（デフォルト: true）
       validatePath: true,
       // ルールがないファイルはスキップするか（デフォルト: true）
-      skipFilesWithoutRules: true,
-      // 親→子の @rel を必須にするか（デフォルト: true）
-      requireChildRelComments: true,
-      // shared セクション内でも子 @rel を必須にするか（デフォルト: true）
-      requireChildRelCommentsInShared: true,
-      // interaction セクション内でも子 @rel を必須にするか（デフォルト: false）
-      requireChildRelCommentsInInteraction: false,
-      // 子→親の @rel を必須にするか（デフォルト: true）
-      requireParentRelComment: true,
+      skipNoRules: true,
       // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）
-      childScssDir: 'scss'
+      childDir: 'scss'
     }
   },
 

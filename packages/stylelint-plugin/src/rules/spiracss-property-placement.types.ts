@@ -5,16 +5,28 @@ import type {
 } from '../types'
 
 export type Options = {
-  allowElementChainDepth: number
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-  marginSide: 'top' | 'bottom'
-  enablePosition: boolean
-  enableSizeInternal: boolean
-  responsiveMixins: string[]
+  element: {
+    depth: number
+  }
+  external: {
+    classes: string[]
+    prefixes: string[]
+  }
+  margin: {
+    side: 'top' | 'bottom'
+  }
+  position: boolean
+  size: {
+    internal: boolean
+  }
+  responsive: {
+    mixins: string[]
+  }
   naming?: NamingOptions
   selectorPolicy: NormalizedSelectorPolicyBase
-  sharedCommentPattern: RegExp
-  interactionCommentPattern: RegExp
-  cacheSizes: NormalizedCacheSizes
+  comments: {
+    shared: RegExp
+    interaction: RegExp
+  }
+  cache: NormalizedCacheSizes
 }

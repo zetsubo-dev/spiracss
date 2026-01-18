@@ -40,21 +40,34 @@ const defaultSelectorPolicy: NormalizedSelectorPolicy = {
 const ERROR_PREFIX = '[spiracss]'
 
 const defaultOptions: Options = {
-  // SpiraCSS recommends up to ~4 levels, so default to 4.
-  allowElementChainDepth: 4,
-  allowExternalClasses: [],
-  allowExternalPrefixes: [],
-  enforceChildCombinator: true,
-  enforceSingleRootBlock: true,
-  enforceRootFileName: true,
-  rootFileCase: 'preserve',
-  childScssDir: 'scss',
-  componentsDirs: ['components'],
+  element: {
+    // SpiraCSS recommends up to ~4 levels, so default to 4.
+    depth: 4
+  },
+  external: {
+    classes: [],
+    prefixes: []
+  },
+  child: {
+    combinator: true,
+    nesting: true
+  },
+  root: {
+    single: true,
+    file: true,
+    case: 'preserve'
+  },
+  paths: {
+    childDir: 'scss',
+    components: ['components']
+  },
   naming: undefined,
-  sharedCommentPattern: /--shared/i,
-  interactionCommentPattern: /--interaction/i,
+  comments: {
+    shared: /--shared/i,
+    interaction: /--interaction/i
+  },
   selectorPolicy: defaultSelectorPolicy,
-  cacheSizes: DEFAULT_CACHE_SIZES
+  cache: DEFAULT_CACHE_SIZES
 }
 
 const isWordCase = (value: unknown): value is WordCase =>
@@ -164,11 +177,22 @@ export const normalizeOptions = (
   reportInvalid?: InvalidOptionReporter
 ): Options => {
   if (!raw || typeof raw !== 'object') return { ...defaultOptions }
-  const opt = raw as Partial<Options> & {
-    sharedCommentPattern?: RegExp | string
-    interactionCommentPattern?: RegExp | string
-    cacheSizes?: CacheSizes
+  const opt = raw as {
+    elementDepth?: number
+    childCombinator?: boolean
+    childNesting?: boolean
+    rootSingle?: boolean
+    rootFile?: boolean
+    rootCase?: FileNameCase
+    childDir?: string
+    componentsDirs?: string[]
+    comments?: { shared?: RegExp | string; interaction?: RegExp | string }
+    cache?: CacheSizes
+    naming?: Options['naming']
+    external?: Options['external']
+    selectorPolicy?: Options['selectorPolicy']
   }
+  const selectorPolicy = opt.selectorPolicy
   const safeNormalizeKeyList = (
     value: unknown,
     fallback: string[],
@@ -181,33 +205,45 @@ export const normalizeOptions = (
   )
 
   return {
-    allowElementChainDepth:
-      typeof opt.allowElementChainDepth === 'number'
-        ? opt.allowElementChainDepth
-        : defaultOptions.allowElementChainDepth,
-    enforceChildCombinator: normalizeBoolean(
-      opt.enforceChildCombinator,
-      defaultOptions.enforceChildCombinator
-    ),
-    enforceSingleRootBlock: normalizeBoolean(
-      opt.enforceSingleRootBlock,
-      defaultOptions.enforceSingleRootBlock
-    ),
-    enforceRootFileName: normalizeBoolean(
-      opt.enforceRootFileName,
-      defaultOptions.enforceRootFileName
-    ),
-    rootFileCase: normalizeFileNameCase(opt.rootFileCase, defaultOptions.rootFileCase),
-    childScssDir: normalizeString(opt.childScssDir, defaultOptions.childScssDir),
-    componentsDirs: safeNormalizeKeyList(
-      opt.componentsDirs,
-      defaultOptions.componentsDirs,
-      'componentsDirs'
-    ),
-    selectorPolicy: normalizeSelectorPolicy(
-      (opt as { selectorPolicy?: SelectorPolicy }).selectorPolicy,
-      reportInvalid
-    ),
+    element: {
+      depth:
+        typeof opt.elementDepth === 'number'
+          ? opt.elementDepth
+          : defaultOptions.element.depth
+    },
+    child: {
+      combinator: normalizeBoolean(
+        opt.childCombinator,
+        defaultOptions.child.combinator
+      ),
+      nesting: normalizeBoolean(
+        opt.childNesting,
+        defaultOptions.child.nesting
+      )
+    },
+    root: {
+      single: normalizeBoolean(
+        opt.rootSingle,
+        defaultOptions.root.single
+      ),
+      file: normalizeBoolean(
+        opt.rootFile,
+        defaultOptions.root.file
+      ),
+      case: normalizeFileNameCase(opt.rootCase, defaultOptions.root.case)
+    },
+    paths: {
+      childDir: normalizeString(
+        opt.childDir,
+        defaultOptions.paths.childDir
+      ),
+      components: safeNormalizeKeyList(
+        opt.componentsDirs,
+        defaultOptions.paths.components,
+        'componentsDirs'
+      )
+    },
+    selectorPolicy: normalizeSelectorPolicy(selectorPolicy, reportInvalid),
     ...common
   }
 }

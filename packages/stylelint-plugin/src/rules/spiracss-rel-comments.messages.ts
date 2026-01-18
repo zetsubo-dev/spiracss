@@ -1,7 +1,6 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-rel-comments.constants'
 import {
+  createRuleMessages,
   formatCode,
   formatConfigList,
   formatSelectorParseFailed,
@@ -14,7 +13,7 @@ const formatAliasList = (aliases: string[]): string =>
 const formatAliasHint = (aliases: string[]): string =>
   ` (current: ${formatAliasList(aliases)})`
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   // Summarizes missing/incorrect link comment placement (top-of-file, child Block, or inside root Block).
   missingParentRel: (aliases: string[]) =>
     'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. ' +

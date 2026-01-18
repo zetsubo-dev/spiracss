@@ -12,19 +12,31 @@ import type { Options } from './spiracss-property-placement.types'
 const defaultSelectorPolicy: NormalizedSelectorPolicyBase = createDefaultSelectorPolicyBase()
 
 const defaultOptions: Options = {
-  // SpiraCSS recommends up to ~4 levels, so default to 4.
-  allowElementChainDepth: 4,
-  allowExternalClasses: [],
-  allowExternalPrefixes: [],
-  marginSide: 'top',
-  enablePosition: true,
-  enableSizeInternal: true,
-  responsiveMixins: [],
+  element: {
+    // SpiraCSS recommends up to ~4 levels, so default to 4.
+    depth: 4
+  },
+  external: {
+    classes: [],
+    prefixes: []
+  },
+  margin: {
+    side: 'top'
+  },
+  position: true,
+  size: {
+    internal: true
+  },
+  responsive: {
+    mixins: []
+  },
   naming: undefined,
   selectorPolicy: defaultSelectorPolicy,
-  sharedCommentPattern: /--shared/i,
-  interactionCommentPattern: /--interaction/i,
-  cacheSizes: DEFAULT_CACHE_SIZES
+  comments: {
+    shared: /--shared/i,
+    interaction: /--interaction/i
+  },
+  cache: DEFAULT_CACHE_SIZES
 }
 
 export const normalizeOptions = (
@@ -32,46 +44,60 @@ export const normalizeOptions = (
   reportInvalid?: InvalidOptionReporter
 ): Options => {
   if (!raw || typeof raw !== 'object') return { ...defaultOptions }
-  const opt = raw as Partial<Options> & {
-    sharedCommentPattern?: RegExp | string
-    interactionCommentPattern?: RegExp | string
-    cacheSizes?: CacheSizes
+  const opt = raw as {
+    elementDepth?: number
+    marginSide?: Options['margin']['side']
+    position?: boolean
+    sizeInternal?: boolean
+    responsiveMixins?: string[]
+    comments?: { shared?: RegExp | string; interaction?: RegExp | string }
+    cache?: CacheSizes
+    naming?: Options['naming']
+    external?: Options['external']
+    selectorPolicy?: Options['selectorPolicy']
   }
+  const selectorPolicy = opt.selectorPolicy
   const common = normalizeCommonOptions(
     opt,
     pickCommonDefaults(defaultOptions),
     reportInvalid
   )
 
-  const normalizeMarginSide = (value: unknown): Options['marginSide'] => {
+  const normalizeMarginSide = (value: unknown): Options['margin']['side'] => {
     const lowered = typeof value === 'string' ? value.toLowerCase() : ''
     if (lowered === 'top' || lowered === 'bottom') return lowered
     if (value !== undefined) {
       reportInvalid?.('marginSide', value, 'Expected "top" or "bottom".')
     }
-    return defaultOptions.marginSide
+    return defaultOptions.margin.side
   }
 
   return {
-    allowElementChainDepth:
-      typeof opt.allowElementChainDepth === 'number'
-        ? opt.allowElementChainDepth
-        : defaultOptions.allowElementChainDepth,
-    marginSide: normalizeMarginSide(opt.marginSide),
-    enablePosition:
-      typeof opt.enablePosition === 'boolean'
-        ? opt.enablePosition
-        : defaultOptions.enablePosition,
-    enableSizeInternal:
-      typeof opt.enableSizeInternal === 'boolean'
-        ? opt.enableSizeInternal
-        : defaultOptions.enableSizeInternal,
-    responsiveMixins: normalizeStringArray(
-      opt.responsiveMixins,
-      defaultOptions.responsiveMixins
-    ),
+    element: {
+      depth:
+        typeof opt.elementDepth === 'number'
+          ? opt.elementDepth
+          : defaultOptions.element.depth
+    },
+    margin: {
+      side: normalizeMarginSide(opt.marginSide)
+    },
+    position:
+      typeof opt.position === 'boolean' ? opt.position : defaultOptions.position,
+    size: {
+      internal:
+        typeof opt.sizeInternal === 'boolean'
+          ? opt.sizeInternal
+          : defaultOptions.size.internal
+    },
+    responsive: {
+      mixins: normalizeStringArray(
+        opt.responsiveMixins,
+        defaultOptions.responsive.mixins
+      )
+    },
     selectorPolicy: safeNormalizeSelectorPolicyBase(
-      opt.selectorPolicy,
+      selectorPolicy,
       defaultSelectorPolicy,
       reportInvalid
     ),

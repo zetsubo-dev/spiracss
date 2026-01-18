@@ -1,7 +1,6 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-interaction-scope.constants'
 import {
+  createRuleMessages,
   formatCode,
   formatConfigList,
   formatPattern,
@@ -9,7 +8,7 @@ import {
   type RuleMessageArgs
 } from '../utils/messages'
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   needAtRoot: () =>
     `When ${formatCode(
       'requireAtRoot'
@@ -18,7 +17,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     )} and each selector must start with ${formatCode('&')}.`,
   needComment: (pattern: RegExp) =>
     `Add the interaction comment matching ${formatCode(
-      'interactionCommentPattern'
+      'comments.interaction'
     )} (current: ${formatPattern(
       pattern
     )}) immediately before the interaction rule ` +

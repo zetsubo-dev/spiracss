@@ -4,7 +4,7 @@
 主な参照先は以下です。
 
 - **aliasRoots**: Comment Links / Stylelint のパス解決
-- **stylelint**: ルール設定（classStructure / interactionScope / interactionProperties / keyframesNaming / pseudoNesting / relComments など）
+- **stylelint**: ルール設定（base / class / placement / interactionScope / interactionProps / keyframes / pseudo / rel など）
 - **selectorPolicy**: バリアント/状態の表現方針（lint / generator / HTML lint）
 - **htmlFormat**: HTML プレースホルダ付与の出力属性
 - **generator**: HTML→SCSS 生成
@@ -81,50 +81,69 @@ aliasRoots: {
 ### `stylelint`
 
 SpiraCSS Stylelint プラグインのルール設定です。
-`createRules()` / `createRulesAsync()` を使う場合、`classStructure` / `interactionScope` / `interactionProperties` / `keyframesNaming` / `pseudoNesting` / `relComments` は未指定でもデフォルトが適用されます（`aliasRoots` は必須）。
+`createRules()` / `createRulesAsync()` を使う場合、`base` / `class` / `placement` / `interactionScope` / `interactionProps` / `keyframes` / `pseudo` / `rel` は未指定でもデフォルトが適用されます（`aliasRoots` は必須）。
 ESM で設定パスを渡したい場合は `createRulesAsync()` を使用します。
 `stylelint` を指定する場合は **プレーンオブジェクト必須** です（`stylelint: []` や `new Map()` などはエラー）。
 
-#### `stylelint.sectionCommentPatterns`
+#### `stylelint.base`
 
-shared / interaction セクションのコメント判定を一元化します。
-`createRules()` / `createRulesAsync()` を使う場合は、ここに書いた値が各ルールに展開されます（個別指定がある場合はそちらが優先）。
+複数ルールに共通で使う設定です。`comments` / `external` / `naming` / `cache` / `selectorPolicy` / `paths` は各ルール側で上書きできます。
 
 ```js
 stylelint: {
-  sectionCommentPatterns: {
-    shared: /--shared/i,
-    interaction: /--interaction/i
+  base: {
+    comments: {
+      shared: /--shared/i,
+      interaction: /--interaction/i
+    },
+    external: {
+      classes: [],
+      prefixes: ['u-']
+    },
+    naming: {
+      blockCase: 'kebab',
+      blockMaxWords: 2,
+      elementCase: 'kebab',
+      modifierCase: 'kebab',
+      modifierPrefix: '-'
+    },
+    cache: {
+      selector: 1000,
+      patterns: 1000,
+      naming: 1000,
+      path: 1000
+    },
+    selectorPolicy: {
+      // top-level selectorPolicy と同じ構造
+    },
+    paths: {
+      childDir: 'scss',
+      components: ['components']
+    }
   }
 }
 ```
 
-> 注意: `shared` / `interaction` は **RegExp または文字列**を指定できます。文字列は `new RegExp(pattern, 'i')` として扱われ、無効/危険なパターンはデフォルトにフォールバックします。柔軟性が必要な場合は RegExp の指定を推奨します。
+**設定一覧:**
 
-#### `stylelint.cacheSizes`
+| 項目 | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `comments.shared` | RegExp / string | `/--shared/i` | shared コメント判定 |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | interaction コメント判定 |
+| `external.classes` | string[] | `[]` | 外部クラスを除外（完全一致） |
+| `external.prefixes` | string[] | `[]` | 外部クラスを除外（前方一致） |
+| `naming` | object | `undefined` | 命名規則（class / placement / keyframes / rel などに継承） |
+| `cache.selector` | number | `1000` | セレクタ解析キャッシュ |
+| `cache.patterns` | number | `1000` | 命名パターン生成キャッシュ |
+| `cache.naming` | number | `1000` | 命名パターンキャッシュ |
+| `cache.path` | number | `1000` | @rel パス存在チェックキャッシュ |
+| `selectorPolicy` | object | top-level selectorPolicy | stylelint 用のセレクタポリシー上書き |
+| `paths.childDir` | string | `'scss'` | 子 Block SCSS の配置ディレクトリ（class / rel のデフォルト） |
+| `paths.components` | string[] | `['components']` | コンポーネント層ディレクトリ（class のデフォルト） |
 
-Stylelint ルール内の LRU キャッシュサイズをまとめて指定します。
-未指定時は各キャッシュとも **1000** です。
+> 注意: `comments.shared` / `comments.interaction` は **RegExp または文字列**を指定できます。文字列は `new RegExp(pattern, 'i')` として扱われ、無効/危険なパターンはデフォルトにフォールバックします。柔軟性が必要な場合は RegExp の指定を推奨します。
 
-```js
-stylelint: {
-  cacheSizes: {
-    selector: 1000,
-    patterns: 1000,
-    naming: 1000,
-    path: 1000
-  }
-}
-```
-
-- **`selector`**: セレクタ解析キャッシュ（postcss-selector-parser）
-- **`patterns`**: 命名パターン生成キャッシュ
-- **`naming`**: Block 命名パターンキャッシュ
-- **`path`**: @rel パス存在チェックキャッシュ
-
-> すべて正の整数で指定してください。各ルール（classStructure / interactionScope / interactionProperties / keyframesNaming / pseudoNesting / relComments）で `cacheSizes` を指定した場合はそちらが優先されます。
-
-#### `stylelint.classStructure`
+#### `stylelint.class`
 
 クラス命名規則とセレクタ構造のルールを定義します。
 
@@ -132,20 +151,21 @@ stylelint: {
 
 | 項目 | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `allowElementChainDepth` | number | `4` | Element 連鎖の段数上限 |
-| `allowExternalClasses` | string[] | `[]` | 外部クラスを除外（完全一致） |
-| `allowExternalPrefixes` | string[] | `[]` | 外部クラスを除外（前方一致） |
-| `enforceChildCombinator` | boolean | `true` | Block 直下に `>` を必須化 |
-| `enforceSingleRootBlock` | boolean | `true` | 1 ファイル 1 ルート Block |
-| `enforceRootFileName` | boolean | `true` | ルート Block 名とファイル名一致 |
-| `rootFileCase` | `'preserve' \| 'kebab' \| 'snake' \| 'camel' \| 'pascal'` | `'preserve'` | ルート Block のファイル名ケース |
-| `childScssDir` | string | `'scss'` | 子 Block SCSS の配置ディレクトリ |
+| `elementDepth` | number | `4` | Element 連鎖の段数上限 |
+| `childCombinator` | boolean | `true` | Block 直下に `>` を必須化 |
+| `childNesting` | boolean | `true` | 子要素は Block 内でネスト必須 |
+| `rootSingle` | boolean | `true` | 1 ファイル 1 ルート Block |
+| `rootFile` | boolean | `true` | ルート Block 名とファイル名一致 |
+| `rootCase` | `'preserve' \| 'kebab' \| 'snake' \| 'camel' \| 'pascal'` | `'preserve'` | ルート Block のファイル名ケース |
+| `childDir` | string | `'scss'` | 子 Block SCSS の配置ディレクトリ |
 | `componentsDirs` | string[] | `['components']` | コンポーネント層として扱うディレクトリ |
-| `naming` | object | 下表参照 | 命名規則のカスタマイズ |
-| `sharedCommentPattern` | RegExp / string | `/--shared/i` | shared コメントの個別指定（`sectionCommentPatterns` より優先） |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | interaction コメントの個別指定（`sectionCommentPatterns` より優先） |
-| `selectorPolicy` | object | `data-variant` / `data-state` / `aria-*` | ルール単体指定（`createRules()` / `createRulesAsync()` では top-level を優先） |
-| `cacheSizes` | object | `stylelint.cacheSizes` | ルール単体指定（未指定時は `stylelint.cacheSizes`、未指定なら各 1000） |
+| `comments.shared` | RegExp / string | `/--shared/i` | shared コメント判定（`stylelint.base.comments` を上書き） |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | interaction コメント判定（`stylelint.base.comments` を上書き） |
+| `external.classes` | string[] | `[]` | 外部クラスを除外（完全一致） |
+| `external.prefixes` | string[] | `[]` | 外部クラスを除外（前方一致） |
+| `naming` | object | `stylelint.base.naming` | 命名規則のカスタマイズ |
+| `selectorPolicy` | object | top-level selectorPolicy | ルール単体指定（未指定時は top-level selectorPolicy を使用） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
 **`naming` サブ項目:**
 
@@ -170,16 +190,19 @@ stylelint: {
 
 ```js
 stylelint: {
-  classStructure: {
-    allowElementChainDepth: 4,
-    allowExternalClasses: [],
-    allowExternalPrefixes: ['swiper-'],
-    enforceChildCombinator: true,
-    enforceSingleRootBlock: true,
-    enforceRootFileName: true,
-    rootFileCase: 'preserve',
-    childScssDir: 'scss',
+  class: {
+    elementDepth: 4,
+    childCombinator: true,
+    childNesting: true,
+    rootSingle: true,
+    rootFile: true,
+    rootCase: 'preserve',
+    childDir: 'scss',
     componentsDirs: ['components'],
+    external: {
+      classes: [],
+      prefixes: ['swiper-']
+    },
     naming: {
       blockCase: 'kebab',
       blockMaxWords: 2,
@@ -201,10 +224,43 @@ stylelint: {
 - `customPatterns` を使う場合、HTML プレースホルダ（`block-box` / `element`）と一致しない可能性があるため整合性を確認してください。
 - `customPatterns` は **RegExp のみ有効** です。`g` / `y` フラグ付きは無効になります。
 - Element は **常に 1 語**です。`elementCase=camel/pascal` でも内部大文字で語分割しません（例: `bodyText` / `BodyText` は 1 語で 2 語以上に見えるため不許可）。
-- HTML lint / HTML 生成でも `classStructure.naming` / `allowExternalClasses` / `allowExternalPrefixes` を参照します。
-- `enforceRootFileName` は `componentsDirs` 配下のみを対象とし、`assets/css`、`index.scss`、`_*.scss` は除外されます。
-- `enforceRootFileName` の期待値は `childScssDir` 配下なら root Block 名のまま、配下外なら `rootFileCase` で整形したファイル名です。
+- HTML lint / HTML 生成でも `stylelint.base.naming` / `stylelint.base.external` を参照します（未指定時は `stylelint.class` の値）。
+- `rootFile` は `componentsDirs` 配下のみを対象とし、`assets/css`、`index.scss`、`_*.scss` は除外されます。
+- `rootFile` の期待値は `childDir` 配下なら root Block 名のまま、配下外なら `rootCase` で整形したファイル名です。
 - `createRules()` / `createRulesAsync()` を使う場合、`generator.rootFileCase` / `generator.childScssDir` が未指定項目のフォールバックに使われます。
+
+#### `stylelint.placement`
+
+プロパティ配置（コンテナ / アイテム / 内部）を検証します。
+
+```js
+stylelint: {
+  placement: {
+    elementDepth: 4,
+    marginSide: 'top',
+    position: true,
+    sizeInternal: true,
+    responsiveMixins: []
+  }
+}
+```
+
+**設定一覧:**
+
+| 項目 | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `elementDepth` | number | `stylelint.class.elementDepth` | Element 連鎖の段数上限（未指定時は class の値、未指定なら 4） |
+| `marginSide` | `'top' \| 'bottom'` | `'top'` | 縦方向マージンの許可側 |
+| `position` | boolean | `true` | child Block の `position` 制限を有効にする |
+| `sizeInternal` | boolean | `true` | width/height/min/max などを内部プロパティとして扱う |
+| `responsiveMixins` | string[] | `[]` | `@include` で透過扱いにする Mixin 名 |
+| `comments.shared` | RegExp / string | `/--shared/i` | shared コメント判定（`stylelint.base.comments` を上書き） |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | interaction コメント判定（`stylelint.base.comments` を上書き） |
+| `naming` | object | `stylelint.base.naming` | 命名設定（未指定時は base を使用） |
+| `external.classes` | string[] | `stylelint.base.external.classes` | 外部クラスの除外（完全一致。未指定時は base を使用） |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | 外部クラスの除外（前方一致。未指定時は base を使用） |
+| `selectorPolicy` | object | top-level selectorPolicy | このルール内での上書き（未指定時は top-level selectorPolicy を使用） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
 #### `stylelint.interactionScope`
 
@@ -213,11 +269,11 @@ interaction セクション（`// --interaction` と `@at-root & { ... }`）の�
 ```js
 stylelint: {
   interactionScope: {
-    allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+    pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
     requireAtRoot: true,
     requireComment: true,
     requireTail: true,
-    enforceWithCommentOnly: false,
+    commentOnly: false,
     selectorPolicy: { ... } // 任意（未指定時は top-level selectorPolicy を使用）
   }
 }
@@ -229,25 +285,25 @@ interaction セクションは**常にルート Block 直下**に配置します
 
 | 項目 | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `allowedPseudos` | string[] | `[':hover', ':focus', ':focus-visible', ':active', ':visited']` | 検証対象とする擬似クラス |
+| `pseudos` | string[] | `[':hover', ':focus', ':focus-visible', ':active', ':visited']` | 検証対象とする擬似クラス |
 | `requireAtRoot` | boolean | `true` | `@at-root & { ... }` と `&` 起点のセレクタを必須化 |
 | `requireComment` | boolean | `true` | `// --interaction` コメントを必須にするか |
 | `requireTail` | boolean | `true` | interaction ブロックを末尾に置くか |
-| `enforceWithCommentOnly` | boolean | `false` | コメント付きブロックのみ検査するか |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | セクションコメントの個別指定（`sectionCommentPatterns` より優先） |
-| `selectorPolicy` | object | `data-variant` / `data-state` / `aria-*` | このルール内での上書き（未指定時は top-level を使用） |
-| `cacheSizes` | object | `stylelint.cacheSizes` | ルール単体指定（未指定時は `stylelint.cacheSizes`、未指定なら各 1000） |
+| `commentOnly` | boolean | `false` | コメント付きブロックのみ検査するか |
+| `comments.shared` | RegExp / string | `/--shared/i` | shared コメント判定（`stylelint.base.comments` を上書き） |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | interaction コメント判定（`stylelint.base.comments` を上書き） |
+| `selectorPolicy` | object | top-level selectorPolicy | このルール内での上書き（未指定時は top-level selectorPolicy を使用） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
-#### `stylelint.interactionProperties`
+#### `stylelint.interactionProps`
 
 interaction セクション内の transition / animation 宣言と、transition 対象プロパティの整合を検証します。
 
 ```js
 stylelint: {
-  interactionProperties: {
-    // shared / interaction コメントの個別指定が必要ならここで上書き
-    // sharedCommentPattern: /--shared/i,
-    // interactionCommentPattern: /--interaction/i
+  interactionProps: {
+    // comments.shared / comments.interaction の個別指定が必要ならここで上書き
+    // comments: { shared: /--shared/i, interaction: /--interaction/i }
   }
 }
 ```
@@ -256,30 +312,30 @@ stylelint: {
 
 | 項目 | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `sharedCommentPattern` | RegExp / string | `/--shared/i` | セクションコメントの個別指定（`sectionCommentPatterns` より優先） |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | セクションコメントの個別指定（`sectionCommentPatterns` より優先） |
-| `naming` | object | `classStructure.naming` | 命名設定（`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `allowExternalClasses` | string[] | `classStructure.allowExternalClasses` | 外部クラスの除外（完全一致。`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `allowExternalPrefixes` | string[] | `classStructure.allowExternalPrefixes` | 外部クラスの除外（前方一致。`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `cacheSizes` | object | `stylelint.cacheSizes` | ルール単体指定（未指定時は `stylelint.cacheSizes`、未指定なら各 1000） |
+| `comments.shared` | RegExp / string | `/--shared/i` | セクションコメントの個別指定（`stylelint.base.comments` を上書き） |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | セクションコメントの個別指定（`stylelint.base.comments` を上書き） |
+| `naming` | object | `stylelint.base.naming` | 命名設定（未指定時は base を使用） |
+| `external.classes` | string[] | `stylelint.base.external.classes` | 外部クラスの除外（完全一致。未指定時は base を使用） |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | 外部クラスの除外（前方一致。未指定時は base を使用） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
-#### `stylelint.keyframesNaming`
+#### `stylelint.keyframes`
 
 `@keyframes` の命名と配置ルールを検証します。
 
 ```js
 stylelint: {
-  keyframesNaming: {
+  keyframes: {
     enabled: true,
     actionMaxWords: 3,
-    blockNameSource: 'selector',
-    warnOnMissingBlock: true,
+    blockSource: 'selector',
+    blockWarnMissing: true,
     sharedPrefixes: ['kf-'],
     sharedFiles: ['keyframes.scss'],
     ignoreFiles: [],
     ignorePatterns: [],
     // ignorePatterns に一致した keyframes の配置チェックをスキップするか（デフォルト: false）
-    ignorePlacementForIgnored: false
+    ignoreSkipPlacement: false
   }
 }
 ```
@@ -290,25 +346,25 @@ stylelint: {
 | --- | --- | --- | --- |
 | `enabled` | boolean | `true` | `false` の場合はこのルールを無効化（`createRules()` / `createRulesAsync()` 使用時のみ） |
 | `actionMaxWords` | number | `3` | action の語数上限（1〜3） |
-| `blockNameSource` | `'selector' \| 'file' \| 'selector-or-file'` | `'selector'` | Block 名の取得元（`selector` は最初の root Block、`file` はファイル名、`selector-or-file` はフォールバック） |
-| `warnOnMissingBlock` | boolean | `true` | Block を判定できない場合に警告するか |
+| `blockSource` | `'selector' \| 'file' \| 'selector-or-file'` | `'selector'` | Block 名の取得元（`selector` は最初の root Block、`file` はファイル名、`selector-or-file` はフォールバック） |
+| `blockWarnMissing` | boolean | `true` | Block を判定できない場合に警告するか |
 | `sharedPrefixes` | string[] | `['kf-']` | 共有 keyframes の prefix |
 | `sharedFiles` | (string \| RegExp)[] | `['keyframes.scss']` | shared keyframes を許可するファイルパターン（文字列は suffix 判定） |
 | `ignoreFiles` | (string \| RegExp)[] | `[]` | keyframes ルールを無視するファイルパターン（文字列は suffix 判定） |
 | `ignorePatterns` | (string \| RegExp)[] | `[]` | keyframes 名を無視するパターン（文字列は RegExp として解釈） |
-| `ignorePlacementForIgnored` | boolean | `false` | `ignorePatterns` に一致した keyframes の配置チェック（root/末尾）をスキップする |
-| `naming` | object | `classStructure.naming` | 命名設定（`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `allowExternalClasses` | string[] | `classStructure.allowExternalClasses` | 外部クラスの除外（完全一致。`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `allowExternalPrefixes` | string[] | `classStructure.allowExternalPrefixes` | 外部クラスの除外（前方一致。`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `cacheSizes` | object | `stylelint.cacheSizes` | ルール単体指定（未指定時は `stylelint.cacheSizes`、未指定なら各 1000） |
+| `ignoreSkipPlacement` | boolean | `false` | `ignorePatterns` に一致した keyframes の配置チェック（root/末尾）をスキップする |
+| `naming` | object | `stylelint.base.naming` | 命名設定（未指定時は base を使用） |
+| `external.classes` | string[] | `stylelint.base.external.classes` | 外部クラスの除外（完全一致。未指定時は base を使用） |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | 外部クラスの除外（前方一致。未指定時は base を使用） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
-#### `stylelint.pseudoNesting`
+#### `stylelint.pseudo`
 
 疑似クラス / 疑似要素を `&` にネストして書くルールです。
 
 ```js
 stylelint: {
-  pseudoNesting: {}
+  pseudo: {}
 }
 ```
 
@@ -316,27 +372,27 @@ stylelint: {
 
 | 項目 | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `cacheSizes` | object | `stylelint.cacheSizes` | ルール単体指定（未指定時は `stylelint.cacheSizes`、未指定なら各 1000） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
 - 例: `.btn { &:hover { ... } }`, `.btn { &::before { ... } }`
 - 不可: `.btn:hover { ... }`, `& > .btn:hover { ... }`
 
-#### `stylelint.relComments`
+#### `stylelint.rel`
 
 `@rel` リンクコメントのルールを定義します。
 
 ```js
 stylelint: {
-  relComments: {
-    requireInScssDirectories: true,
-    requireWhenMetaLoadCss: true,
+  rel: {
+    requireScss: true,
+    requireMeta: true,
+    requireParent: true,
+    requireChild: true,
+    requireChildShared: true,
+    requireChildInteraction: false,
     validatePath: true,
-    skipFilesWithoutRules: true,
-    requireChildRelComments: true,
-    requireChildRelCommentsInShared: true,
-    requireChildRelCommentsInInteraction: false,
-    requireParentRelComment: true,
-    childScssDir: 'scss'
+    skipNoRules: true,
+    childDir: 'scss'
   }
 }
 ```
@@ -345,25 +401,26 @@ stylelint: {
 
 | 項目 | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `requireInScssDirectories` | boolean | `true` | `childScssDir` 配下の SCSS で @rel を必須にするか |
-| `requireWhenMetaLoadCss` | boolean | `true` | `@include meta.load-css("<childScssDir>")` を含む親 Block で先頭コメントを必須にするか |
+| `requireScss` | boolean | `true` | `childDir` 配下の SCSS で @rel を必須にするか |
+| `requireMeta` | boolean | `true` | `@include meta.load-css("<childDir>")` を含む親 Block で先頭コメントを必須にするか |
+| `requireParent` | boolean | `true` | 子→親の @rel を必須にするか（`requireMeta` / `requireScss` が有効な場合のみ） |
+| `requireChild` | boolean | `true` | 親→子の @rel を必須にするか |
+| `requireChildShared` | boolean | `true` | shared セクション内でも子 @rel を必須にするか |
+| `requireChildInteraction` | boolean | `false` | interaction セクション内でも子 @rel を必須にするか |
 | `validatePath` | boolean | `true` | パスの実在検証を行うか |
-| `skipFilesWithoutRules` | boolean | `true` | セレクタルールが無い SCSS をスキップするか |
-| `requireChildRelComments` | boolean | `true` | 親→子の @rel を必須にするか |
-| `requireChildRelCommentsInShared` | boolean | `true` | shared セクション内でも子 @rel を必須にするか |
-| `requireChildRelCommentsInInteraction` | boolean | `false` | interaction セクション内でも子 @rel を必須にするか |
-| `requireParentRelComment` | boolean | `true` | 子→親の @rel を必須にするか（`requireWhenMetaLoadCss` / `requireInScssDirectories` が有効な場合のみ） |
-| `childScssDir` | string | `'scss'` | 子 Block の SCSS を置くディレクトリ名（`createRules()` / `createRulesAsync()` 使用時のみ `generator.childScssDir` が未指定時のフォールバック） |
-| `sharedCommentPattern` | RegExp / string | `/--shared/i` | セクションコメントの個別指定（`sectionCommentPatterns` より優先） |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | セクションコメントの個別指定（`sectionCommentPatterns` より優先） |
-| `naming` | object | `classStructure.naming` | 命名設定（`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `allowExternalClasses` | string[] | `classStructure.allowExternalClasses` | 外部クラスの除外（完全一致。`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `allowExternalPrefixes` | string[] | `classStructure.allowExternalPrefixes` | 外部クラスの除外（前方一致。`createRules()` / `createRulesAsync()` 使用時のみ `classStructure` から自動継承） |
-| `cacheSizes` | object | `stylelint.cacheSizes` | ルール単体指定（未指定時は `stylelint.cacheSizes`、未指定なら各 1000） |
+| `skipNoRules` | boolean | `true` | セレクタルールが無い SCSS をスキップするか |
+| `childDir` | string | `'scss'` | 子 Block の SCSS を置くディレクトリ名（`createRules()` / `createRulesAsync()` 使用時のみ `generator.childScssDir` が未指定時のフォールバック） |
+| `aliasRoots` | object | `aliasRoots` | @rel エイリアスの解決ルート（未指定時は top-level `aliasRoots`） |
+| `comments.shared` | RegExp / string | `/--shared/i` | セクションコメントの個別指定（`stylelint.base.comments` を上書き） |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | セクションコメントの個別指定（`stylelint.base.comments` を上書き） |
+| `naming` | object | `stylelint.base.naming` | 命名設定（未指定時は base を使用） |
+| `external.classes` | string[] | `stylelint.base.external.classes` | 外部クラスの除外（完全一致。未指定時は base を使用） |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | 外部クラスの除外（前方一致。未指定時は base を使用） |
+| `cache` | object | `stylelint.base.cache` | ルール単体指定（未指定時は base、未指定なら各 1000） |
 
 補足:
 - エイリアスの解決は `aliasRoots` を参照します（`validatePath: true` の場合）
-- `requireParentRelComment` は `requireWhenMetaLoadCss` が有効で `@include meta.load-css(...)` を含む親 Block、または `requireInScssDirectories` が有効で `childScssDir` 配下にある SCSS の場合にのみ発火します
+- `requireParent` は `requireMeta` が有効で `@include meta.load-css(...)` を含む親 Block、または `requireScss` が有効で `childDir` 配下にある SCSS の場合にのみ発火します
 
 詳細は [SpiraCSS Comment Links](comment-links.md) を参照してください。
 
@@ -482,18 +539,18 @@ module.exports = {
     styles: ['styles']
   },
   stylelint: {
-    classStructure: {
-      allowElementChainDepth: 4,
-      enforceChildCombinator: true,
-      enforceSingleRootBlock: true
+    class: {
+      elementDepth: 4,
+      childCombinator: true,
+      rootSingle: true
     },
     interactionScope: {
-      allowedPseudos: [':hover', ':focus'],
+      pseudos: [':hover', ':focus'],
       requireComment: true
     },
-    pseudoNesting: {},
-    relComments: {
-      requireInScssDirectories: true
+    pseudo: {},
+    rel: {
+      requireScss: true
     }
   },
   generator: {

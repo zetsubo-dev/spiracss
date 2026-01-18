@@ -1,8 +1,7 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-property-placement.constants'
 import type { WordCase } from '../types'
 import {
+  createRuleMessages,
   formatCode,
   formatConfigList,
   formatPattern,
@@ -103,7 +102,7 @@ const isPositionUnknownReason = (
   value: RuleMessageArg | undefined
 ): value is PositionUnknownReason => value === 'dynamic' || value === 'unknown'
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   containerInChildBlock: (prop: string, selector: string) =>
     `${formatCode(
       prop
@@ -244,7 +243,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
       '@at-root'
     )} breaks selector hierarchy and should only be used for interaction states. ` +
     `Move this rule to the interaction section using ${formatCode(
-      'interactionCommentPattern'
+      'comments.interaction'
     )} (current: ${formatPattern(
       pattern
     )}), ` +

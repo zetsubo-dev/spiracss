@@ -8,9 +8,8 @@ describe('spiracss/property-placement', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        elementDepth: 4,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -798,7 +797,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `:global(.foo) .block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `:global(.foo) .block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1596,7 +1595,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1610,7 +1609,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name, :global(.foo)`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name, :global(.foo)`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1624,7 +1623,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:has(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:has(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1638,7 +1637,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:is(:global(.foo), .bar)`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:is(:global(.foo), .bar)`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1652,7 +1651,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:not(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:not(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1666,7 +1665,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:nth-child(2n of :global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:nth-child(2n of :global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1682,7 +1681,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name > .title`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name > .title`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1920,7 +1919,7 @@ body {
         warnings: [
           {
             message:
-              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `interactionCommentPattern` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
           }
         ]
       },
@@ -1945,14 +1944,13 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
+        elementDepth: 4,
         naming: {
           customPatterns: {
             modifier: /^is-[a-z]+$/
           }
         },
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -1981,10 +1979,9 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
+        elementDepth: 4,
         responsiveMixins: ['clearfix'],
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2012,10 +2009,9 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
+        elementDepth: 4,
         responsiveMixins: ['breakpoint-up', 'breakpoint-down', 'screen'],
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2046,10 +2042,9 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
+        elementDepth: 4,
         marginSide: 'bottom',
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2089,10 +2084,9 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enablePosition: false,
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        elementDepth: 4,
+        position: false,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2115,10 +2109,9 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enableSizeInternal: false,
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        elementDepth: 4,
+        sizeInternal: false,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2141,10 +2134,9 @@ body {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
+        elementDepth: 4,
         responsiveMixins: ['breakpoint-up'],
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2192,9 +2184,8 @@ body {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        elementDepth: 4,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2237,9 +2228,8 @@ describe('spiracss/property-placement - selector parse failure', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        elementDepth: 4,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -2273,9 +2263,8 @@ describe('spiracss/property-placement - selector resolution explosion', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        sharedCommentPattern: /--shared/i,
-        interactionCommentPattern: /--interaction/i
+        elementDepth: 4,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',

@@ -43,25 +43,25 @@ export const normalizeCacheSizes = (
     selector: normalizeCacheSize(
       raw.selector,
       DEFAULT_CACHE_SIZES.selector,
-      'cacheSizes.selector',
+      'cache.selector',
       reportInvalid
     ),
     patterns: normalizeCacheSize(
       raw.patterns,
       DEFAULT_CACHE_SIZES.patterns,
-      'cacheSizes.patterns',
+      'cache.patterns',
       reportInvalid
     ),
     naming: normalizeCacheSize(
       raw.naming,
       DEFAULT_CACHE_SIZES.naming,
-      'cacheSizes.naming',
+      'cache.naming',
       reportInvalid
     ),
     path: normalizeCacheSize(
       raw.path,
       DEFAULT_CACHE_SIZES.path,
-      'cacheSizes.path',
+      'cache.path',
       reportInvalid
     )
   }

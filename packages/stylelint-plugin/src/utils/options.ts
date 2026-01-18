@@ -7,21 +7,29 @@ import {
 } from './normalize'
 
 type CommonOptionsInput = Partial<{
-  sharedCommentPattern: RegExp | string
-  interactionCommentPattern: RegExp | string
+  comments: {
+    shared?: RegExp | string
+    interaction?: RegExp | string
+  }
   naming: NamingOptions
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-  cacheSizes: CacheSizes
+  external: {
+    classes?: string[]
+    prefixes?: string[]
+  }
+  cache: CacheSizes
 }>
 
 type CommonOptionValues = {
-  sharedCommentPattern: RegExp
-  interactionCommentPattern: RegExp
+  comments: {
+    shared: RegExp
+    interaction: RegExp
+  }
   naming: NamingOptions | undefined
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-  cacheSizes: NormalizedCacheSizes
+  external: {
+    classes: string[]
+    prefixes: string[]
+  }
+  cache: NormalizedCacheSizes
 }
 
 type CommonOptionsDefaults = Partial<CommonOptionValues>
@@ -39,55 +47,49 @@ export const normalizeCommonOptions = <T extends CommonOptionsDefaults>(
   reportInvalid?: InvalidOptionReporter
 ): NormalizedCommonOptions<T> => {
   const result: Partial<CommonOptionValues> = {}
+  const rawComments = raw.comments
+  const rawExternal = raw.external
 
-  if (hasOwn(defaults, 'sharedCommentPattern')) {
-    result.sharedCommentPattern = normalizeCommentPattern(
-      raw.sharedCommentPattern,
-      defaults.sharedCommentPattern as RegExp,
-      'sharedCommentPattern',
-      reportInvalid
-    )
-  }
-
-  if (hasOwn(defaults, 'interactionCommentPattern')) {
-    result.interactionCommentPattern = normalizeCommentPattern(
-      raw.interactionCommentPattern,
-      defaults.interactionCommentPattern as RegExp,
-      'interactionCommentPattern',
-      reportInvalid
-    )
+  if (hasOwn(defaults, 'comments')) {
+    const fallback = defaults.comments as CommonOptionValues['comments']
+    result.comments = {
+      shared: normalizeCommentPattern(
+        rawComments?.shared,
+        fallback.shared,
+        'comments.shared',
+        reportInvalid
+      ),
+      interaction: normalizeCommentPattern(
+        rawComments?.interaction,
+        fallback.interaction,
+        'comments.interaction',
+        reportInvalid
+      )
+    }
   }
 
   if (hasOwn(defaults, 'naming')) {
     result.naming = raw.naming ?? defaults.naming
   }
 
-  if (hasOwn(defaults, 'allowExternalClasses')) {
-    result.allowExternalClasses = normalizeStringArray(
-      raw.allowExternalClasses,
-      defaults.allowExternalClasses ?? []
-    )
+  if (hasOwn(defaults, 'external')) {
+    const fallback = defaults.external as CommonOptionValues['external']
+    result.external = {
+      classes: normalizeStringArray(rawExternal?.classes, fallback.classes ?? []),
+      prefixes: normalizeStringArray(rawExternal?.prefixes, fallback.prefixes ?? [])
+    }
   }
 
-  if (hasOwn(defaults, 'allowExternalPrefixes')) {
-    result.allowExternalPrefixes = normalizeStringArray(
-      raw.allowExternalPrefixes,
-      defaults.allowExternalPrefixes ?? []
-    )
-  }
-
-  if (hasOwn(defaults, 'cacheSizes')) {
-    result.cacheSizes = normalizeCacheSizes(raw.cacheSizes, reportInvalid)
+  if (hasOwn(defaults, 'cache')) {
+    result.cache = normalizeCacheSizes(raw.cache, reportInvalid)
   }
 
   return result as NormalizedCommonOptions<T>
 }
 
 export const pickCommonDefaults = (defaults: CommonOptionsDefaults): CommonOptionsDefaults => ({
-  sharedCommentPattern: defaults.sharedCommentPattern,
-  interactionCommentPattern: defaults.interactionCommentPattern,
+  comments: defaults.comments,
   naming: defaults.naming,
-  allowExternalClasses: defaults.allowExternalClasses,
-  allowExternalPrefixes: defaults.allowExternalPrefixes,
-  cacheSizes: defaults.cacheSizes
+  external: defaults.external,
+  cache: defaults.cache
 })

@@ -39,7 +39,7 @@ Note: Lint rules do not enforce layer intent (Page vs Component responsibility).
 1) Load spiracss.config.js from project root.
 2) Resolve effective settings (naming, structure, selectorPolicy, interaction, keyframes, rel).
 3) Classify classes and decide Block/Element/Modifier/Utility/External.
-4) Place rules into correct sections (basic/shared/interaction) based on policy.
+4) Place rules into correct sections (basic/shared/interaction) based on selectorPolicy.
 5) Generate or modify code.
 6) Run lint tools; fix code to satisfy config. Change config only if explicitly requested.
 
@@ -50,31 +50,34 @@ If config is missing or invalid, any output based on fallback defaults must be t
 
 ### 3.1 Stylelint createRules / createRulesAsync
 
-- stylelint.sectionCommentPatterns.shared / interaction are expanded into:
-  - classStructure.sharedCommentPattern / interactionCommentPattern
-  - interactionScope.interactionCommentPattern
-  - interactionProperties.sharedCommentPattern / interactionCommentPattern
-  - relComments.sharedCommentPattern / interactionCommentPattern
-  (Only when the per-rule patterns are not already set.)
-- Per-rule comment patterns always override sectionCommentPatterns.
+- stylelint.base.comments.shared / interaction are merged into per-rule comments when not explicitly set:
+  - class.comments
+  - placement.comments
+  - interactionScope.comments
+  - interactionProps.comments
+  - rel.comments
+- Per-rule comments override base comments (shared/interaction).
 - Comment patterns accept RegExp or string. Strings become new RegExp(pattern, 'i').
   - Unsafe/invalid patterns fall back to defaults.
 - selectorPolicy:
-  - Top-level selectorPolicy overrides classStructure.selectorPolicy.
-  - Top-level selectorPolicy fills interactionScope.selectorPolicy if not set there.
-- interactionProperties inherits naming + allowExternalClasses/Prefixes from classStructure only when those keys are not explicitly set in interactionProperties.
-- keyframesNaming inherits naming + allowExternalClasses/Prefixes from classStructure only when those keys are not explicitly set in keyframesNaming.
-- relComments inherits naming + allowExternalClasses/Prefixes from classStructure only when those keys are not explicitly set in relComments.
-- generator.rootFileCase / childScssDir fill classStructure rootFileCase / childScssDir if missing.
-- generator.childScssDir fills relComments.childScssDir if missing.
-- stylelint.cacheSizes fills per-rule cacheSizes if missing.
+  - Top-level selectorPolicy is used when stylelint.base.selectorPolicy is not set.
+  - stylelint.base.selectorPolicy fills class/placement/interactionScope selectorPolicy unless overridden.
+- Shared naming defaults to stylelint.base.naming; if missing, stylelint.class.naming is used.
+- interactionProps inherits naming + external from stylelint.base/stylelint.class unless explicitly set in interactionProps.
+- keyframes inherits naming + external from stylelint.base/stylelint.class unless explicitly set in keyframes.
+- rel inherits naming + external from stylelint.base/stylelint.class unless explicitly set in rel.
+- stylelint.base.paths.childDir / components fill class.childDir / componentsDirs when missing.
+- generator.rootFileCase / childScssDir fill class.rootCase / childDir if missing.
+- generator.childScssDir fills rel.childDir if missing.
+- stylelint.base.cache fills per-rule cache when missing.
+- placement.elementDepth defaults to class.elementDepth when missing.
 
 ### 3.2 HTML tools (html-lint / html-to-scss / html-format)
 
 - All HTML tools load spiracss.config.js from the current working directory.
 - Run tools from the directory that contains spiracss.config.js.
-- spiracss-html-lint: uses stylelint.classStructure.naming + allowExternal* + top-level selectorPolicy only.
-- spiracss-html-to-scss (generator): uses generator.globalScssModule, pageEntryAlias, pageEntrySubdir, childScssDir, layoutMixins, rootFileCase; also uses classStructure naming + allowExternal* + selectorPolicy for classification.
+- spiracss-html-lint: uses stylelint.base.naming (fallback: stylelint.class.naming), merged external (base + class), and top-level selectorPolicy.
+- spiracss-html-to-scss (generator): uses generator.globalScssModule, pageEntryAlias, pageEntrySubdir, childScssDir, layoutMixins, rootFileCase; also uses naming + external (base + class) + selectorPolicy for classification.
 - spiracss-html-format: uses htmlFormat.classAttribute ("class" | "className"); data-spiracss-classname is an internal placeholder and is normalized back to class/className (do not author it).
 - If config is missing, defaults apply. If unreadable, tools exit with error.
 
@@ -89,7 +92,7 @@ If config is missing or invalid, any output based on fallback defaults must be t
 
 ### 4.2 Classification order (HTML base classification priority)
 
-1) Matches allowExternalPrefixes / allowExternalClasses -> External.
+1) Matches external.prefixes / external.classes -> External.
 2) Matches modifier pattern (modifierPrefix + modifierCase or customPatterns.modifier) -> Modifier (never a base class).
 3) Starts with "u-" -> Utility (never a base class).
 4) Starts with "-" or "_" -> Invalid as base.
@@ -101,7 +104,7 @@ If config is missing or invalid, any output based on fallback defaults must be t
 
 This order is for HTML base classification. Stylelint validates class names individually (no base-first semantics).
 Reserved prefixes ("u-", "-", "_") are fixed for HTML base classification when not treated as External.
-customPatterns cannot override reserved prefixes; only allowExternal* can bypass them, which removes the class from structure checks.
+customPatterns cannot override reserved prefixes; only external.* can bypass them, which removes the class from structure checks.
 If customPatterns.block is set, Block classification uses only that pattern (word-count Block classification is skipped).
 
 ### 4.3 Word count rules
@@ -132,10 +135,10 @@ Internal capitals create additional words; camel/pascal multi-word names become 
 
 ### 4.6 External classes
 
-- allowExternalClasses (exact) / allowExternalPrefixes (prefix) exclude classes from structure checks.
+- external.classes (exact) / external.prefixes (prefix) exclude classes from structure checks.
 - If an element mixes External and Spira classes, the base must be Block/Element (External cannot be the base).
 - If all classes are External, the element is treated as non-Spira structure.
-- Avoid referencing utilities in SCSS. Only consider allowExternalPrefixes for utilities if the project explicitly requires it and config changes are authorized.
+- Avoid referencing utilities in SCSS. Only consider external.prefixes for utilities if the project explicitly requires it and config changes are authorized.
 
 ## 5. Structure and Sections
 
@@ -150,18 +153,18 @@ Rules:
 - --shared and --interaction must be direct children of the root Block.
 - Root wrappers like @layer/@supports/@media/@container/@scope are allowed.
 - Comment patterns control section detection; requireComment=true makes them mandatory.
-- interactionProperties always uses comment patterns to detect the interaction section.
+- interactionProps always uses comment patterns to detect the interaction section.
 
 ### 5.2 Structure constraints
 
 - Allowed: Block > Block, Block > Element.
 - Element cannot contain Block in basic/shared sections (interaction is exempt).
 - Block > Block > Block (3+ levels) is invalid in basic/shared sections (interaction is exempt). There is no config option to allow this; refactor or disable the rule.
-- Element chain depth is limited by allowElementChainDepth (interaction is exempt).
-- enforceChildCombinator=true requires ">" under Block direct children (shared/interaction are exempt).
+- Element chain depth is limited by elementDepth (interaction is exempt).
+- childCombinator=true requires ">" under Block direct children (shared/interaction are exempt).
 - Shared section relaxes the ">" requirement but still enforces structure rules.
 - Do not target a grandchild Element from a parent Block when Block > Block exists (interaction is exempt).
-- enforceSingleRootBlock=true requires a single root Block per file; it applies only to top-level selectors that include Spira classes.
+- rootSingle=true requires a single root Block per file; it applies only to top-level selectors that include Spira classes.
 
 ### 5.3 Variant and State placement
 
@@ -170,13 +173,13 @@ Rules:
 - Variant selectors may appear in interaction only for transition initial values when needed.
 - Do not mix data-variant with data-state / aria-* in the same selector.
 
-### 5.4 Root file naming (enforceRootFileName)
+### 5.4 Root file naming (rootFile)
 
 - Applies only inside componentsDirs (supports nested paths).
 - Skips assets/css, index.scss, and files starting with "_" (partials).
-- If the path includes childScssDir, expected filename is the root Block name as-is.
-- Otherwise, expected filename is the root Block name formatted by rootFileCase.
-- If enforceRootFileName=false, no filename checks are applied.
+- If the path includes childDir, expected filename is the root Block name as-is.
+- Otherwise, expected filename is the root Block name formatted by rootCase.
+- If rootFile=false, no filename checks are applied.
 
 ## 6. Variant/State Policy (selectorPolicy)
 
@@ -209,20 +212,20 @@ interactionScope:
 - requireComment=true: // --interaction is mandatory.
 - requireTail=true: interaction block must be the last non-comment node inside the root Block.
 - requireTail is checked only when the interaction section is detected (comment + @at-root &).
-- enforceWithCommentOnly=true: only validate sections with the comment.
+- commentOnly=true: only validate sections with the comment.
   - false: pseudo/state selectors without comment are detected and reported.
-- allowedPseudos is configured by stylelint.interactionScope.allowedPseudos.
+- pseudos is configured by stylelint.interactionScope.pseudos.
 
-pseudoNesting:
+pseudo:
 - Pseudo-classes/elements must be nested under "&".
 - OK: .block { &:hover {} }
 - OK: .block { > .child { &:hover {} } }
 - NG: .block:hover {}
 - NG: & > .child:hover {}
 
-Default allowedPseudos: :hover, :focus, :focus-visible, :active, :visited.
+Default pseudos: :hover, :focus, :focus-visible, :active, :visited.
 
-## 8. Transition / Animation (interactionProperties)
+## 8. Transition / Animation (interactionProps)
 
 Rules:
 - transition / animation only in interaction section.
@@ -245,22 +248,22 @@ Example:
 }
 ```
 
-## 9. Keyframes (keyframesNaming)
+## 9. Keyframes (keyframes)
 
 - @keyframes must be at root level and file end (unless ignored by config).
 - Naming: {block}-{action} or {block}-{element}-{action}.
 - actionMaxWords applies to action part; action case follows blockCase.
-- blockNameSource:
+- blockSource:
   - selector: use root Block selector
   - file: use filename
   - selector-or-file: try selector first, then file
-- warnOnMissingBlock=true: emits warning if block cannot be determined; naming checks are skipped.
+- blockWarnMissing=true: emits warning if block cannot be determined; naming checks are skipped.
 - ignoreFiles / ignorePatterns can skip files or names.
-- ignorePlacementForIgnored skips placement checks for ignored names.
+- ignoreSkipPlacement skips placement checks for ignored names.
 - sharedPrefixes default: ["kf-"]
 - sharedFiles default: ["keyframes.scss"]
 
-## 10. @rel Comments (relComments)
+## 10. @rel Comments (rel)
 
 aliasRoots:
 - Required for Stylelint; not used by HTML CLI.
@@ -277,16 +280,17 @@ aliasRoots: {
 ```
 
 Requirement flags:
-- requireWhenMetaLoadCss: if true, a parent file using meta.load-css requires a page @rel at root scope.
-- requireInScssDirectories: if true, SCSS under childScssDir requires child -> parent @rel.
-- requireChildRelCommentsInShared / requireChildRelCommentsInInteraction control checks inside those sections (only when requireChildRelComments=true).
-- requireParentRelComment enables the root-scope @rel requirement when applicable.
+- requireMeta: if true, a parent file using meta.load-css requires a page @rel at root scope.
+- requireScss: if true, SCSS under childDir requires child -> parent @rel.
+- requireChild enables parent -> child @rel checks.
+- requireChildShared / requireChildInteraction control checks inside those sections (only when requireChild=true).
+- requireParent enables the root-scope @rel requirement when applicable.
 
 Placement rules (when required by config):
 - Parent Block -> Page: // @assets/css/page.scss at root scope, before rules.
 - Child Block -> Parent: // @rel/../parent-block.scss at root scope, before rules.
 - Parent -> Child: // @rel/scss/child-block.scss as the first node inside "> .child" rule.
-- Root Block must be the first rule in the file when requireParentRelComment applies.
+- Root Block must be the first rule in the file when requireParent applies.
 
 ## 11. Tooling Constraints
 
@@ -305,17 +309,19 @@ Lint messages are designed to be actionable. Read the message first, then map to
 If a message conflicts with config, re-check the config. If a message conflicts with this document, follow the tool output and report doc drift. Only change config when explicitly instructed.
 
 Stylelint rules -> config section -> typical fixes:
-- spiracss/class-structure -> stylelint.classStructure
+- spiracss/class-structure -> stylelint.class
   - Fix naming, child combinators, depth, modifier placement.
+- spiracss/property-placement -> stylelint.placement
+  - Fix placement rules (margin side, position, size/internal, responsive mixins).
 - spiracss/interaction-scope -> stylelint.interactionScope
   - Fix @at-root &, leading &, comment, tail placement.
-- spiracss/interaction-properties -> stylelint.interactionProperties
+- spiracss/interaction-properties -> stylelint.interactionProps
   - Move transition/animation to interaction; specify targets; move initial values.
-- spiracss/keyframes-naming -> stylelint.keyframesNaming
+- spiracss/keyframes-naming -> stylelint.keyframes
   - Move @keyframes to root/end; rename to {block}-{action}.
-- spiracss/pseudo-nesting -> stylelint.pseudoNesting
+- spiracss/pseudo-nesting -> stylelint.pseudo
   - Nest pseudo under &; do not attach pseudo directly to selector.
-- spiracss/rel-comments -> stylelint.relComments
+- spiracss/rel-comments -> stylelint.rel
   - Add/move @rel comments; fix alias paths; ensure root Block is first rule when required.
 
 HTML lint error codes -> typical fixes:
@@ -443,35 +449,38 @@ Child Block file:
 
 ## 14. Fallback Defaults (use only if config is missing)
 
-- classStructure:
+- class:
   - blockCase=kebab, blockMaxWords=2, elementCase=kebab, modifierCase=kebab, modifierPrefix="-"
-  - enforceChildCombinator=true
-  - enforceSingleRootBlock=true
-  - enforceRootFileName=true
-  - rootFileCase="preserve"
-  - childScssDir="scss"
+  - childCombinator=true
+  - childNesting=true
+  - rootSingle=true
+  - rootFile=true
+  - rootCase="preserve"
+  - childDir="scss"
   - componentsDirs=["components"]
-  - allowElementChainDepth=4
-  - sharedCommentPattern=/--shared/i, interactionCommentPattern=/--interaction/i
+  - elementDepth=4
+  - comments.shared=/--shared/i, comments.interaction=/--interaction/i
 - selectorPolicy:
+  - valueNaming={ case: kebab, maxWords: 2 }
   - variant.mode=data, variant.dataKeys=[data-variant]
   - state.mode=data, state.dataKey=data-state, state.ariaKeys=[aria-expanded, aria-selected, aria-disabled]
-  - valueNaming={ case: kebab, maxWords: 2 }
+- placement:
+  - elementDepth=4, marginSide="top", position=true, sizeInternal=true, responsiveMixins=[]
 - interactionScope:
-  - requireAtRoot=true, requireComment=true, requireTail=true, enforceWithCommentOnly=false
-  - allowedPseudos=[:hover, :focus, :focus-visible, :active, :visited]
-- relComments:
-  - requireParentRelComment=true
-  - requireChildRelComments=true
-  - requireChildRelCommentsInShared=true
-  - requireChildRelCommentsInInteraction=false
-  - requireWhenMetaLoadCss=true
-  - requireInScssDirectories=true
+  - requireAtRoot=true, requireComment=true, requireTail=true, commentOnly=false
+  - pseudos=[:hover, :focus, :focus-visible, :active, :visited]
+- rel:
+  - requireScss=true
+  - requireMeta=true
+  - requireParent=true
+  - requireChild=true
+  - requireChildShared=true
+  - requireChildInteraction=false
   - validatePath=true
-  - skipFilesWithoutRules=true
-- keyframesNaming:
+  - skipNoRules=true
+- keyframes:
   - sharedPrefixes=["kf-"], sharedFiles=["keyframes.scss"], actionMaxWords=3
-  - blockNameSource="selector", warnOnMissingBlock=true, ignorePlacementForIgnored=false
+  - blockSource="selector", blockWarnMissing=true, ignoreSkipPlacement=false
 
 ## 15. Optional Official References (absolute URLs)
 

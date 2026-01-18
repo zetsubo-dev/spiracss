@@ -1,7 +1,6 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-class-structure.constants'
 import {
+  createRuleMessages,
   formatConfigList,
   formatList,
   formatPattern,
@@ -10,7 +9,7 @@ import {
   type RuleMessageArgs
 } from '../utils/messages'
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   invalidName: (cls: string, namingHint: string) =>
     // Naming style is configurable, so only state that it violates SpiraCSS Block/Element/Modifier rules.
     `Class ${formatCode(
@@ -59,18 +58,24 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
       `> .${child}`
     )}. ` +
     `Sections marked by ${formatCode(
-      'sharedCommentPattern'
+      'comments.shared'
     )} (current: ${formatPattern(
       sharedPattern
     )}) ` +
     `or ${formatCode(
-      'interactionCommentPattern'
+      'comments.interaction'
     )} (current: ${formatPattern(
       interactionPattern
     )}) are exempt.`,
+  needChildNesting: (selector: string) =>
+    `Do not write child selectors at the top level. Selector: ${formatCode(
+      selector
+    )}. Nest it inside the Block (e.g., ${formatCode(
+      '.block { > .child { ... } }'
+    )}).`,
   sharedNeedRootBlock: (sharedPattern: RegExp) =>
     `Place the shared section comment matching ${formatCode(
-      'sharedCommentPattern'
+      'comments.shared'
     )} (current: ${formatPattern(
       sharedPattern
     )}) directly under the root Block ` +

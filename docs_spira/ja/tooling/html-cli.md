@@ -130,7 +130,7 @@ npx spiracss-html-lint --root path/to/file.html --json
 - `--selection` モードでは `class` を持つ要素のみ検証（該当要素が無い場合は `INVALID_BASE_CLASS`）
 - `data-*` / `aria-*` は予約キー（`variant.dataKeys` / `state.dataKey` / `state.ariaKeys`）のみ対象
 - data 値の命名は `selectorPolicy.valueNaming` と `variant/state.valueNaming` で検証
-- `allowExternalClasses` / `allowExternalPrefixes` に一致するクラスは外部扱い（base 判定から除外）
+- `stylelint.base.external.classes` / `stylelint.base.external.prefixes` に一致するクラスは外部扱い（base 判定から除外）
 - 先頭トークンが外部クラスで、外部以外のクラスが後続にある場合は `INVALID_BASE_CLASS`（Block/Element を先頭に置く必要あり）。外部クラスのみの要素は許容
 - `variant.mode=class` + `state.mode=class` は state 分離不可のため **全 modifier を variant 扱い**
 - エラーメッセージの文言は変更される可能性があるため、文字列一致に依存しないでください

@@ -1,16 +1,16 @@
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { testRule, withClassMode } from './rule-test-utils.js'
 
-describe('spiracss/class-structure - enforceSingleRootBlock option', () => {
+describe('spiracss/class-structure - rootSingle option', () => {
   testRule({
     plugins: [classStructure],
     ruleName: classStructure.ruleName,
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
-        enforceSingleRootBlock: true,
+        elementDepth: 4,
+        childCombinator: false,
+        rootSingle: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -50,10 +50,10 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalPrefixes: ['u-'],
-        enforceChildCombinator: false,
-        enforceSingleRootBlock: true,
+        elementDepth: 4,
+        external: { prefixes: ['u-'] },
+        childCombinator: false,
+        rootSingle: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -65,7 +65,7 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
         description: 'root Block only'
       },
       {
-        code: '.tab-panels > .tab-panel {}',
+        code: '.tab-panels[role="tablist"] {}',
         description: 'selector includes the root Block'
       },
       {
@@ -117,11 +117,11 @@ describe('spiracss/class-structure - file name matches root Block name', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
-        enforceRootFileName: true,
-        rootFileCase: 'preserve',
-        childScssDir: 'scss',
+        elementDepth: 4,
+        childCombinator: false,
+        rootFile: true,
+        rootCase: 'preserve',
+        childDir: 'scss',
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -136,7 +136,7 @@ describe('spiracss/class-structure - file name matches root Block name', () => {
       {
         code: '.card-header {}',
         codeFilename: 'components/card-list/scss/card-header.scss',
-        description: 'child Blocks match class names without applying rootFileCase'
+        description: 'child Blocks match class names without applying rootCase'
       }
     ],
 
@@ -152,18 +152,18 @@ describe('spiracss/class-structure - file name matches root Block name', () => {
 })
 
 
-describe('spiracss/class-structure - rootFileCase application', () => {
+describe('spiracss/class-structure - rootCase application', () => {
   testRule({
     plugins: [classStructure],
     ruleName: classStructure.ruleName,
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
-        enforceRootFileName: true,
-        rootFileCase: 'pascal',
-        childScssDir: 'scss',
+        elementDepth: 4,
+        childCombinator: false,
+        rootFile: true,
+        rootCase: 'pascal',
+        childDir: 'scss',
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -173,7 +173,7 @@ describe('spiracss/class-structure - rootFileCase application', () => {
       {
         code: '.hero-card {}',
         codeFilename: 'components/hero-card/HeroCard.scss',
-        description: 'file name matching rootFileCase is allowed'
+        description: 'file name matching rootCase is allowed'
       }
     ]
   })
@@ -187,11 +187,11 @@ describe('spiracss/class-structure - componentsDirs setting', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
-        enforceRootFileName: true,
-        rootFileCase: 'preserve',
-        childScssDir: 'scss',
+        elementDepth: 4,
+        childCombinator: false,
+        rootFile: true,
+        rootCase: 'preserve',
+        childDir: 'scss',
         componentsDirs: ['src/ui'],
         naming: { blockCase: 'kebab' }
       })

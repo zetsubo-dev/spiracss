@@ -68,8 +68,8 @@ const getExternalClassCache = (options: Options): { classSet: Set<string>; prefi
   const cached = externalClassCache.get(options)
   if (cached) return cached
   const entry = {
-    classSet: new Set(options.allowExternalClasses),
-    prefixes: options.allowExternalPrefixes
+    classSet: new Set(options.external.classes),
+    prefixes: options.external.prefixes
   }
   externalClassCache.set(options, entry)
   return entry
@@ -1081,7 +1081,7 @@ export const analyzeSelectorList = (
   const normalizedSelectors = selectorList.filter((selector) => selector.length > 0)
   if (normalizedSelectors.length === 0) return { status: 'skip' }
   const strippedSelectors = normalizedSelectors.flatMap((selector) =>
-    analyzeGlobalSelector(selector, cache, options.cacheSizes.selector).strippedSelectors
+    analyzeGlobalSelector(selector, cache, options.cache.selector).strippedSelectors
   )
   if (strippedSelectors.length === 0) return { status: 'skip' }
 
@@ -1192,7 +1192,7 @@ const analyzeSelectorWithFamilyKey = (
       const kind = analyzeSegmentKind(segment, options, policy, patterns, classifyOptions)
       return kind ? { kind } : null
     },
-    options.allowElementChainDepth
+    options.element.depth
   )
   if (!chain) return { status: 'skip' }
 
@@ -1215,7 +1215,7 @@ const analyzeSelectorWithFamilyKey = (
     segments,
     combinators,
     (segment) => analyzeSegmentBase(segment, options, policy, patterns, classifyOptions),
-    options.allowElementChainDepth
+    options.element.depth
   )
   const familyKey = baseChain ? buildFamilyKeyFromChain(baseChain) : null
 

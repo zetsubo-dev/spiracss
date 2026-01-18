@@ -40,6 +40,13 @@ SpiraCSS turns structural decisions into invariants instead of interpretations. 
 
 See [Design Principles](principles.md) for details.
 
+### Give meaning to property placement, not just naming
+
+Traditional CSS methodologies tend to focus on naming to convey structure, but SpiraCSS gives **structural meaning to where properties are written**.
+By separating container / item / internal responsibilities, Stylelint can validate intent, so you don't need to memorize fine-grained rules.
+Because the criteria are machine-checkable, the approach also aligns well with AI-assisted generation and corrections.
+This principle is distilled into the one-sentence rule in [Design Principles](principles.md).
+
 ### Separate Variant / State
 
 SpiraCSS splits traditional Modifiers into **Variant (visual variations)** and **State (interaction state)**, and clarifies responsibility and placement. By default, it uses data attributes.
@@ -57,6 +64,7 @@ SpiraCSS treats areas where decisions tend to vary as local invariants and makes
 - Parent-child structure (`Block > Block` / `Block > Element`)
 - One root Block per file and filename alignment
 - Variant / State separation and placement (data mode)
+- Property placement (container / item / internal)
 - Relationship links via `@rel` comments
 
 See [Stylelint](tooling/stylelint.md), [HTML CLI](tooling/html-cli.md), and [Tooling overview](tooling/index.md) for details.

@@ -11,8 +11,8 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -56,7 +56,12 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
         description: 'compound selectors inside :not() are out of scope'
       },
       {
-        code: '.block [data-variant="primary"] { color: red; }',
+        code: `
+.parent-block {
+  [data-variant="primary"] {
+    color: red;
+  }
+}`,
         description: 'reserved keys on descendants are out of scope'
       }
     ],
@@ -153,8 +158,8 @@ describe('spiracss/class-structure - attribute allowance in data mode', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -192,8 +197,8 @@ describe('spiracss/class-structure - modifiers in data mode', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           variant: { dataKeys: ['data-theme', 'data-size'] }
@@ -226,8 +231,8 @@ describe('spiracss/class-structure - data value naming', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -266,8 +271,8 @@ describe('spiracss/class-structure - data value naming', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           valueNaming: { case: 'snake', maxWords: 2 },
@@ -320,8 +325,8 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
     config: [
       true,
       {
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           variant: { mode: 'data', dataKeys: ['data-variant'] },
@@ -363,8 +368,8 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
     config: [
       true,
       {
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           variant: { mode: 'class' },

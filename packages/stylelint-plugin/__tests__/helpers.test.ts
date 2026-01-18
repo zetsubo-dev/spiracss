@@ -25,14 +25,17 @@ describe('helpers/createRules', () => {
         rootFileCase: 'kebab'
       },
       stylelint: {
-        classStructure: {},
+        base: {
+          comments: {
+            shared: /--shared/i,
+            interaction: /--interaction/i
+          }
+        },
+        class: {},
         interactionScope: {},
-        pseudoNesting: {},
-        relComments: {},
-        sectionCommentPatterns: {
-          shared: /--shared/i,
-          interaction: /--interaction/i
-        }
+        interactionProps: {},
+        pseudo: {},
+        rel: {}
       }
     })
 
@@ -47,18 +50,21 @@ describe('helpers/createRules', () => {
       'spiracss/rel-comments'
     ])
 
-    const relComments = rules['spiracss/rel-comments'] as [boolean, { aliasRoots?: unknown }]
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { aliasRoots?: unknown }
+    ]
     assert.strictEqual(relComments[0], true)
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
 
     const classStructure = rules['spiracss/class-structure'] as [
       boolean,
-      { sharedCommentPattern?: RegExp; interactionCommentPattern?: RegExp }
+      { comments?: { shared?: RegExp; interaction?: RegExp } }
     ]
-    assert.ok(classStructure[1].sharedCommentPattern instanceof RegExp)
-    assert.ok(classStructure[1].interactionCommentPattern instanceof RegExp)
-    assert.strictEqual(classStructure[1].sharedCommentPattern?.source, '--shared')
-    assert.strictEqual(classStructure[1].interactionCommentPattern?.source, '--interaction')
+    assert.ok(classStructure[1].comments?.shared instanceof RegExp)
+    assert.ok(classStructure[1].comments?.interaction instanceof RegExp)
+    assert.strictEqual(classStructure[1].comments?.shared?.source, '--shared')
+    assert.strictEqual(classStructure[1].comments?.interaction?.source, '--interaction')
   })
 
   it('applies defaults when stylelint sections are missing', () => {
@@ -79,7 +85,10 @@ describe('helpers/createRules', () => {
       'spiracss/rel-comments'
     ])
 
-    const relComments = rules['spiracss/rel-comments'] as [boolean, { aliasRoots?: unknown }]
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { aliasRoots?: unknown }
+    ]
     assert.strictEqual(relComments[0], true)
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
@@ -90,7 +99,7 @@ describe('helpers/createRules', () => {
         components: ['src/components']
       },
       stylelint: {
-        keyframesNaming: {
+        keyframes: {
           enabled: false
         }
       }
@@ -134,7 +143,10 @@ describe('helpers/createRules', () => {
   it('loads an ESM config file via createRulesAsync', async () => {
     const configPath = path.resolve('__tests__/fixtures/spiracss.config.js')
     const rules = await createRulesAsync(configPath)
-    const relComments = rules['spiracss/rel-comments'] as [boolean, { aliasRoots?: unknown }]
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { aliasRoots?: unknown }
+    ]
     assert.strictEqual(relComments[0], true)
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
@@ -145,7 +157,7 @@ describe('helpers/createRules', () => {
         components: ['src/components']
       },
       stylelint: {
-        keyframesNaming: {
+        keyframes: {
           enabled: false
         }
       }
@@ -160,7 +172,10 @@ describe('helpers/createRules', () => {
       createRulesAsync: (configPathOrConfig?: string | Record<string, unknown>) => Promise<Record<string, unknown>>
     }
     const rules = await createRulesAsyncCjs(configPath)
-    const relComments = rules['spiracss/rel-comments'] as [boolean, { aliasRoots?: unknown }]
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { aliasRoots?: unknown }
+    ]
     assert.strictEqual(relComments[0], true)
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
@@ -178,7 +193,10 @@ describe('helpers/createRules', () => {
   it('applies defaults when stylelint sections are missing in createRulesAsync', async () => {
     const configPath = path.resolve('__tests__/fixtures/spiracss.missing-stylelint.js')
     const rules = await createRulesAsync(configPath)
-    const relComments = rules['spiracss/rel-comments'] as [boolean, { aliasRoots?: unknown }]
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { aliasRoots?: unknown }
+    ]
     assert.strictEqual(relComments[0], true)
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })

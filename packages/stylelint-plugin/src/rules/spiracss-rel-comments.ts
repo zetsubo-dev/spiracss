@@ -9,10 +9,10 @@ import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constan
 import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
 import {
-  CACHE_SIZES_SCHEMA,
-  INTERACTION_COMMENT_PATTERN_SCHEMA,
-  NAMING_SCHEMA,
-  SHARED_COMMENT_PATTERN_SCHEMA
+  CACHE_SCHEMA,
+  COMMENTS_SCHEMA,
+  EXTERNAL_SCHEMA,
+  NAMING_SCHEMA
 } from '../utils/option-schema'
 import {
   getCommentText,
@@ -28,13 +28,8 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import {
-  isAliasRoots,
-  isBoolean,
-  isPlainObject,
-  isString,
-  isStringArray
-} from '../utils/validate'
+import { getRuleDocsUrl } from '../utils/rule-docs'
+import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import {
   extractLinkTargets,
   normalizeRelPath,
@@ -72,7 +67,7 @@ import type { AliasRoots, RelComment } from './spiracss-rel-comments.types'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracssrel-comments',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Validate @rel and alias link comments in SpiraCSS files.',
   category: 'stylistic'
@@ -81,22 +76,20 @@ const meta = {
 const ALIAS_KEY_PATTERN = /^[a-z][a-z0-9-]*$/
 
 const optionSchema = {
-  requireInScssDirectories: [isBoolean],
-  requireWhenMetaLoadCss: [isBoolean],
+  requireScss: [isBoolean],
+  requireMeta: [isBoolean],
+  requireParent: [isBoolean],
+  requireChild: [isBoolean],
+  requireChildShared: [isBoolean],
+  requireChildInteraction: [isBoolean],
   validatePath: [isBoolean],
-  skipFilesWithoutRules: [isBoolean],
-  requireChildRelComments: [isBoolean],
-  requireChildRelCommentsInShared: [isBoolean],
-  requireChildRelCommentsInInteraction: [isBoolean],
-  requireParentRelComment: [isBoolean],
-  childScssDir: [isString],
-  aliasRoots: [isAliasRoots],
-  ...SHARED_COMMENT_PATTERN_SCHEMA,
-  ...INTERACTION_COMMENT_PATTERN_SCHEMA,
+  skipNoRules: [isBoolean],
+  childDir: [isString],
+  aliasRoots: [isPlainObject],
+  ...COMMENTS_SCHEMA,
   ...NAMING_SCHEMA,
-  ...CACHE_SIZES_SCHEMA,
-  allowExternalClasses: [isString],
-  allowExternalPrefixes: [isString]
+  ...EXTERNAL_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const rule = createRule(
@@ -151,11 +144,11 @@ const rule = createRule(
       }
       cache = {
         options,
-        aliasRoots: options.aliasRoots || {},
-        childScssDir: options.childScssDir || 'scss',
+        aliasRoots: options.paths.aliases || {},
+        childScssDir: options.paths.childDir || 'scss',
         commentPatterns: {
-          sharedCommentPattern: options.sharedCommentPattern,
-          interactionCommentPattern: options.interactionCommentPattern
+          sharedCommentPattern: options.comments.shared,
+          interactionCommentPattern: options.comments.interaction
         },
         hasInvalidOptions
       }
@@ -194,7 +187,7 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowExternalClasses', 'allowExternalPrefixes'],
+        ['external.classes', 'external.prefixes'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
@@ -204,7 +197,7 @@ const rule = createRule(
       const { options, aliasRoots, childScssDir, commentPatterns, hasInvalidOptions } =
         getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
-      const cacheSizes = options.cacheSizes
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const pathExistsCache = createLruCache<string, boolean>(cacheSizes.path)
@@ -219,7 +212,7 @@ const rule = createRule(
       const filePath: string = (result?.opts?.from as string) || ''
       const inScssDir = filePath.split(path.sep).includes(childScssDir)
       const containsRules = hasRuleNodes(root)
-      const needsRulesCheck = !options.skipFilesWithoutRules || containsRules
+      const needsRulesCheck = !options.skip.noRules || containsRules
       const firstRule = getFirstRuleNode(root)
       const projectRoot =
         (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
@@ -272,8 +265,8 @@ const rule = createRule(
         if (!firstRootBlockRule) firstRootBlockRule = rule
       })
 
-      const requiresMetaRel = options.requireWhenMetaLoadCss && hasMetaLoad
-      const requiresScssRel = options.requireInScssDirectories && inScssDir
+      const requiresMetaRel = options.require.meta && hasMetaLoad
+      const requiresScssRel = options.require.scss && inScssDir
 
       const relComments: RelComment[] = []
 
@@ -330,7 +323,7 @@ const rule = createRule(
 
       const requiresParentRel =
         needsRulesCheck &&
-        options.requireParentRelComment &&
+        options.require.parent &&
         (requiresMetaRel || requiresScssRel)
 
       if (requiresParentRel) {
@@ -359,13 +352,13 @@ const rule = createRule(
         }
       }
 
-      if (options.requireChildRelComments && needsRulesCheck) {
+      if (options.require.child.enabled && needsRulesCheck) {
         allRules.forEach((rule: Rule) => {
           if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
           const isShared = sharedRules.has(rule)
           const isInteraction = interactionRules.has(rule)
-          if (isShared && !options.requireChildRelCommentsInShared) return
-          if (isInteraction && !options.requireChildRelCommentsInInteraction) return
+          if (isShared && !options.require.child.shared) return
+          if (isInteraction && !options.require.child.interaction) return
           const childBlocks = collectDirectChildBlocks(
             rule.selector || '',
             options,
@@ -416,7 +409,7 @@ const rule = createRule(
         })
       }
 
-      if (options.validatePath) {
+      if (options.validate.path) {
         const baseDir = filePath ? path.dirname(filePath) : process.cwd()
         const pathExists = (candidate: string): boolean => {
           if (pathExistsCache.has(candidate)) {

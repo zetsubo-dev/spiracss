@@ -1,6 +1,7 @@
 # Guidelines
 
-This document lists recommended SpiraCSS rules that are not enforced by the SpiraCSS Stylelint plugin.
+This document lists recommended SpiraCSS rules (some are enforced by the Stylelint plugin).
+For rules enforced by Stylelint, see [SpiraCSS Stylelint Plugin](tooling/stylelint.md).
 
 ## Configuration
 
@@ -19,9 +20,11 @@ See [spiracss.config.js](tooling/spiracss-config.md) for details.
 
 | Rule | Notes |
 | --- | --- |
-| **Use only top margins** (`margin-top`) for vertical spacing; do not use bottom margins. | Simplifies spacing calculations and prevents duplicates. |
+| **Use only top margins** (`margin-top`) for vertical spacing; do not use bottom margins. | Simplifies spacing calculations and prevents duplicates. Enforced by Stylelint `spiracss/property-placement` (`marginSide: 'top'`). |
 
 > From a design perspective, treating elements as having their own space above them is more natural, so use top margins.
+> This rule is enforced by Stylelint's `spiracss/property-placement` rule. Non-zero values on `margin-bottom` or `margin-block-end` cause an error.
+> On the forbidden side, `0` / `auto` / `initial` are allowed. If the entire value is `inherit` / `unset` / `revert` / `revert-layer` alone, it is skipped. See [property-placement](tooling/stylelint-rules/property-placement.md) for details.
 
 ## Class naming
 

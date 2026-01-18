@@ -11,10 +11,9 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'camel'
         }
@@ -69,10 +68,9 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'pascal'
         }
@@ -127,10 +125,9 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'snake'
         }
@@ -189,8 +186,8 @@ describe('spiracss/class-structure - naming.blockMaxWords option', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: {
           blockCase: 'kebab',
           blockMaxWords: 3
@@ -236,8 +233,8 @@ describe('spiracss/class-structure - naming default word count', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -264,10 +261,9 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           modifierPrefix: '_'
         }
@@ -301,10 +297,9 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           modifierPrefix: '--'
         }
@@ -342,10 +337,9 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           elementCase: 'camel',
           modifierCase: 'camel'
@@ -396,10 +390,9 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           elementCase: 'pascal',
           modifierCase: 'pascal'
@@ -454,10 +447,9 @@ describe('spiracss/class-structure - naming.customPatterns (all specified)', () 
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           customPatterns: {
             block: /^b-[a-z]+$/,
@@ -533,10 +525,9 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'kebab',
           customPatterns: {

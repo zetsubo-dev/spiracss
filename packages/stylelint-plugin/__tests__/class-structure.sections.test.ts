@@ -8,8 +8,8 @@ describe('spiracss/class-structure - --shared section behavior', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        childCombinator: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -23,7 +23,7 @@ describe('spiracss/class-structure - --shared section behavior', () => {
   // --shared
   .helper-class {}
 }`,
-        description: 'child combinator is not required inside --shared (enforceChildCombinator relaxed)'
+        description: 'child combinator is not required inside --shared (childCombinator relaxed)'
       },
       {
         code: `
@@ -93,14 +93,14 @@ describe('spiracss/class-structure - --shared section behavior', () => {
   }
 }`,
         description: '--shared section must be directly under the root Block',
-        message: 'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+        message: 'Place the shared section comment matching `comments.shared` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
       },
       {
         code: `
 // --shared
 .hero-banner { > .title {} }`,
         description: '--shared comments at the file top level are invalid',
-        message: 'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+        message: 'Place the shared section comment matching `comments.shared` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
       }
     ]
   })
@@ -115,8 +115,8 @@ describe('spiracss/class-structure - --interaction section behavior', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        childCombinator: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -133,7 +133,7 @@ describe('spiracss/class-structure - --interaction section behavior', () => {
     & .title:focus-visible {}
   }
 }`,
-        description: 'child combinator is not required inside --interaction (enforceChildCombinator relaxed)'
+        description: 'child combinator is not required inside --interaction (childCombinator relaxed)'
       },
       {
         code: `
@@ -217,8 +217,8 @@ describe('spiracss/class-structure - --shared section details', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        childCombinator: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -292,10 +292,10 @@ describe('spiracss/class-structure - comment pattern flags', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        childCombinator: true,
         naming: { blockCase: 'kebab' },
-        sharedCommentPattern: /--shared/g
+        comments: { shared: /--shared/g }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -321,11 +321,11 @@ describe('spiracss/class-structure - comment pattern flags', () => {
         warnings: [
           {
             message:
-              'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/g`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+              'Place the shared section comment matching `comments.shared` (current: `/--shared/g`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
           },
           {
             message:
-              'Place the shared section comment matching `sharedCommentPattern` (current: `/--shared/g`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+              'Place the shared section comment matching `comments.shared` (current: `/--shared/g`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
           }
         ]
       }

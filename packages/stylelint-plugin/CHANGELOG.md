@@ -6,7 +6,7 @@ All notable changes to this package will be documented in this file.
 
 ### Added
 
-- `keyframesNaming.enabled` option to disable the `spiracss/keyframes-naming` rule entirely
+- `keyframes.enabled` option to disable the `spiracss/keyframes-naming` rule entirely
 
 ### Documentation
 

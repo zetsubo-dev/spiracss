@@ -6,7 +6,7 @@ import {
   safeNormalizeSelectorPolicyBase,
   normalizeStringArray
 } from '../utils/normalize'
-import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
+import { normalizeCommonOptions } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type {
   NormalizedSelectorPolicy,
@@ -17,14 +17,19 @@ import type {
 const defaultSelectorPolicy: NormalizedSelectorPolicy = createDefaultSelectorPolicyBase()
 
 const defaultOptions: Options = {
-  allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
-  requireAtRoot: true,
-  requireComment: true,
-  requireTail: true,
-  enforceWithCommentOnly: false,
-  interactionCommentPattern: /--interaction/i,
+  pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+  require: {
+    atRoot: true,
+    comment: true,
+    tail: true
+  },
+  commentOnly: false,
+  comments: {
+    shared: /--shared/i,
+    interaction: /--interaction/i
+  },
   selectorPolicy: defaultSelectorPolicy,
-  cacheSizes: DEFAULT_CACHE_SIZES
+  cache: DEFAULT_CACHE_SIZES
 }
 
 export const normalizeOptions = (
@@ -32,32 +37,44 @@ export const normalizeOptions = (
   reportInvalid?: InvalidOptionReporter
 ): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
-  const raw = opt as Partial<Options> & {
-    interactionCommentPattern?: RegExp | string
-    cacheSizes?: CacheSizes
+  const raw = opt as {
+    pseudos?: Options['pseudos']
+    requireAtRoot?: boolean
+    requireComment?: boolean
+    requireTail?: boolean
+    commentOnly?: boolean
+    comments?: { shared?: RegExp | string; interaction?: RegExp | string }
+    cache?: CacheSizes
+    selectorPolicy?: SelectorPolicy
   }
+  const selectorPolicy = raw.selectorPolicy
   const common = normalizeCommonOptions(
     raw,
-    pickCommonDefaults(defaultOptions),
+    {
+      comments: defaultOptions.comments,
+      cache: defaultOptions.cache
+    },
     reportInvalid
   )
 
   return {
-    allowedPseudos: normalizeStringArray(raw.allowedPseudos, defaultOptions.allowedPseudos),
-    requireAtRoot: normalizeBoolean(raw.requireAtRoot, defaultOptions.requireAtRoot, {
+    pseudos: normalizeStringArray(raw.pseudos, defaultOptions.pseudos),
+    require: {
+      atRoot: normalizeBoolean(raw.requireAtRoot, defaultOptions.require.atRoot, {
+        coerce: true
+      }),
+      comment: normalizeBoolean(raw.requireComment, defaultOptions.require.comment, {
+        coerce: true
+      }),
+      tail: normalizeBoolean(raw.requireTail, defaultOptions.require.tail, {
+        coerce: true
+      })
+    },
+    commentOnly: normalizeBoolean(raw.commentOnly, defaultOptions.commentOnly, {
       coerce: true
     }),
-    requireComment: normalizeBoolean(raw.requireComment, defaultOptions.requireComment, {
-      coerce: true
-    }),
-    requireTail: normalizeBoolean(raw.requireTail, defaultOptions.requireTail, { coerce: true }),
-    enforceWithCommentOnly: normalizeBoolean(
-      raw.enforceWithCommentOnly,
-      defaultOptions.enforceWithCommentOnly,
-      { coerce: true }
-    ),
     selectorPolicy: safeNormalizeSelectorPolicyBase(
-      (raw as { selectorPolicy?: SelectorPolicy }).selectorPolicy,
+      selectorPolicy,
       defaultSelectorPolicy,
       reportInvalid
     ),

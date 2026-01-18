@@ -195,9 +195,9 @@ describe('utils/normalize', () => {
   it('falls back on invalid comment pattern strings', () => {
     let called = false
     const fallback = /--shared/i
-    const result = normalizeCommentPattern('(', fallback, 'sharedCommentPattern', (name, value) => {
+    const result = normalizeCommentPattern('(', fallback, 'comments.shared', (name, value) => {
       called = true
-      assert.strictEqual(name, 'sharedCommentPattern')
+      assert.strictEqual(name, 'comments.shared')
       assert.strictEqual(value, '(')
     })
     assert.strictEqual(result, fallback)
@@ -217,10 +217,10 @@ describe('utils/normalize', () => {
       const result = normalizeCommentPattern(
         pattern,
         fallback,
-        'sharedCommentPattern',
+        'comments.shared',
         (name, value) => {
           called = true
-          assert.strictEqual(name, 'sharedCommentPattern')
+          assert.strictEqual(name, 'comments.shared')
           assert.strictEqual(value, pattern)
         }
       )

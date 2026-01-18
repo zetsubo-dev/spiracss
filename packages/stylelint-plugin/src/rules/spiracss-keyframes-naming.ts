@@ -6,7 +6,7 @@ import stylelint from 'stylelint'
 import type { NamingOptions, WordCase } from '../types'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
-import { CACHE_SIZES_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
+import { CACHE_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import {
   isAtRule,
   isComment,
@@ -21,6 +21,7 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   isBoolean,
   isNumber,
@@ -40,25 +41,27 @@ import type { Options } from './spiracss-keyframes-naming.types'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracsskeyframes-naming',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Enforce SpiraCSS keyframes naming and placement.',
   category: 'stylistic'
 }
 
+const isStringOrRegExpArray = (value: unknown): value is Array<string | RegExp> =>
+  Array.isArray(value) && value.every((entry) => isString(entry) || isRegExp(entry))
+
 const optionSchema = {
   actionMaxWords: [isNumber],
-  blockNameSource: ['selector', 'file', 'selector-or-file'],
-  warnOnMissingBlock: [isBoolean],
-  sharedPrefixes: [isStringArray],
+  blockSource: [isString],
+  blockWarnMissing: [isBoolean],
+  sharedPrefixes: [isString],
   sharedFiles: [isString, isRegExp],
   ignoreFiles: [isString, isRegExp],
   ignorePatterns: [isString, isRegExp],
-  ignorePlacementForIgnored: [isBoolean],
-  allowExternalClasses: [isString],
-  allowExternalPrefixes: [isString],
+  ignoreSkipPlacement: [isBoolean],
   ...NAMING_SCHEMA,
-  ...CACHE_SIZES_SCHEMA
+  ...EXTERNAL_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const resolveActionCase = (naming?: NamingOptions): WordCase =>
@@ -275,18 +278,24 @@ const rule = createRule(
       const hasInvalidArray = validateOptionsArrayFields(
         rawOptions,
         ['sharedFiles', 'ignoreFiles', 'ignorePatterns'],
-        (value) =>
-          Array.isArray(value) &&
-          value.every((entry) => typeof entry === 'string' || entry instanceof RegExp),
+        isStringOrRegExpArray,
         reportInvalid,
         (optionName) =>
           `[spiracss] ${optionName} must be an array of strings or RegExp instances.`
       )
       if (shouldValidate && hasInvalidArray) return
+      const hasInvalidPrefixes = validateOptionsArrayFields(
+        rawOptions,
+        ['sharedPrefixes'],
+        isStringArray,
+        reportInvalid,
+        (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
+      )
+      if (shouldValidate && hasInvalidPrefixes) return
 
       const options = normalizeOptions(rawOptions, reportInvalid)
       const actionCase = resolveActionCase(options.naming)
-      const actionRe = actionPattern(actionCase, options.actionMaxWords)
+      const actionRe = actionPattern(actionCase, options.action.maxWords)
       const resultOptions = result?.opts as { from?: string; codeFilename?: string } | undefined
       const fromPath = resolveInputPath(resultOptions?.from)
       const rootFromPath = resolveInputPath(root.source?.input?.from)
@@ -298,33 +307,33 @@ const rule = createRule(
         rootFromPath ||
         ''
       const normalizedPath = normalizePath(filePath)
-      if (options.ignoreFiles.length > 0 && matchAny(normalizedPath, options.ignoreFiles)) {
+      if (options.ignore.files.length > 0 && matchAny(normalizedPath, options.ignore.files)) {
         return
       }
-      const cacheSizes = options.cacheSizes
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const patterns = buildPatterns(
         options as unknown as ClassStructureOptions,
-        options.cacheSizes,
+        options.cache,
         reportInvalid
       )
       const elementNames = collectElementNames(root, selectorCache, options, patterns)
-      const sharedFiles = options.sharedFiles
-      const ignorePatterns = options.ignorePatterns
+      const sharedFiles = options.shared.files
+      const ignorePatterns = options.ignore.patterns
 
       const rootBlockName =
-        options.blockNameSource === 'file'
+        options.block.source === 'file'
           ? null
           : resolveRootBlockName(root, selectorCache, options, patterns)
       const fileBlockName =
-        options.blockNameSource === 'selector'
+        options.block.source === 'selector'
           ? null
           : resolveFileBlockName(filePath, patterns)
       const blockName =
-        options.blockNameSource === 'selector'
+        options.block.source === 'selector'
           ? rootBlockName
-          : options.blockNameSource === 'file'
+          : options.block.source === 'file'
             ? fileBlockName
             : rootBlockName || fileBlockName
       const nameCheck = blockName ? buildNameCheck(blockName, elementNames, actionRe) : null
@@ -336,7 +345,7 @@ const rule = createRule(
         if (!name) return
 
         const isIgnoredName = ignorePatterns.length > 0 && matchAny(name, ignorePatterns)
-        if (isIgnoredName && options.ignorePlacementForIgnored) return
+        if (isIgnoredName && options.ignore.skipPlacement) return
 
         if (node.parent?.type !== 'root') {
           stylelint.utils.report({
@@ -359,7 +368,7 @@ const rule = createRule(
 
         if (isIgnoredName) return
 
-        const sharedPrefix = getSharedPrefix(name, options.sharedPrefixes)
+        const sharedPrefix = getSharedPrefix(name, options.shared.prefixes)
         if (sharedPrefix) {
           if (sharedFiles.length > 0 && !matchAny(normalizedPath, sharedFiles)) {
             stylelint.utils.report({
@@ -379,7 +388,7 @@ const rule = createRule(
                 name,
                 sharedPrefix,
                 actionCase,
-                options.actionMaxWords
+                options.action.maxWords
               )
             })
           }
@@ -387,7 +396,7 @@ const rule = createRule(
         }
 
         if (!nameCheck) {
-          if (options.warnOnMissingBlock && !reportedMissingBlock) {
+          if (options.block.warnMissing && !reportedMissingBlock) {
             reportedMissingBlock = true
             stylelint.utils.report({
               ruleName,
@@ -409,7 +418,7 @@ const rule = createRule(
               name,
               blockName ?? '(unknown)',
               actionCase,
-              options.actionMaxWords
+              options.action.maxWords
             )
           })
         }

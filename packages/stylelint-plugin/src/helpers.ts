@@ -18,94 +18,132 @@ import type { Options as KeyframesNamingOptions } from './rules/spiracss-keyfram
 import type { Options as PropertyPlacementOptions } from './rules/spiracss-property-placement.types'
 import type { Options as PseudoNestingOptions } from './rules/spiracss-pseudo-nesting.types'
 import type { Options as RelCommentsOptions } from './rules/spiracss-rel-comments.types'
-import type { CacheSizes } from './types'
+import type { CacheSizes, NamingOptions } from './types'
 import { isAliasRoots, isPlainObject } from './utils/validate'
 
-type ClassStructureConfig = Partial<
-  Omit<
-    ClassStructureOptions,
-    'selectorPolicy' | 'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'
-  >
-> & {
-  selectorPolicy?: ClassStructureSelectorPolicy
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+type CommentConfig = {
+  shared?: RegExp | string
+  interaction?: RegExp | string
 }
 
-type InteractionScopeConfig = Partial<
-  Omit<InteractionScopeOptions, 'selectorPolicy' | 'interactionCommentPattern' | 'cacheSizes'>
-> & {
+type ExternalConfig = {
+  classes?: string[]
+  prefixes?: string[]
+}
+
+type BasePathsConfig = {
+  childDir?: string
+  components?: string[]
+}
+
+type BaseConfig = {
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  selectorPolicy?: ClassStructureSelectorPolicy
+  cache?: CacheSizes
+  paths?: BasePathsConfig
+}
+
+type ClassStructureConfig = {
+  elementDepth?: number
+  childCombinator?: boolean
+  childNesting?: boolean
+  rootSingle?: boolean
+  rootFile?: boolean
+  rootCase?: ClassStructureOptions['root']['case']
+  childDir?: string
+  componentsDirs?: string[]
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  selectorPolicy?: ClassStructureSelectorPolicy
+  cache?: CacheSizes
+}
+
+type InteractionScopeConfig = {
+  pseudos?: InteractionScopeOptions['pseudos']
+  requireAtRoot?: boolean
+  requireComment?: boolean
+  requireTail?: boolean
+  commentOnly?: boolean
+  comments?: CommentConfig
   selectorPolicy?: InteractionScopeSelectorPolicy
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+  cache?: CacheSizes
 }
 
-type RelCommentsConfig = Partial<
-  Omit<RelCommentsOptions, 'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'>
-> & {
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+type RelCommentsConfig = {
+  requireScss?: boolean
+  requireMeta?: boolean
+  requireParent?: boolean
+  requireChild?: boolean
+  requireChildShared?: boolean
+  requireChildInteraction?: boolean
+  validatePath?: boolean
+  skipNoRules?: boolean
+  childDir?: string
+  aliasRoots?: Record<string, string[]>
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
 }
 
-type InteractionPropertiesConfig = Partial<
-  Omit<
-    InteractionPropertiesOptions,
-    'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'
-  >
-> & {
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+type InteractionPropertiesConfig = {
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
 }
 
-type PropertyPlacementConfig = Partial<
-  Omit<
-    PropertyPlacementOptions,
-    'selectorPolicy' | 'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'
-  >
-> & {
+type PropertyPlacementConfig = {
+  elementDepth?: number
+  marginSide?: PropertyPlacementOptions['margin']['side']
+  position?: boolean
+  sizeInternal?: boolean
+  responsiveMixins?: string[]
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
   selectorPolicy?: ClassStructureSelectorPolicy
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+  cache?: CacheSizes
 }
 
-type KeyframesNamingConfig = Partial<
-  Omit<KeyframesNamingOptions, 'sharedFiles' | 'ignoreFiles' | 'ignorePatterns' | 'cacheSizes'>
-> & {
+type KeyframesNamingConfig = {
+  enabled?: boolean
+  actionMaxWords?: number
+  blockSource?: KeyframesNamingOptions['block']['source']
+  blockWarnMissing?: boolean
+  sharedPrefixes?: string[]
   sharedFiles?: Array<string | RegExp>
   ignoreFiles?: Array<string | RegExp>
   ignorePatterns?: Array<string | RegExp>
-  cacheSizes?: CacheSizes
-  enabled?: boolean
+  ignoreSkipPlacement?: boolean
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
 }
 
-type PseudoNestingConfig = Partial<Omit<PseudoNestingOptions, 'cacheSizes'>> & {
-  cacheSizes?: CacheSizes
+type PseudoNestingConfig = {
+  cache?: CacheSizes
 }
 
 type SpiracssConfig = {
   aliasRoots?: Record<string, string[]>
   selectorPolicy?: ClassStructureSelectorPolicy
   generator?: {
-    rootFileCase?: ClassStructureOptions['rootFileCase']
+    rootFileCase?: ClassStructureOptions['root']['case']
     childScssDir?: string
   }
   stylelint?: {
-    cacheSizes?: CacheSizes
-    classStructure?: ClassStructureConfig
+    base?: BaseConfig
+    class?: ClassStructureConfig
+    placement?: PropertyPlacementConfig
     interactionScope?: InteractionScopeConfig
-    interactionProperties?: InteractionPropertiesConfig
-    propertyPlacement?: PropertyPlacementConfig
-    keyframesNaming?: KeyframesNamingConfig
-    pseudoNesting?: PseudoNestingConfig
-    relComments?: RelCommentsConfig
-    sectionCommentPatterns?: {
-      shared?: RegExp | string
-      interaction?: RegExp | string
-    }
+    interactionProps?: InteractionPropertiesConfig
+    keyframes?: KeyframesNamingConfig
+    pseudo?: PseudoNestingConfig
+    rel?: RelCommentsConfig
   }
 }
 
@@ -369,97 +407,176 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
 }
 
 const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
-  const sectionCommentPatterns =
-    spiracss.stylelint?.sectionCommentPatterns &&
-    typeof spiracss.stylelint.sectionCommentPatterns === 'object'
-      ? spiracss.stylelint.sectionCommentPatterns
+  const stylelint =
+    spiracss.stylelint && typeof spiracss.stylelint === 'object'
+      ? spiracss.stylelint
       : undefined
-  const cacheSizes = spiracss.stylelint?.cacheSizes
-  const sharedCommentPattern = sectionCommentPatterns?.shared
-  const interactionCommentPattern = sectionCommentPatterns?.interaction
-  const generator = spiracss.generator && typeof spiracss.generator === 'object'
-    ? spiracss.generator
-    : undefined
+  const base =
+    stylelint?.base && typeof stylelint.base === 'object' ? stylelint.base : undefined
+  const interactionScopeConfig =
+    stylelint?.interactionScope && typeof stylelint.interactionScope === 'object'
+      ? stylelint.interactionScope
+      : undefined
+  const interactionPropsConfig =
+    stylelint?.interactionProps && typeof stylelint.interactionProps === 'object'
+      ? stylelint.interactionProps
+      : undefined
+  const generator =
+    spiracss.generator && typeof spiracss.generator === 'object'
+      ? spiracss.generator
+      : undefined
 
-  const withFallback = <T extends object, K extends keyof T>(
-    target: T,
-    key: K,
-    value: T[K] | undefined
-  ): void => {
-    if (value === undefined) return
-    if (target[key] !== undefined) return
-    target[key] = value
+  const mergeObjects = <T extends object>(
+    baseValue?: Partial<T>,
+    override?: Partial<T>
+  ): Partial<T> | undefined => {
+    if (!baseValue && !override) return undefined
+    return { ...(baseValue ?? {}), ...(override ?? {}) }
   }
 
-  const classStructure = { ...spiracss.stylelint?.classStructure }
-  withFallback(classStructure, 'selectorPolicy', spiracss.selectorPolicy)
-  withFallback(classStructure, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(classStructure, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(classStructure, 'rootFileCase', generator?.rootFileCase)
-  withFallback(classStructure, 'childScssDir', generator?.childScssDir)
-  withFallback(classStructure, 'cacheSizes', cacheSizes)
+  const baseComments = base?.comments
+  const baseNaming = base?.naming
+  const baseExternal = base?.external
+  const baseCache = base?.cache
+  const basePolicy = base?.selectorPolicy ?? spiracss.selectorPolicy
+  const basePaths = base?.paths
 
-  const interactionScope = { ...spiracss.stylelint?.interactionScope }
-  withFallback(interactionScope, 'selectorPolicy', spiracss.selectorPolicy)
-  withFallback(interactionScope, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(interactionScope, 'cacheSizes', cacheSizes)
-
-  const interactionProperties = { ...spiracss.stylelint?.interactionProperties }
-  withFallback(interactionProperties, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(interactionProperties, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(interactionProperties, 'naming', classStructure.naming)
-  withFallback(interactionProperties, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(interactionProperties, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(interactionProperties, 'cacheSizes', cacheSizes)
-
-  const propertyPlacement = { ...spiracss.stylelint?.propertyPlacement }
-  withFallback(propertyPlacement, 'selectorPolicy', spiracss.selectorPolicy)
-  withFallback(propertyPlacement, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(propertyPlacement, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(propertyPlacement, 'naming', classStructure.naming)
-  withFallback(propertyPlacement, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(propertyPlacement, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(
-    propertyPlacement,
-    'allowElementChainDepth',
-    classStructure.allowElementChainDepth
+  const classConfig = { ...(stylelint?.class ?? {}) }
+  classConfig.comments = mergeObjects<CommentConfig>(
+    baseComments,
+    classConfig.comments
   )
-  withFallback(propertyPlacement, 'cacheSizes', cacheSizes)
+  classConfig.external = mergeObjects<ExternalConfig>(
+    baseExternal,
+    classConfig.external
+  )
+  if (classConfig.naming === undefined) {
+    classConfig.naming = baseNaming
+  }
+  const classPolicy = classConfig.selectorPolicy ?? basePolicy
+  if (classPolicy !== undefined) {
+    classConfig.selectorPolicy = classPolicy
+  }
+  if (classConfig.cache === undefined) {
+    classConfig.cache = baseCache
+  }
+  if (classConfig.rootCase === undefined && generator?.rootFileCase !== undefined) {
+    classConfig.rootCase = generator.rootFileCase
+  }
+  if (classConfig.childDir === undefined) {
+    classConfig.childDir = basePaths?.childDir
+  }
+  if (classConfig.componentsDirs === undefined) {
+    classConfig.componentsDirs = basePaths?.components
+  }
+  if (classConfig.childDir === undefined && generator?.childScssDir) {
+    classConfig.childDir = generator.childScssDir
+  }
 
-  const keyframesNaming = { ...spiracss.stylelint?.keyframesNaming }
-  const keyframesNamingEnabled = keyframesNaming.enabled !== false
-  delete keyframesNaming.enabled
-  withFallback(keyframesNaming, 'naming', classStructure.naming)
-  withFallback(keyframesNaming, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(keyframesNaming, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(keyframesNaming, 'cacheSizes', cacheSizes)
+  const sharedNaming = baseNaming ?? classConfig.naming
+  const sharedExternal = mergeObjects<ExternalConfig>(
+    baseExternal,
+    classConfig.external
+  )
 
-  const pseudoNesting = { ...spiracss.stylelint?.pseudoNesting }
-  withFallback(pseudoNesting, 'cacheSizes', cacheSizes)
+  const placementConfig = { ...(stylelint?.placement ?? {}) }
+  placementConfig.comments = mergeObjects<CommentConfig>(
+    baseComments,
+    placementConfig.comments
+  )
+  placementConfig.external = mergeObjects<ExternalConfig>(
+    sharedExternal,
+    placementConfig.external
+  )
+  if (placementConfig.naming === undefined) {
+    placementConfig.naming = sharedNaming
+  }
+  const placementPolicy = placementConfig.selectorPolicy ?? basePolicy
+  if (placementPolicy !== undefined) {
+    placementConfig.selectorPolicy = placementPolicy
+  }
+  if (placementConfig.cache === undefined) {
+    placementConfig.cache = baseCache
+  }
+  if (placementConfig.elementDepth === undefined && classConfig.elementDepth !== undefined) {
+    placementConfig.elementDepth = classConfig.elementDepth
+  }
 
-  const relComments = { ...spiracss.stylelint?.relComments }
-  withFallback(relComments, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(relComments, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(relComments, 'childScssDir', generator?.childScssDir)
-  withFallback(relComments, 'naming', classStructure.naming)
-  withFallback(relComments, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(relComments, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(relComments, 'cacheSizes', cacheSizes)
+  const interactionScope = { ...(interactionScopeConfig ?? {}) }
+  interactionScope.comments = mergeObjects<CommentConfig>(
+    baseComments,
+    interactionScope.comments
+  )
+  const interactionPolicy = interactionScope.selectorPolicy ?? basePolicy
+  if (interactionPolicy !== undefined) {
+    interactionScope.selectorPolicy = interactionPolicy
+  }
+  if (interactionScope.cache === undefined) {
+    interactionScope.cache = baseCache
+  }
+
+  const interactionProps = { ...(interactionPropsConfig ?? {}) }
+  interactionProps.comments = mergeObjects<CommentConfig>(
+    baseComments,
+    interactionProps.comments
+  )
+  interactionProps.external = mergeObjects<ExternalConfig>(
+    sharedExternal,
+    interactionProps.external
+  )
+  if (interactionProps.naming === undefined) {
+    interactionProps.naming = sharedNaming
+  }
+  if (interactionProps.cache === undefined) {
+    interactionProps.cache = baseCache
+  }
+
+  const keyframesConfig = { ...(stylelint?.keyframes ?? {}) }
+  const keyframesEnabled = keyframesConfig.enabled !== false
+  delete keyframesConfig.enabled
+  keyframesConfig.external = mergeObjects<ExternalConfig>(
+    sharedExternal,
+    keyframesConfig.external
+  )
+  if (keyframesConfig.naming === undefined) {
+    keyframesConfig.naming = sharedNaming
+  }
+  if (keyframesConfig.cache === undefined) {
+    keyframesConfig.cache = baseCache
+  }
+
+  const pseudoConfig = { ...(stylelint?.pseudo ?? {}) }
+  if (pseudoConfig.cache === undefined) {
+    pseudoConfig.cache = baseCache
+  }
+
+  const relConfig = { ...(stylelint?.rel ?? {}) }
+  relConfig.comments = mergeObjects<CommentConfig>(baseComments, relConfig.comments)
+  relConfig.external = mergeObjects<ExternalConfig>(sharedExternal, relConfig.external)
+  if (relConfig.naming === undefined) {
+    relConfig.naming = sharedNaming
+  }
+  if (relConfig.cache === undefined) {
+    relConfig.cache = baseCache
+  }
+  if (relConfig.childDir === undefined) {
+    relConfig.childDir = basePaths?.childDir
+  }
+  if (!relConfig.childDir && generator?.childScssDir) {
+    relConfig.childDir = generator.childScssDir
+  }
+  if (relConfig.aliasRoots === undefined) {
+    relConfig.aliasRoots = spiracss.aliasRoots
+  }
 
   return {
-    'spiracss/class-structure': [true, classStructure],
-    'spiracss/property-placement': [true, propertyPlacement],
+    'spiracss/class-structure': [true, classConfig],
+    'spiracss/property-placement': [true, placementConfig],
     'spiracss/interaction-scope': [true, interactionScope],
-    'spiracss/interaction-properties': [true, interactionProperties],
-    'spiracss/keyframes-naming': keyframesNamingEnabled ? [true, keyframesNaming] : false,
-    'spiracss/pseudo-nesting': [true, pseudoNesting],
-    'spiracss/rel-comments': [
-      true,
-      {
-        ...relComments,
-        aliasRoots: spiracss.aliasRoots
-      }
-    ]
+    'spiracss/interaction-properties': [true, interactionProps],
+    'spiracss/keyframes-naming': keyframesEnabled ? [true, keyframesConfig] : false,
+    'spiracss/pseudo-nesting': [true, pseudoConfig],
+    'spiracss/rel-comments': [true, relConfig]
   }
 }
 

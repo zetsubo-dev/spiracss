@@ -94,6 +94,7 @@ type ProcessContext = {
   namingHint: string
   isShared: boolean
   isInteraction: boolean
+  hasBlockAncestor: boolean
 }
 
 const MAX_BLOCK_NESTING_DEPTH = 1
@@ -112,9 +113,9 @@ const reportAttributeViolations = (
   ctx: ProcessContext
 ): void => {
   const { parentKind, report, options, patterns, policyData } = ctx
-  const policy = options.selectorPolicy
-  const variantValueNaming = policy.variant.valueNaming
-  const stateValueNaming = policy.state.valueNaming
+  const selectorPolicy = options.selectorPolicy
+  const variantValueNaming = selectorPolicy.variant.valueNaming
+  const stateValueNaming = selectorPolicy.state.valueNaming
   const {
     reservedVariantKeys,
     reservedStateKey,
@@ -139,7 +140,7 @@ const reportAttributeViolations = (
       if (!name) return
       if (name.startsWith('data-')) {
         if (reservedVariantKeys.has(name)) {
-          if (policy.variant.mode === 'class') {
+          if (selectorPolicy.variant.mode === 'class') {
             report(
               messages.invalidVariantAttribute(
                 name,
@@ -160,7 +161,7 @@ const reportAttributeViolations = (
             )
           }
         } else if (name === reservedStateKey) {
-          if (policy.state.mode !== 'data') {
+          if (selectorPolicy.state.mode !== 'data') {
             report(
               messages.invalidStateAttribute(
                 name,
@@ -182,7 +183,7 @@ const reportAttributeViolations = (
           }
         }
       } else if (name.startsWith('aria-')) {
-        if (reservedAriaKeys.has(name) && policy.state.mode !== 'data') {
+        if (reservedAriaKeys.has(name) && selectorPolicy.state.mode !== 'data') {
           report(
             messages.invalidStateAttribute(
               name,
@@ -301,13 +302,13 @@ const reportElementHierarchyViolations = (
   }
 
   if (baseKind === 'element') {
-    if (depth > options.allowElementChainDepth) {
+    if (depth > options.element.depth) {
       report(
         messages.elementChainTooDeep(
           parentLabel,
           baseValue,
           depth,
-          options.allowElementChainDepth
+          options.element.depth
         )
       )
     }
@@ -340,7 +341,7 @@ const reportBlockCombinatorViolations = (
 ): void => {
   const { parentKind, parentSelector, options, report, isShared, isInteraction } = ctx
   if (parentKind !== 'block' || kind === 'modifier') return
-  if (!options.enforceChildCombinator || isShared || isInteraction) return
+  if (!options.child.combinator || isShared || isInteraction) return
 
   const missingChild = !hasNesting && !firstCombinator
   const wrongCombinator = firstCombinator && firstCombinator !== '>'
@@ -348,8 +349,8 @@ const reportBlockCombinatorViolations = (
     report(
       messages.needChild(
         baseValue,
-        options.sharedCommentPattern,
-        options.interactionCommentPattern
+        options.comments.shared,
+        options.comments.interaction
       )
     )
     return
@@ -425,7 +426,8 @@ export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null
   const modifierClass = modifierClasses[0]
 
   const modifiersAllowed =
-    !(options.selectorPolicy.variant.mode === 'data' && options.selectorPolicy.state.mode === 'data')
+    !(options.selectorPolicy.variant.mode === 'data' &&
+      options.selectorPolicy.state.mode === 'data')
   if (!modifiersAllowed && modifierClasses.length > 0) {
     // Display lowercase keys in messages to match actual selector matching behavior.
     const { variantKeys, stateKeys } = getLowercasePolicyKeys(options.selectorPolicy)
@@ -436,6 +438,13 @@ export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null
   // even if the last segment is external.
   const base = resolveBaseClass(classes, modifierClass, options, patterns)
   const baseKind = classify(base.value, options, patterns)
+
+  if (options.child.nesting && combinatorCount > 0 && !ctx.hasBlockAncestor) {
+    const rootBlocks = collectRootBlockNames([sel], options, patterns)
+    if (rootBlocks.length > 0) {
+      report(messages.needChildNesting(sel.toString().trim()))
+    }
+  }
 
   // Kind resolution:
   // 1. If a Modifier exists -> 'modifier'

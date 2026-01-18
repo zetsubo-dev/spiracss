@@ -1,3 +1,7 @@
+import stylelint from 'stylelint'
+
+import { getRuleDocsUrl } from './rule-docs'
+
 const DEFAULT_CODE_MAX_CHARS = 120
 const DEFAULT_LIST_MAX_CHARS = 200
 const DEFAULT_LIST_MAX_ITEMS = 5
@@ -15,6 +19,42 @@ export type RuleMessageArg =
   | Array<string | RegExp>
 
 export type RuleMessageArgs = RuleMessageArg[]
+
+const appendDocsLink = (message: string, ruleName: string): string => {
+  const docsUrl = getRuleDocsUrl(ruleName)
+  if (!docsUrl) return message
+  if (message.includes('Docs:')) return message
+  const suffix = `Docs: ${docsUrl}`
+  const ruleTag = ` (${ruleName})`
+  if (message.endsWith(ruleTag)) {
+    return message.slice(0, -ruleTag.length) + ` ${suffix}` + ruleTag
+  }
+  const separator = message.endsWith('.') || message.endsWith('!') ? ' ' : '. '
+  return `${message}${separator}${suffix}`
+}
+
+type RuleMessageValue = string | ((...args: any[]) => string)
+
+export const createRuleMessages = <T extends Record<string, unknown>>(
+  ruleName: string,
+  messages: T
+): T => {
+  const wrapped: Record<string, RuleMessageValue> = {}
+  for (const [key, value] of Object.entries(messages)) {
+    if (typeof value === 'function') {
+      wrapped[key] = (...args: any[]) =>
+        appendDocsLink(
+          (value as (...args: any[]) => string)(...args),
+          ruleName
+        )
+      continue
+    }
+    wrapped[key] = appendDocsLink(value as string, ruleName)
+  }
+  return stylelint.utils.ruleMessages(ruleName, wrapped) as T
+}
+
+export { appendDocsLink }
 
 const normalizeSelectorExample = (example: RuleMessageArg | undefined): string | undefined => {
   if (example === undefined) return undefined

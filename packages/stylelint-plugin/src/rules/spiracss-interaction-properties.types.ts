@@ -1,10 +1,14 @@
 import type { NamingOptions, NormalizedCacheSizes } from '../types'
 
 export type Options = {
-  sharedCommentPattern: RegExp
-  interactionCommentPattern: RegExp
+  comments: {
+    shared: RegExp
+    interaction: RegExp
+  }
   naming?: NamingOptions
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-  cacheSizes: NormalizedCacheSizes
+  external: {
+    classes: string[]
+    prefixes: string[]
+  }
+  cache: NormalizedCacheSizes
 }

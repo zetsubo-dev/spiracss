@@ -8,8 +8,8 @@ describe('spiracss/class-structure - modifier checks', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],

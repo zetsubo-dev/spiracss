@@ -2,10 +2,12 @@ import { testRule as rawTestRule } from 'stylelint-test-rule-node'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { formatNamingHint } from '../dist/esm/rules/spiracss-class-structure.patterns.js'
+import { appendDocsLink } from '../dist/esm/utils/messages.js'
 import type { NamingOptions } from '../dist/esm/types.js'
 
 const normalizeRootBlock = (code: string): string =>
   code.replace(/\.block(?![\w-])/g, '.block-name')
+
 
 type TestCase =
   | string
@@ -28,6 +30,29 @@ const normalizeCases = (cases: TestCase[] | undefined): TestCase[] | undefined =
   })
 }
 
+const appendDocsToMessage = (message: string | undefined, ruleName: string): string | undefined =>
+  message ? appendDocsLink(message, ruleName) : message
+
+const normalizeRejectMessages = (
+  cases: TestCase[] | undefined,
+  ruleName: string
+): TestCase[] | undefined => {
+  if (!cases) return cases
+  return cases.map((item) => {
+    if (typeof item === 'string') return item
+    if (!item || typeof item !== 'object') return item
+    const warnings = item.warnings?.map((warning) => ({
+      ...warning,
+      message: appendDocsLink(warning.message, ruleName)
+    }))
+    return {
+      ...item,
+      message: appendDocsToMessage(item.message, ruleName),
+      warnings
+    }
+  })
+}
+
 type RawRuleConfig = Parameters<typeof rawTestRule>[0]
 type RuleConfig = Omit<RawRuleConfig, 'accept' | 'reject'> & {
   accept?: TestCase[]
@@ -35,14 +60,18 @@ type RuleConfig = Omit<RawRuleConfig, 'accept' | 'reject'> & {
 }
 
 export const testRule = (config: RuleConfig): void => {
+  const normalizedReject = normalizeRejectMessages(config.reject, config.ruleName)
   if (config.ruleName !== classStructure.ruleName) {
-    rawTestRule(config as RawRuleConfig)
+    rawTestRule({
+      ...config,
+      reject: normalizedReject
+    } as RawRuleConfig)
     return
   }
   rawTestRule({
     ...config,
     accept: normalizeCases(config.accept),
-    reject: normalizeCases(config.reject)
+    reject: normalizeRejectMessages(normalizeCases(config.reject), config.ruleName)
   } as RawRuleConfig)
 }
 
@@ -60,15 +89,21 @@ const dataModeSelectorPolicy = {
   }
 }
 
-export const withClassMode = (config: Record<string, unknown>) => ({
-  ...config,
-  selectorPolicy: config.selectorPolicy ?? classModeSelectorPolicy
-})
+export const withClassMode = (config: Record<string, unknown>) => {
+  const { selectorPolicy, ...rest } = config
+  return {
+    ...rest,
+    selectorPolicy: selectorPolicy ?? classModeSelectorPolicy
+  }
+}
 
-export const withDataMode = (config: Record<string, unknown>) => ({
-  ...config,
-  selectorPolicy: config.selectorPolicy ?? dataModeSelectorPolicy
-})
+export const withDataMode = (config: Record<string, unknown>) => {
+  const { selectorPolicy, ...rest } = config
+  return {
+    ...rest,
+    selectorPolicy: selectorPolicy ?? dataModeSelectorPolicy
+  }
+}
 
 const buildNamingHint = (naming: NamingOptions = {}): string =>
   formatNamingHint({ naming })

@@ -4,7 +4,7 @@
 // This sample uses ESM syntax (export default).
 //
 // - aliasRoots:  alias mappings such as @components / @assets / @styles to real directories
-// - `stylelint`: options passed to the Stylelint plugin rules
+// - stylelint:   options passed to the Stylelint plugin rules
 // - selectorPolicy: variant/state representation policy
 // - htmlFormat: output attribute for HTML placeholders
 // - generator:  options for HTML-to-SCSS generators (VS Code extension, CLI)
@@ -24,38 +24,26 @@ const config = {
 
   // Recommended settings for SpiraCSS Stylelint rules (adjust per project)
   stylelint: {
-    // Cache sizes (LRU / default: 1000)
-    cacheSizes: {
-      selector: 1000,
-      patterns: 1000,
-      naming: 1000,
-      path: 1000
-    },
-    // Shared section comment patterns (default: { shared: /--shared/i, interaction: /--interaction/i })
-    sectionCommentPatterns: {
-      shared: /--shared/i,
-      interaction: /--interaction/i
-    },
-
-    classStructure: {
-      // Max Element > Element chain depth (default: 4)
-      allowElementChainDepth: 4,
-      // Class names excluded from naming/structure checks (exact match / default: [])
-      allowExternalClasses: [],
-      // Class name prefixes excluded from naming/structure checks (prefix match / e.g. u- / swiper- / default: [])
-      allowExternalPrefixes: ['u-'],
-      // Require `>` child selectors directly under Block (default: true)
-      enforceChildCombinator: true,
-      // Limit to one root Block per file (default: true)
-      enforceSingleRootBlock: true,
-      // Require root Block name to match the SCSS filename (default: true)
-      enforceRootFileName: true,
-      // Root Block SCSS filename case (default: 'preserve')
-      rootFileCase: 'preserve', // align with generator.rootFileCase
-      // Directory name for child Block SCSS (default: 'scss')
-      childScssDir: 'scss',
-      // Directory names treated as the component layer (default: ['components'])
-      componentsDirs: ['components'],
+    // Shared defaults across rules (omitted: each rule uses its own defaults)
+    base: {
+      // Cache sizes (LRU / default: 1000)
+      cache: {
+        selector: 1000,
+        patterns: 1000,
+        naming: 1000,
+        path: 1000
+      },
+      // Shared section comment patterns (default: { shared: /--shared/i, interaction: /--interaction/i })
+      comments: {
+        shared: /--shared/i,
+        interaction: /--interaction/i
+      },
+      // Class names excluded from naming/structure checks (default: [])
+      external: {
+        classes: [],
+        // Class name prefixes excluded from naming/structure checks (e.g. u- / swiper- / default: [])
+        prefixes: ['u-']
+      },
       // Naming customization (SpiraCSS defaults when omitted)
       naming: {
         // Block word case (kebab / snake / camel / pascal / default: 'kebab')
@@ -77,37 +65,68 @@ const config = {
       }
     },
 
+    class: {
+      // Max Element > Element chain depth (default: 4)
+      elementDepth: 4,
+      // Require `>` for direct children of a Block (default: true)
+      childCombinator: true,
+      // Require child selectors to be nested inside the Block (default: true)
+      childNesting: true,
+      // Limit to one root Block per file (default: true)
+      rootSingle: true,
+      // Require root Block name to match the SCSS filename (default: true)
+      rootFile: true,
+      // Root Block SCSS filename case (default: 'preserve')
+      rootCase: 'preserve', // align with generator.rootFileCase
+      // Directory name for child Block SCSS (default: 'scss')
+      childDir: 'scss',
+      // Directory names treated as the component layer (default: ['components'])
+      componentsDirs: ['components']
+    },
+
+    placement: {
+      // Max Element chain depth (default: class.elementDepth / fallback: 4)
+      elementDepth: 4,
+      // Allowed vertical margin side (top / bottom / default: 'top')
+      marginSide: 'top',
+      // Enable child Block position restrictions (default: true)
+      position: true,
+      // Treat width/height/min/max as internal props (default: true)
+      sizeInternal: true,
+      // Mixin names treated as transparent (default: [])
+      responsiveMixins: []
+    },
+
     interactionScope: {
       // Pseudo-classes to validate (default: [':hover', ':focus', ':focus-visible', ':active', ':visited'])
-      allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+      pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
       // Require @at-root & { ... } and selectors starting with & (default: true)
       requireAtRoot: true,
       // Require --interaction comment (default: true)
       requireComment: true,
       // Require interaction block at the end (default: true)
       requireTail: true,
-      // Only validate blocks that have comments (default: false)
-      enforceWithCommentOnly: false,
+      // Only validate blocks with comments (default: false)
+      commentOnly: false
       // selectorPolicy references top-level (set only if you need to override explicitly)
       // selectorPolicy: { ... }
     },
 
-    interactionProperties: {
+    interactionProps: {
       // Enforce transition/animation declarations inside the interaction section
-      // Override sharedCommentPattern / interactionCommentPattern only if needed
-      // sharedCommentPattern: /--shared/i,
-      // interactionCommentPattern: /--interaction/i
+      // Override comments.shared / comments.interaction only if needed
+      // comments: { shared: /--shared/i, interaction: /--interaction/i }
     },
 
-    keyframesNaming: {
+    keyframes: {
       // Enable or disable this rule (default: true)
       enabled: true,
       // Max words for action (1-3 / default: 3)
       actionMaxWords: 3,
       // Block name source (selector / file / selector-or-file / default: selector)
-      blockNameSource: 'selector',
+      blockSource: 'selector',
       // Warn when Block cannot be resolved (default: true)
-      warnOnMissingBlock: true,
+      blockWarnMissing: true,
       // Prefixes for shared keyframes (default: ['kf-'])
       sharedPrefixes: ['kf-'],
       // Files allowed for shared keyframes (string = suffix match / default: ['keyframes.scss'])
@@ -117,28 +136,31 @@ const config = {
       // Keyframes names to ignore (string treated as RegExp / default: [])
       ignorePatterns: [],
       // Skip placement checks for keyframes matched by ignorePatterns (default: false)
-      ignorePlacementForIgnored: false
+      ignoreSkipPlacement: false
     },
 
-    relComments: {
-      // Require @rel in SCSS directories (default: true)
-      requireInScssDirectories: true,
+    // Pseudo-classes/elements must be nested under &
+    pseudo: {},
+
+    rel: {
+      // Require @rel in scss directories (default: true)
+      requireScss: true,
       // Require @rel when meta.load-css is present (default: true)
-      requireWhenMetaLoadCss: true,
+      requireMeta: true,
+      // Require child -> parent @rel (default: true)
+      requireParent: true,
+      // Require parent -> child @rel (default: true)
+      requireChild: true,
+      // Require child @rel in shared sections (default: true)
+      requireChildShared: true,
+      // Require child @rel in interaction sections (default: false)
+      requireChildInteraction: false,
       // Validate @rel path existence (default: true)
       validatePath: true,
       // Skip files without selector rules (default: true)
-      skipFilesWithoutRules: true,
-      // Require parent -> child @rel (default: true)
-      requireChildRelComments: true,
-      // Require child @rel in shared sections (default: true)
-      requireChildRelCommentsInShared: true,
-      // Require child @rel in interaction sections (default: false)
-      requireChildRelCommentsInInteraction: false,
-      // Require child -> parent @rel (default: true)
-      requireParentRelComment: true,
+      skipNoRules: true,
       // Directory name for child Block SCSS (default: 'scss')
-      childScssDir: 'scss'
+      childDir: 'scss'
     }
   },
 
@@ -161,7 +183,7 @@ const config = {
       // Data attribute key for state (default: 'data-state')
       dataKey: 'data-state',
       // Allowlist of aria attributes for state
-      ariaKeys: ['aria-expanded', 'aria-selected', 'aria-disabled'],
+      ariaKeys: ['aria-expanded', 'aria-selected', 'aria-disabled']
       // valueNaming: { maxWords: 1 } // override only for state
     }
   },

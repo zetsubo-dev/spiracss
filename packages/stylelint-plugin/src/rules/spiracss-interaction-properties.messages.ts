@@ -1,20 +1,19 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-interaction-properties.constants'
 import {
+  createRuleMessages,
   formatCode,
   formatPattern,
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   needInteraction: (prop: string, pattern: RegExp) =>
     `${formatCode(
       prop
     )} must be declared inside the SpiraCSS interaction section in root scope ` +
     `(comment matching ${formatCode(
-      'interactionCommentPattern'
+      'comments.interaction'
     )}, current: ${formatPattern(
       pattern
     )}; typically in ${formatCode('@at-root &')}).`,
@@ -52,7 +51,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
       target
     )}. Move its declarations into the interaction section ` +
     `(comment matching ${formatCode(
-      'interactionCommentPattern'
+      'comments.interaction'
     )}, current: ${formatPattern(pattern)}).`,
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])
 })

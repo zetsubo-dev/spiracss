@@ -12,34 +12,37 @@ module.exports = {
 
   // stylelint plugin rules (generally unused during extension development)
   stylelint: {
-    // Shared section comment patterns
-    sectionCommentPatterns: {
-      shared: /--shared/i,
-      interaction: /--interaction/i
+    base: {
+      comments: {
+        shared: /--shared/i,
+        interaction: /--interaction/i
+      },
+      external: {
+        classes: [],
+        prefixes: []
+      }
     },
-    classStructure: {
-      allowElementChainDepth: 4,
-      allowExternalClasses: [],
-      allowExternalPrefixes: [],
-      enforceChildCombinator: true
+    class: {
+      elementDepth: 4,
+      childCombinator: true
     },
     interactionScope: {
-      allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+      pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
       requireAtRoot: true,
       requireComment: true,
       requireTail: true,
-      enforceWithCommentOnly: false
+      commentOnly: false
     },
-    relComments: {
-      requireInScssDirectories: true,
-      requireWhenMetaLoadCss: true,
+    rel: {
+      requireScss: true,
+      requireMeta: true,
+      requireParent: true,
+      requireChild: true,
+      requireChildShared: true,
+      requireChildInteraction: true,
       validatePath: true,
-      skipFilesWithoutRules: true,
-      requireChildRelComments: true,
-      requireChildRelCommentsInShared: true,
-      requireChildRelCommentsInInteraction: true,
-      requireParentRelComment: true,
-      childScssDir: 'scss'
+      skipNoRules: true,
+      childDir: 'scss'
     }
   },
 

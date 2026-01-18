@@ -3,6 +3,7 @@
  * ========================================================= */
 
 import {
+  type ExternalOptions,
   type FileNameCase,
   generateFromHtml,
   type GeneratorOptions,
@@ -12,7 +13,8 @@ import {
   type NamingOptions,
   type RootBlockSummary,
   type SelectorPolicy,
-  summarizeRootBlocks} from '@spiracss/html-cli'
+  summarizeRootBlocks
+} from '@spiracss/html-cli'
 import { existsSync, promises as fsp, statSync } from 'fs'
 import * as path from 'path'
 import { pathToFileURL } from 'url'
@@ -31,6 +33,9 @@ function isFileNameCase(value: string): value is FileNameCase {
     value === 'pascal'
   )
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
 
 /* ---------- workspace / config loading ---------- */
 function getWorkspaceRoot(uri: vscode.Uri): string | undefined {
@@ -157,10 +162,15 @@ function loadRootFileCaseFromConfig(config?: SpiracssConfig): FileNameCase {
 function loadNamingFromConfig(config?: SpiracssConfig): NamingOptions {
   if (!config) return {}
   const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-  const classStructure = stylelintCfg?.classStructure as Record<string, unknown> | undefined
-  const naming = classStructure?.naming
-  if (naming && typeof naming === 'object') {
-    return naming as NamingOptions
+  const base = stylelintCfg?.base as Record<string, unknown> | undefined
+  const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
+  const baseNaming = base?.naming
+  if (isRecord(baseNaming)) {
+    return baseNaming as NamingOptions
+  }
+  const classNaming = classConfig?.naming
+  if (isRecord(classNaming)) {
+    return classNaming as NamingOptions
   }
   return {}
 }
@@ -178,33 +188,33 @@ function loadHtmlFormatClassAttributeFromConfig(config?: SpiracssConfig): ClassA
   return fallback
 }
 
-function loadExternalOptionsFromConfig(config?: SpiracssConfig): {
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-} {
+function loadExternalOptionsFromConfig(config?: SpiracssConfig): ExternalOptions {
   if (!config) {
-    return { allowExternalClasses: [], allowExternalPrefixes: [] }
+    return { classes: [], prefixes: [] }
   }
   const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-  const classStructure = stylelintCfg?.classStructure as Record<string, unknown> | undefined
-  const allowExternalClasses = Array.isArray(classStructure?.allowExternalClasses)
-    ? classStructure.allowExternalClasses.filter(
-        (item) => typeof item === 'string' && item.trim() !== ''
-      )
+  const base = stylelintCfg?.base as Record<string, unknown> | undefined
+  const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
+  const baseExternal = base?.external
+  const classExternal = classConfig?.external
+  const external = {
+    ...(isRecord(baseExternal) ? baseExternal : {}),
+    ...(isRecord(classExternal) ? classExternal : {})
+  }
+  const classes = Array.isArray(external.classes)
+    ? external.classes.filter((item) => typeof item === 'string' && item.trim() !== '')
     : []
-  const allowExternalPrefixes = Array.isArray(classStructure?.allowExternalPrefixes)
-    ? classStructure.allowExternalPrefixes.filter(
-        (item) => typeof item === 'string' && item.trim() !== ''
-      )
+  const prefixes = Array.isArray(external.prefixes)
+    ? external.prefixes.filter((item) => typeof item === 'string' && item.trim() !== '')
     : []
-  return { allowExternalClasses, allowExternalPrefixes }
+  return { classes, prefixes }
 }
 
 function loadSelectorPolicyFromConfig(config?: SpiracssConfig): SelectorPolicy | undefined {
   if (!config) return undefined
-  const policy = config.selectorPolicy
-  if (policy && typeof policy === 'object') {
-    return policy as SelectorPolicy
+  const selectorPolicyConfig = config.selectorPolicy
+  if (selectorPolicyConfig && typeof selectorPolicyConfig === 'object') {
+    return selectorPolicyConfig as SelectorPolicy
   }
   return undefined
 }
@@ -464,7 +474,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
     const layoutMixins = loadLayoutMixinsFromConfig(config)
     const naming = loadNamingFromConfig(config)
     const selectorPolicy = loadSelectorPolicyFromConfig(config)
-    const { allowExternalClasses, allowExternalPrefixes } = loadExternalOptionsFromConfig(config)
+    const external = loadExternalOptionsFromConfig(config)
     const childScssDir = loadChildScssDirFromConfig(config)
     const rootFileCase = loadRootFileCaseFromConfig(config)
 
@@ -476,16 +486,18 @@ export function activate(ctx: vscode.ExtensionContext): void {
       naming,
       rootFileCase,
       selectorPolicy,
-      allowExternalClasses,
-      allowExternalPrefixes
+      external
     }
 
     globalWriteChoice = null
     try {
-      const lintIssues = lintHtmlStructure(html, isRoot, options.naming, options.selectorPolicy, {
-        allowExternalClasses: options.allowExternalClasses,
-        allowExternalPrefixes: options.allowExternalPrefixes
-      })
+      const lintIssues = lintHtmlStructure(
+        html,
+        isRoot,
+        options.naming,
+        options.selectorPolicy,
+        options.external
+      )
       if (lintIssues.length > 0) {
         await reportLintIssues(lintIssues)
         return

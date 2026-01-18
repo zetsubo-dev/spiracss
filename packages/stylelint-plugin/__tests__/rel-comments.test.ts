@@ -14,12 +14,12 @@ describe('spiracss/rel-comments - basic checks', () => {
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        requireWhenMetaLoadCss: true,
+        requireScss: true,
+        requireMeta: true,
         validatePath: false, // File existence checks are disabled for tests.
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -83,7 +83,7 @@ describe('spiracss/rel-comments - basic checks', () => {
     @include meta.load-css('scss');
   }
 }`,
-        description: 'missing page entry comment (requireInScssDirectories violation)',
+        description: 'missing page entry comment (requireScss violation)',
         message:
           'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). (spiracss/rel-comments)'
       },
@@ -147,7 +147,7 @@ describe('spiracss/rel-comments - basic checks', () => {
     @include meta.load-css('scss');
   }
 }`,
-        description: 'missing child Block @rel comment (requireChildRelComments violation)',
+        description: 'missing child Block @rel comment (requireChild violation)',
         message:
           'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. (spiracss/rel-comments)'
       }
@@ -162,12 +162,12 @@ describe('spiracss/rel-comments - root Block must be first rule', () => {
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        requireWhenMetaLoadCss: false,
+        requireScss: true,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -221,12 +221,12 @@ describe('spiracss/rel-comments - selector parse failure', () => {
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: false
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -260,12 +260,12 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
           'spiracss/rel-comments': [
             true,
             {
-              requireInScssDirectories: false,
-              requireWhenMetaLoadCss: false,
+              requireScss: false,
+              requireMeta: false,
               validatePath: false,
-              skipFilesWithoutRules: true,
-              requireChildRelComments: false,
-              requireParentRelComment: false,
+              skipNoRules: true,
+              requireChild: false,
+              requireParent: false,
               naming: {
                 customPatterns: {
                   block: 'invalid' as unknown as RegExp,
@@ -312,12 +312,12 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
     const run = relComments.rule(
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: false,
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: false,
         naming: {
           customPatterns: {
             block: 'invalid' as unknown as RegExp
@@ -332,15 +332,15 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
   })
 })
 
-describe('spiracss/rel-comments - requireWhenMetaLoadCss: false', () => {
+describe('spiracss/rel-comments - requireMeta: false', () => {
   testRule({
     plugins: [relComments],
     ruleName: relComments.ruleName,
     config: [
       true,
       {
-        requireWhenMetaLoadCss: false,
-        skipFilesWithoutRules: true
+        requireMeta: false,
+        skipNoRules: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -354,7 +354,7 @@ describe('spiracss/rel-comments - requireWhenMetaLoadCss: false', () => {
     @include meta.load-css('scss');
   }
 }`,
-        description: 'when requireWhenMetaLoadCss: false, comments are optional'
+        description: 'when requireMeta: false, comments are optional'
       }
     ]
   })
@@ -367,12 +367,12 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: true,
+        requireScss: false,
+        requireMeta: true,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -396,15 +396,15 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
   })
 })
 
-describe('spiracss/rel-comments - skipFilesWithoutRules: true', () => {
+describe('spiracss/rel-comments - skipNoRules: true', () => {
   testRule({
     plugins: [relComments],
     ruleName: relComments.ruleName,
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        skipFilesWithoutRules: true
+        requireScss: true,
+        skipNoRules: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -434,12 +434,12 @@ describe('spiracss/rel-comments - multiple meta.load-css', () => {
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        requireWhenMetaLoadCss: true,
+        requireScss: true,
+        requireMeta: true,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -472,12 +472,12 @@ describe('spiracss/rel-comments - validatePath: true', () => {
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: true,
+        requireScss: false,
+        requireMeta: true,
         validatePath: true,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: false,
         aliasRoots: {
           components: ['__tests__/fixtures/components'],
           'assets-v2': ['__tests__/fixtures/components'],
@@ -591,12 +591,12 @@ describe('spiracss/rel-comments - validatePath error handling', () => {
             'spiracss/rel-comments': [
               true,
               {
-                requireInScssDirectories: false,
-                requireWhenMetaLoadCss: false,
+                requireScss: false,
+                requireMeta: false,
                 validatePath: true,
-                skipFilesWithoutRules: true,
-                requireChildRelComments: false,
-                requireParentRelComment: false
+                skipNoRules: true,
+                requireChild: false,
+                requireParent: false
               }
             ]
           }
@@ -621,12 +621,12 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: false
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -745,14 +745,14 @@ describe('spiracss/rel-comments - child block comments opt-out in shared/interac
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireChildRelCommentsInShared: false,
-        requireChildRelCommentsInInteraction: false,
-        requireParentRelComment: false
+        skipNoRules: true,
+        requireChild: true,
+        requireChildShared: false,
+        requireChildInteraction: false,
+        requireParent: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -804,12 +804,12 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: true,
+        requireScss: false,
+        requireMeta: true,
         validatePath: true,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: false,
         aliasRoots: {
           components: ['__tests__/fixtures/components', '__tests__/fixtures/legacy'],
           shared: ['__tests__/fixtures/scss']

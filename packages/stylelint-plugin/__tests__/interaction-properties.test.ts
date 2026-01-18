@@ -8,7 +8,7 @@ describe('spiracss/interaction-properties - basics', () => {
     config: [
       true,
       {
-        interactionCommentPattern: /--interaction/i
+        comments: { interaction: /--interaction/i }
       }
     ],
     customSyntax: 'postcss-scss',
@@ -263,7 +263,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -297,7 +297,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -311,7 +311,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -347,7 +347,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `interactionCommentPattern`, current: `/--interaction/i`). (spiracss/interaction-properties)'
+              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `comments.interaction`, current: `/--interaction/i`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -368,7 +368,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `interactionCommentPattern`, current: `/--interaction/i`). (spiracss/interaction-properties)'
+              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `comments.interaction`, current: `/--interaction/i`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -416,7 +416,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`animation` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -431,11 +431,11 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`animation-name` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation-name` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           },
           {
             message:
-              '`animation-delay` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation-delay` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -450,11 +450,11 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`animation-timeline` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation-timeline` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           },
           {
             message:
-              '`animation-range` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation-range` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -469,11 +469,11 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`animation-range-start` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation-range-start` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           },
           {
             message:
-              '`animation-range-end` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`animation-range-end` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -487,7 +487,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`transition-behavior` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`transition-behavior` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -501,7 +501,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`transition-duration` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`transition-duration` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/i`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -524,7 +524,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`opacity` is transitioned for `.block-name > .title`. Move its declarations into the interaction section (comment matching `interactionCommentPattern`, current: `/--interaction/i`). (spiracss/interaction-properties)'
+              '`opacity` is transitioned for `.block-name > .title`. Move its declarations into the interaction section (comment matching `comments.interaction`, current: `/--interaction/i`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -545,7 +545,7 @@ describe('spiracss/interaction-properties - basics', () => {
         warnings: [
           {
             message:
-              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `interactionCommentPattern`, current: `/--interaction/i`). (spiracss/interaction-properties)'
+              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `comments.interaction`, current: `/--interaction/i`). (spiracss/interaction-properties)'
           }
         ]
       },
@@ -560,8 +560,8 @@ describe('spiracss/interaction-properties - external prefixes', () => {
     config: [
       true,
       {
-        interactionCommentPattern: /--interaction/i,
-        allowExternalPrefixes: ['u-']
+        comments: { interaction: /--interaction/i },
+        external: { prefixes: ['u-'] }
       }
     ],
     customSyntax: 'postcss-scss',
@@ -602,7 +602,7 @@ describe('spiracss/interaction-properties - external prefixes', () => {
         warnings: [
           {
             message:
-              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `interactionCommentPattern`, current: `/--interaction/i`). (spiracss/interaction-properties)'
+              '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `comments.interaction`, current: `/--interaction/i`). (spiracss/interaction-properties)'
           }
         ]
       }
@@ -617,8 +617,7 @@ describe('spiracss/interaction-properties - comment pattern flags', () => {
     config: [
       true,
       {
-        interactionCommentPattern: /--interaction/g,
-        sharedCommentPattern: /--shared/g
+        comments: { interaction: /--interaction/g, shared: /--shared/g }
       }
     ],
     customSyntax: 'postcss-scss',
@@ -650,7 +649,7 @@ describe('spiracss/interaction-properties - comment pattern flags', () => {
         warnings: [
           {
             message:
-              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `interactionCommentPattern`, current: `/--interaction/g`; typically in `@at-root &`). (spiracss/interaction-properties)'
+              '`transition` must be declared inside the SpiraCSS interaction section in root scope (comment matching `comments.interaction`, current: `/--interaction/g`; typically in `@at-root &`). (spiracss/interaction-properties)'
           }
         ]
       }

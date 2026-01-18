@@ -168,7 +168,7 @@ At its core, a component is expressed entirely as a repetition of `Block > (Bloc
 ### Expression modes
 
 Variant/State can be expressed with **data mode** (default/recommended) or **class mode**.  
-Choose per project/team policy in `spiracss.config.js`.
+Choose per project/team selectorPolicy settings in `spiracss.config.js`.
 
 #### Data mode (default)
 
@@ -271,14 +271,20 @@ Place the `--shared` and `--interaction` sections directly under the root Block 
 ### 1. Base structure section
 
 This section explains what belongs in the base structure section.
+This section is a concrete application of the one-sentence principle in [Design Principles](principles.md). Detailed placement rules are validated by Stylelint, so rely on lint feedback rather than memorization.
 
 #### Property placement cheat sheet
 
 | Category | Typical properties | Where to write |
 | -------- | ------------------ | -------------- |
 | Container-side layout | `display:flex/grid`, `gap`, `justify-*`, `align-*`, `grid-template-*` | on the Block itself (e.g. `.sample-block { ... }`) |
-| Item-side layout as seen from the parent | `margin-top` (vertical spacing), parent-based `width/height/max-*`, `flex`, `order`, `align-self` | on the parent Block’s immediate child rule (e.g. `.sample-block > .child { ... }`) |
+| Item-side layout as seen from the parent | `margin-top` (vertical spacing), `flex`, `order`, `align-self` | on the parent Block's immediate child rule (e.g. `.sample-block > .child { ... }`) |
 | Internal layout inside a child Block | `text-align`, `line-height`, `padding`, internal `gap` inside a child | on the child Block/Element itself |
+
+> **Internal property restrictions (validated by Stylelint `spiracss/property-placement`):**
+> - `padding`/`padding-*`, `overflow`/`overflow-*`, `width`, `height`, `min-*`, `max-*`, `inline-size`, `block-size` are treated as **internal properties** and are generally disallowed on child Blocks (selectors placed as `> .child-block` from a parent Block)
+> - Exception: `min-*` with a value of `0` (e.g., `min-width: 0`) is allowed on child Blocks (needed for flex/grid item-side use cases)
+> - Set `enableSizeInternal: false` to exclude size properties (`width` / `height` / `min-*` / `max-*` / `inline-size` / `block-size`) from internal properties
 
 #### Decision criteria
 
@@ -294,10 +300,18 @@ Global-only selectors are out-of-scope, so `@at-root` / `@extend` restrictions d
 If a selector becomes ambiguous after removing `:global(...)` (e.g., some pseudo selectors lose their selector list),
 placement checks are skipped for that rule, but `@at-root` / `@extend` restrictions still apply.
 
-**Note on placement approximations:** Placement checks use a selector “family” heuristic.
+**Note on placement approximations:** Placement checks use a selector "family" heuristic.
 Variant/state *values* are not distinguished, and `@media` / `@supports` / `@container` / `@layer` wrappers are treated
-as the same context. Extremely complex selectors (or selector explosions from deep nesting) are skipped to avoid false
-positives and performance issues.
+as the same context. `@scope` is treated as a context boundary; declarations in different `@scope` blocks are considered
+different contexts. `@include` is normally a different context, but mixin names specified in `responsiveMixins` are treated
+as transparent, so they are recognized as the same context. Extremely complex selectors (or selector explosions from deep nesting) are skipped to avoid false positives and performance issues.
+However, `position: relative` / `absolute` is an exception: if the family key cannot be determined, it causes an error (offset presence cannot be verified).
+
+**position restrictions (validated by Stylelint `spiracss/property-placement`, when `enablePosition: true`):**
+- `position: fixed` / `sticky` on child Blocks is disallowed (it breaks out of the parent's layout context)
+- `position: relative` / `absolute` is allowed only when offset properties (`top` / `right` / `bottom` / `left` / `inset-*`) are declared in the same selector family and wrapper context
+- Offsets in different `@scope` blocks are considered different contexts and will cause an error
+- `@include` for mixins listed in `responsiveMixins` is treated as the same context
 
 ### 2. --shared section
 
@@ -392,7 +406,7 @@ The `--interaction` section is where you collect styles related to state changes
 
 **Naming rules:**
 - `{block}-{action}` or `{block}-{element}-{action}`
-- Block/Element casing follows `classStructure.naming`
+- Block/Element casing follows `stylelint.base.naming`
 - Element names are allowed only when they exist in the same file.
 - Action uses `blockCase` and must be **1–3 words** (configurable via `actionMaxWords`)
 - The separator between block and action is always `-` (e.g. `cardList-fadeIn` / `CardList-fadeIn`).
@@ -463,7 +477,7 @@ Example: page entry SCSS (`assets/css/home.scss`)
 - **Parent → page**: near the top of the parent Block file, put a link to the page entry
   - On the page entry side, writing `@components/...` inside the `> .block` rule enables round-trip navigation
 
-> Alias resolution (e.g. `@components`) is handled by `aliasRoots` in `spiracss.config.js`. Whether link comments are required/optional and whether their paths are validated are configured under `stylelint.relComments` (= `spiracss/rel-comments`).
+> Alias resolution (e.g. `@components`) is handled by `aliasRoots` in `spiracss.config.js`. Whether link comments are required/optional and whether their paths are validated are configured under `stylelint.rel` (= `spiracss/rel-comments`).
 
 ## Next steps
 

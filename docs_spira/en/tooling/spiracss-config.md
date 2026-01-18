@@ -1,11 +1,11 @@
 # spiracss.config.js Guide
 
 `spiracss.config.js` is the shared configuration file for SpiraCSS tooling.
-Key sections:
+Main sections:
 
 - **aliasRoots**: path resolution for Comment Links / Stylelint
-- **stylelint**: rule settings (classStructure / interactionScope / interactionProperties / keyframesNaming / pseudoNesting / relComments, etc.)
-- **selectorPolicy**: variant/state representation policy (linting / generator / HTML lint)
+- **stylelint**: rule settings (base / class / placement / interactionScope / interactionProps / keyframes / pseudo / rel, etc.)
+- **selectorPolicy**: variant/state representation policy (lint / generator / HTML lint)
 - **htmlFormat**: output attribute for HTML placeholders
 - **generator**: HTML-to-SCSS generation
 
@@ -73,7 +73,7 @@ aliasRoots: {
   - **Stylelint**: ignores candidates resolved outside the project root (does not validate bases)
   - **Comment Links**: ignores bases outside the project root and also ignores targets resolved outside the root
 - Project root basis:
-  - **Stylelint**: `cwd` (running from a subdirectory changes the base path; `createRulesAsync(path)` only specifies the config file path and does not change the project root—run Stylelint from the project root or set the task runner working directory / Node API `cwd`)
+  - **Stylelint**: `cwd` (running from a subdirectory changes the base path; `createRulesAsync(path)` only specifies the config file path and does not change the project root; run Stylelint from the project root or set the task runner working directory / Node API `cwd`)
   - **Comment Links**: the VS Code workspace folder
 - Stylelint cannot resolve aliases not defined in `aliasRoots`
 - Comment Links only link aliases defined in `aliasRoots` or the built-in defaults (`@src` / `@components` / `@styles` / `@assets` / `@pages` / `@parts` / `@common`)
@@ -83,50 +83,69 @@ aliasRoots: {
 ### `stylelint`
 
 Rule settings for the SpiraCSS Stylelint plugin.
-When using `createRules()` or `createRulesAsync()`, `classStructure` / `interactionScope` / `interactionProperties` / `keyframesNaming` / `pseudoNesting` / `relComments` are optional; defaults apply if omitted.
+When using `createRules()` or `createRulesAsync()`, `base` / `class` / `placement` / `interactionScope` / `interactionProps` / `keyframes` / `pseudo` / `rel` are optional; defaults apply if omitted (`aliasRoots` is required).
 Use `createRulesAsync()` if you want to pass a config path in ESM.
 If you set `stylelint`, it must be a **plain object** (`stylelint: []` or `new Map()` are invalid).
 
-#### `stylelint.sectionCommentPatterns`
+#### `stylelint.base`
 
-Unifies comment matching for shared and interaction sections.
-When using `createRules()` or `createRulesAsync()`, values here are expanded into each rule (per-rule overrides take priority).
+Shared settings used across multiple rules. `comments` / `external` / `naming` / `cache` / `selectorPolicy` / `paths` can be overridden per rule.
 
 ```js
 stylelint: {
-  sectionCommentPatterns: {
-    shared: /--shared/i,
-    interaction: /--interaction/i
+  base: {
+    comments: {
+      shared: /--shared/i,
+      interaction: /--interaction/i
+    },
+    external: {
+      classes: [],
+      prefixes: ['u-']
+    },
+    naming: {
+      blockCase: 'kebab',
+      blockMaxWords: 2,
+      elementCase: 'kebab',
+      modifierCase: 'kebab',
+      modifierPrefix: '-'
+    },
+    cache: {
+      selector: 1000,
+      patterns: 1000,
+      naming: 1000,
+      path: 1000
+    },
+    selectorPolicy: {
+      // same shape as top-level selectorPolicy
+    },
+    paths: {
+      childDir: 'scss',
+      components: ['components']
+    }
   }
 }
 ```
 
-**Note**: `shared` / `interaction` accept **RegExp or string**. Strings are treated as `new RegExp(pattern, 'i')`, and invalid/unsafe patterns fall back to the default. Use RegExp if you need more control.
+**Settings:**
 
-#### `stylelint.cacheSizes`
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `comments.shared` | RegExp / string | `/--shared/i` | Shared comment matcher |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | Interaction comment matcher |
+| `external.classes` | string[] | `[]` | External class exclusions (exact match) |
+| `external.prefixes` | string[] | `[]` | External class exclusions (prefix match) |
+| `naming` | object | `undefined` | Naming rules (inherited by class / placement / keyframes / rel, etc.) |
+| `cache.selector` | number | `1000` | Selector parse cache |
+| `cache.patterns` | number | `1000` | Naming pattern generation cache |
+| `cache.naming` | number | `1000` | Naming pattern cache |
+| `cache.path` | number | `1000` | @rel path existence cache |
+| `selectorPolicy` | object | top-level selectorPolicy | Rule-level selector policy override |
+| `paths.childDir` | string | `'scss'` | Child Block SCSS directory (default for class / rel) |
+| `paths.components` | string[] | `['components']` | Component-layer directories (default for class) |
 
-Defines LRU cache sizes for Stylelint rules.
-Defaults to **1000** for all caches.
+**Note**: `comments.shared` / `comments.interaction` accept **RegExp or string**. Strings are treated as `new RegExp(pattern, 'i')`, and invalid/unsafe patterns fall back to defaults. Use RegExp if you need fine-grained control.
 
-```js
-stylelint: {
-  cacheSizes: {
-    selector: 1000,
-    patterns: 1000,
-    naming: 1000,
-    path: 1000
-  }
-}
-```
-
-- **`selector`**: selector parse cache (postcss-selector-parser)
-- **`patterns`**: naming pattern generation cache
-- **`naming`**: Block naming pattern cache
-- **`path`**: @rel path existence cache
-
-> Use positive integers only. Rule-level `cacheSizes` (classStructure / interactionScope / interactionProperties / keyframesNaming / pseudoNesting / relComments) override this value.
-
-#### `stylelint.classStructure`
+#### `stylelint.class`
 
 Defines class naming rules and selector structure.
 
@@ -134,20 +153,21 @@ Defines class naming rules and selector structure.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `allowElementChainDepth` | number | `4` | Max depth for Element chains |
-| `allowExternalClasses` | string[] | `[]` | Exclude external classes (exact match) |
-| `allowExternalPrefixes` | string[] | `[]` | Exclude external classes (prefix match) |
-| `enforceChildCombinator` | boolean | `true` | Require `>` for direct children of a Block |
-| `enforceSingleRootBlock` | boolean | `true` | Single root Block per file |
-| `enforceRootFileName` | boolean | `true` | Require root Block name to match the filename |
-| `rootFileCase` | `'preserve' \| 'kebab' \| 'snake' \| 'camel' \| 'pascal'` | `'preserve'` | Case for root Block filename |
-| `childScssDir` | string | `'scss'` | Directory for child Block SCSS |
+| `elementDepth` | number | `4` | Max Element chain depth |
+| `childCombinator` | boolean | `true` | Require `>` for direct children of a Block |
+| `childNesting` | boolean | `true` | Require child selectors to be nested inside the Block |
+| `rootSingle` | boolean | `true` | Single root Block per file |
+| `rootFile` | boolean | `true` | Require root Block name to match the filename |
+| `rootCase` | `'preserve' \| 'kebab' \| 'snake' \| 'camel' \| 'pascal'` | `'preserve'` | Case for root Block filename |
+| `childDir` | string | `'scss'` | Directory for child Block SCSS |
 | `componentsDirs` | string[] | `['components']` | Directories treated as the component layer |
-| `naming` | object | See below | Naming rule customization |
-| `sharedCommentPattern` | RegExp / string | `/--shared/i` | Per-rule shared comment pattern (overrides `sectionCommentPatterns`) |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | Per-rule interaction comment pattern (overrides `sectionCommentPatterns`) |
-| `selectorPolicy` | object | `data-variant` / `data-state` / `aria-*` | Rule-level override (when using `createRules()` or `createRulesAsync()`, top-level selectorPolicy takes priority) |
-| `cacheSizes` | object | `stylelint.cacheSizes` | Rule-level override (falls back to `stylelint.cacheSizes`; otherwise 1000 each) |
+| `comments.shared` | RegExp / string | `/--shared/i` | Shared comment matcher (overrides `stylelint.base.comments`) |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | Interaction comment matcher (overrides `stylelint.base.comments`) |
+| `external.classes` | string[] | `[]` | External class exclusions (exact match) |
+| `external.prefixes` | string[] | `[]` | External class exclusions (prefix match) |
+| `naming` | object | `stylelint.base.naming` | Naming rules |
+| `selectorPolicy` | object | top-level selectorPolicy | Rule-level override (uses top-level selectorPolicy by default) |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
 **`naming` sub-items:**
 
@@ -172,16 +192,19 @@ Example:
 
 ```js
 stylelint: {
-  classStructure: {
-    allowElementChainDepth: 4,
-    allowExternalClasses: [],
-    allowExternalPrefixes: ['swiper-'],
-    enforceChildCombinator: true,
-    enforceSingleRootBlock: true,
-    enforceRootFileName: true,
-    rootFileCase: 'preserve',
-    childScssDir: 'scss',
+  class: {
+    elementDepth: 4,
+    childCombinator: true,
+    childNesting: true,
+    rootSingle: true,
+    rootFile: true,
+    rootCase: 'preserve',
+    childDir: 'scss',
     componentsDirs: ['components'],
+    external: {
+      classes: [],
+      prefixes: ['swiper-']
+    },
     naming: {
       blockCase: 'kebab',
       blockMaxWords: 2,
@@ -202,11 +225,44 @@ stylelint: {
 
 - If you use `customPatterns`, verify it stays consistent with HTML placeholders (`block-box` / `element`).
 - `customPatterns` accept **RegExp only**. RegExp with `g` or `y` flags are invalid.
-- Always treat element names as **a single word**. Even with camel/pascal case, internal capitals do not count as word boundaries (e.g. `bodyText` / `BodyText` are invalid because they appear to be multiple words).
-- HTML lint / HTML generation also reference `classStructure.naming` / `allowExternalClasses` / `allowExternalPrefixes`.
-- `enforceRootFileName` applies only under `componentsDirs`; `assets/css`, `index.scss`, and `_*.scss` are excluded.
-- For `enforceRootFileName`, files under `childScssDir` expect the raw root Block name; files outside `childScssDir` use the `rootFileCase`-formatted name.
+- Element names are **always a single word**. Even with camel/pascal case, internal capitals do not count as word boundaries (`bodyText` / `BodyText` are invalid).
+- HTML lint / HTML generation also reference `stylelint.base.naming` / `stylelint.base.external` (fallbacks to `stylelint.class` when base is missing).
+- `rootFile` applies only under `componentsDirs`; `assets/css`, `index.scss`, and `_*.scss` are excluded.
+- For `rootFile`, files under `childDir` expect the raw root Block name; files outside `childDir` use the `rootCase`-formatted name.
 - When using `createRules()` or `createRulesAsync()`, `generator.rootFileCase` / `generator.childScssDir` are used as fallbacks for missing fields.
+
+#### `stylelint.placement`
+
+Validates property placement (container / item / internal).
+
+```js
+stylelint: {
+  placement: {
+    elementDepth: 4,
+    marginSide: 'top',
+    position: true,
+    sizeInternal: true,
+    responsiveMixins: []
+  }
+}
+```
+
+**Settings:**
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `elementDepth` | number | `class.elementDepth` | Max Element chain depth (fallback to class) |
+| `marginSide` | `'top' \| 'bottom'` | `'top'` | Allowed vertical margin side |
+| `position` | boolean | `true` | Enable child Block position restrictions |
+| `sizeInternal` | boolean | `true` | Treat width/height/min/max as internal properties |
+| `responsiveMixins` | string[] | `[]` | `@include` mixins treated as transparent |
+| `comments.shared` | RegExp / string | `/--shared/i` | Shared comment matcher (overrides `stylelint.base.comments`) |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | Interaction comment matcher (overrides `stylelint.base.comments`) |
+| `external.classes` | string[] | `stylelint.base.external.classes` | External class exclusions (exact match) |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | External class exclusions (prefix match) |
+| `naming` | object | `stylelint.base.naming` | Naming rules |
+| `selectorPolicy` | object | top-level selectorPolicy | Rule-level override |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
 #### `stylelint.interactionScope`
 
@@ -215,41 +271,41 @@ Validates placement rules for the interaction section (`// --interaction` and `@
 ```js
 stylelint: {
   interactionScope: {
-    allowedPseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
+    pseudos: [':hover', ':focus', ':focus-visible', ':active', ':visited'],
     requireAtRoot: true,
     requireComment: true,
     requireTail: true,
-    enforceWithCommentOnly: false,
+    commentOnly: false,
     selectorPolicy: { ... } // optional (defaults to top-level selectorPolicy)
   }
 }
 ```
 
-The interaction section must **always be placed directly under the root Block** (this rule cannot be disabled; wrapper at-rules like @layer/@supports/@media/@container/@scope are allowed).
+The interaction section must **always be placed directly under the root Block** (wrapper at-rules like @layer/@supports/@media/@container/@scope are allowed).
 
 **Settings:**
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `allowedPseudos` | string[] | `[':hover', ':focus', ':focus-visible', ':active', ':visited']` | Pseudo-classes to check |
+| `pseudos` | string[] | `[':hover', ':focus', ':focus-visible', ':active', ':visited']` | Pseudo-classes to check |
 | `requireAtRoot` | boolean | `true` | Require `@at-root & { ... }` and selectors that start with `&` |
 | `requireComment` | boolean | `true` | Require `// --interaction` |
 | `requireTail` | boolean | `true` | Require the interaction block to be at the end |
-| `enforceWithCommentOnly` | boolean | `false` | Only validate blocks with the comment |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | Per-rule section comment pattern (overrides `sectionCommentPatterns`) |
-| `selectorPolicy` | object | `data-variant` / `data-state` / `aria-*` | Rule-level override (uses top-level by default) |
-| `cacheSizes` | object | `stylelint.cacheSizes` | Rule-level override (falls back to `stylelint.cacheSizes`; otherwise 1000 each) |
+| `commentOnly` | boolean | `false` | Only validate blocks with the comment |
+| `comments.shared` | RegExp / string | `/--shared/i` | Shared comment matcher (overrides `stylelint.base.comments`) |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | Interaction comment matcher (overrides `stylelint.base.comments`) |
+| `selectorPolicy` | object | top-level selectorPolicy | Rule-level override (uses top-level by default) |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
-#### `stylelint.interactionProperties`
+#### `stylelint.interactionProps`
 
 Validates transition/animation placement and transition target properties in the interaction section.
 
 ```js
 stylelint: {
-  interactionProperties: {
+  interactionProps: {
     // override section comment patterns if needed
-    // sharedCommentPattern: /--shared/i,
-    // interactionCommentPattern: /--interaction/i
+    // comments: { shared: /--shared/i, interaction: /--interaction/i }
   }
 }
 ```
@@ -258,30 +314,30 @@ stylelint: {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `sharedCommentPattern` | RegExp / string | `/--shared/i` | Per-rule section comment pattern (overrides `sectionCommentPatterns`) |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | Per-rule section comment pattern (overrides `sectionCommentPatterns`) |
-| `naming` | object | `classStructure.naming` | Naming settings (auto-inherited from `classStructure` when using `createRules()` / `createRulesAsync()`) |
-| `allowExternalClasses` | string[] | `classStructure.allowExternalClasses` | External class exclusions (exact match; auto-inherited when using `createRules()` / `createRulesAsync()`) |
-| `allowExternalPrefixes` | string[] | `classStructure.allowExternalPrefixes` | External class exclusions (prefix match; auto-inherited when using `createRules()` / `createRulesAsync()`) |
-| `cacheSizes` | object | `stylelint.cacheSizes` | Rule-level override (falls back to `stylelint.cacheSizes`; otherwise 1000 each) |
+| `comments.shared` | RegExp / string | `/--shared/i` | Shared comment matcher (overrides `stylelint.base.comments`) |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | Interaction comment matcher (overrides `stylelint.base.comments`) |
+| `naming` | object | `stylelint.base.naming` | Naming settings (auto-inherited from base when using `createRules()` / `createRulesAsync()`) |
+| `external.classes` | string[] | `stylelint.base.external.classes` | External class exclusions (exact match; auto-inherited from base) |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | External class exclusions (prefix match; auto-inherited from base) |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
-#### `stylelint.keyframesNaming`
+#### `stylelint.keyframes`
 
 Validates `@keyframes` naming and placement rules.
 
 ```js
 stylelint: {
-  keyframesNaming: {
+  keyframes: {
     enabled: true,
     actionMaxWords: 3,
-    blockNameSource: 'selector',
-    warnOnMissingBlock: true,
+    blockSource: 'selector',
+    blockWarnMissing: true,
     sharedPrefixes: ['kf-'],
     sharedFiles: ['keyframes.scss'],
     ignoreFiles: [],
     ignorePatterns: [],
     // Skip placement checks for keyframes matched by ignorePatterns (default: false)
-    ignorePlacementForIgnored: false
+    ignoreSkipPlacement: false
   }
 }
 ```
@@ -292,25 +348,25 @@ stylelint: {
 | --- | --- | --- | --- |
 | `enabled` | boolean | `true` | Disables this rule when set to `false` (only when using `createRules()` / `createRulesAsync()`) |
 | `actionMaxWords` | number | `3` | Max words in the action segment (1–3) |
-| `blockNameSource` | `'selector' \| 'file' \| 'selector-or-file'` | `'selector'` | Block name source (root selector, file name, or fallback) |
-| `warnOnMissingBlock` | boolean | `true` | Warn when the root Block cannot be resolved |
+| `blockSource` | `'selector' \| 'file' \| 'selector-or-file'` | `'selector'` | Block name source (root selector, file name, or fallback) |
+| `blockWarnMissing` | boolean | `true` | Warn when the root Block cannot be resolved |
 | `sharedPrefixes` | string[] | `['kf-']` | Prefixes for shared keyframes |
 | `sharedFiles` | (string \| RegExp)[] | `['keyframes.scss']` | File patterns allowed for shared keyframes (strings are suffix matches) |
 | `ignoreFiles` | (string \| RegExp)[] | `[]` | File patterns to skip this rule (strings are suffix matches) |
 | `ignorePatterns` | (string \| RegExp)[] | `[]` | Keyframes names to ignore (strings are treated as RegExp patterns) |
-| `ignorePlacementForIgnored` | boolean | `false` | Skip placement checks (root/end) for keyframes matched by `ignorePatterns` |
-| `naming` | object | `classStructure.naming` | Naming settings (auto-inherited from `classStructure` when using `createRules()` / `createRulesAsync()`) |
-| `allowExternalClasses` | string[] | `classStructure.allowExternalClasses` | External class exclusions (exact match; auto-inherited when using `createRules()` / `createRulesAsync()`) |
-| `allowExternalPrefixes` | string[] | `classStructure.allowExternalPrefixes` | External class exclusions (prefix match; auto-inherited when using `createRules()` / `createRulesAsync()`) |
-| `cacheSizes` | object | `stylelint.cacheSizes` | Rule-level override (falls back to `stylelint.cacheSizes`; otherwise 1000 each) |
+| `ignoreSkipPlacement` | boolean | `false` | Skip placement checks (root/end) for keyframes matched by `ignorePatterns` |
+| `naming` | object | `stylelint.base.naming` | Naming settings (auto-inherited from base) |
+| `external.classes` | string[] | `stylelint.base.external.classes` | External class exclusions (exact match; auto-inherited from base) |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | External class exclusions (prefix match; auto-inherited from base) |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
-#### `stylelint.pseudoNesting`
+#### `stylelint.pseudo`
 
 Requires pseudo-classes/elements to be nested under `&`.
 
 ```js
 stylelint: {
-  pseudoNesting: {}
+  pseudo: {}
 }
 ```
 
@@ -318,27 +374,27 @@ stylelint: {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `cacheSizes` | object | `stylelint.cacheSizes` | Rule-level override (falls back to `stylelint.cacheSizes`; otherwise 1000 each) |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
 - Allowed: `.btn { &:hover { ... } }`, `.btn { &::before { ... } }`
 - Not allowed: `.btn:hover { ... }`, `& > .btn:hover { ... }`
 
-#### `stylelint.relComments`
+#### `stylelint.rel`
 
 Defines rules for `@rel` link comments.
 
 ```js
 stylelint: {
-  relComments: {
-    requireInScssDirectories: true,
-    requireWhenMetaLoadCss: true,
+  rel: {
+    requireScss: true,
+    requireMeta: true,
+    requireParent: true,
+    requireChild: true,
+    requireChildShared: true,
+    requireChildInteraction: false,
     validatePath: true,
-    skipFilesWithoutRules: true,
-    requireChildRelComments: true,
-    requireChildRelCommentsInShared: true,
-    requireChildRelCommentsInInteraction: false,
-    requireParentRelComment: true,
-    childScssDir: 'scss'
+    skipNoRules: true,
+    childDir: 'scss'
   }
 }
 ```
@@ -347,25 +403,26 @@ stylelint: {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `requireInScssDirectories` | boolean | `true` | Require @rel in SCSS under `childScssDir` |
-| `requireWhenMetaLoadCss` | boolean | `true` | Require a top-of-file comment when `@include meta.load-css("<childScssDir>")` is present |
+| `requireScss` | boolean | `true` | Require @rel in SCSS under `childDir` |
+| `requireMeta` | boolean | `true` | Require a top-of-file comment when `@include meta.load-css("<childDir>")` is present |
+| `requireParent` | boolean | `true` | Require child-to-parent @rel (only when `requireMeta` / `requireScss` is enabled) |
+| `requireChild` | boolean | `true` | Require parent-to-child @rel |
+| `requireChildShared` | boolean | `true` | Require child @rel in shared sections |
+| `requireChildInteraction` | boolean | `false` | Require child @rel in interaction sections |
 | `validatePath` | boolean | `true` | Validate path existence |
-| `skipFilesWithoutRules` | boolean | `true` | Skip SCSS files without selector rules |
-| `requireChildRelComments` | boolean | `true` | Require parent-to-child @rel |
-| `requireChildRelCommentsInShared` | boolean | `true` | Require child @rel even inside shared sections |
-| `requireChildRelCommentsInInteraction` | boolean | `false` | Require child @rel even inside interaction sections |
-| `requireParentRelComment` | boolean | `true` | Require child-to-parent @rel (only when `requireWhenMetaLoadCss` or `requireInScssDirectories` is enabled) |
-| `childScssDir` | string | `'scss'` | Directory name for child Block SCSS (falls back to `generator.childScssDir` when using `createRules()` or `createRulesAsync()`) |
-| `sharedCommentPattern` | RegExp / string | `/--shared/i` | Per-rule section comment pattern (overrides `sectionCommentPatterns`) |
-| `interactionCommentPattern` | RegExp / string | `/--interaction/i` | Per-rule section comment pattern (overrides `sectionCommentPatterns`) |
-| `naming` | object | `classStructure.naming` | Naming settings (auto-inherited from `classStructure` when using `createRules()` or `createRulesAsync()`) |
-| `allowExternalClasses` | string[] | `classStructure.allowExternalClasses` | External class exclusions (exact match; auto-inherited when using `createRules()` or `createRulesAsync()`) |
-| `allowExternalPrefixes` | string[] | `classStructure.allowExternalPrefixes` | External class exclusions (prefix match; auto-inherited when using `createRules()` or `createRulesAsync()`) |
-| `cacheSizes` | object | `stylelint.cacheSizes` | Rule-level override (falls back to `stylelint.cacheSizes`; otherwise 1000 each) |
+| `skipNoRules` | boolean | `true` | Skip SCSS files without selector rules |
+| `childDir` | string | `'scss'` | Directory name for child Block SCSS (falls back to `generator.childScssDir` when using `createRules()` or `createRulesAsync()`) |
+| `aliasRoots` | object | `aliasRoots` | Alias roots for @rel resolution (defaults to top-level `aliasRoots`) |
+| `comments.shared` | RegExp / string | `/--shared/i` | Shared comment matcher (overrides `stylelint.base.comments`) |
+| `comments.interaction` | RegExp / string | `/--interaction/i` | Interaction comment matcher (overrides `stylelint.base.comments`) |
+| `naming` | object | `stylelint.base.naming` | Naming settings (auto-inherited from base) |
+| `external.classes` | string[] | `stylelint.base.external.classes` | External class exclusions (exact match; auto-inherited from base) |
+| `external.prefixes` | string[] | `stylelint.base.external.prefixes` | External class exclusions (prefix match; auto-inherited from base) |
+| `cache` | object | `stylelint.base.cache` | Rule-level override (falls back to base; otherwise 1000 each) |
 
 Notes:
 - Alias resolution uses `aliasRoots` (when `validatePath: true`)
-- `requireParentRelComment` only fires when `requireWhenMetaLoadCss` is enabled and the parent Block includes `@include meta.load-css(...)`, or when `requireInScssDirectories` is enabled and the SCSS file lives under `childScssDir`
+- `requireParent` only fires when `requireMeta` is enabled and the parent Block includes `@include meta.load-css(...)`, or when `requireScss` is enabled and the SCSS file lives under `childDir`
 
 See [comment-links.md](comment-links.md) for details.
 
@@ -484,18 +541,18 @@ module.exports = {
     styles: ['styles']
   },
   stylelint: {
-    classStructure: {
-      allowElementChainDepth: 4,
-      enforceChildCombinator: true,
-      enforceSingleRootBlock: true
+    class: {
+      elementDepth: 4,
+      childCombinator: true,
+      rootSingle: true
     },
     interactionScope: {
-      allowedPseudos: [':hover', ':focus'],
+      pseudos: [':hover', ':focus'],
       requireComment: true
     },
-    pseudoNesting: {},
-    relComments: {
-      requireInScssDirectories: true
+    pseudo: {},
+    rel: {
+      requireScss: true
     }
   },
   generator: {
@@ -518,26 +575,3 @@ module.exports = {
 
 - Ensure the plugin is loaded in your Stylelint config
 - Ensure `spiracss.config.js` exists in the `cwd` where Stylelint is run (if running from a subdirectory, use `createRulesAsync(path)` to specify the config path explicitly)
-
-### Generated SCSS structure looks wrong
-
-- Ensure `generator.globalScssModule` points to the correct path
-- Ensure HTML class names follow the naming rules
-
-## Related tools
-### Tools
-- [SpiraCSS Stylelint Plugin](stylelint.md)
-- [SpiraCSS HTML CLI](html-cli.md)
-- [SpiraCSS Comment Links](comment-links.md)
-- [SpiraCSS HTML to SCSS](html-to-scss.md)
-
-### Configuration example
-- [spiracss.config.example.js](spiracss.config.example.js)
-
-## SpiraCSS docs
-- [Design Principles](../principles.md)
-- [Quickstart](../quickstart.md)
-- [CSS Layers](../layers.md)
-- [Components](../component.md)
-- [Guidelines](../guidelines.md)
-- [Design Philosophy](../philosophy.md)

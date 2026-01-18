@@ -40,6 +40,13 @@ CSS 設計の歴史において、BEM / SMACSS / OOCSS / RSCSS / ITCSS / CUBE CS
 
 詳細は [設計原則](principles.md) を参照してください。
 
+### 命名だけでなく、プロパティ配置に意味を持たせる
+
+従来の CSS 設計は「命名で構造を示す」ことに寄りがちでしたが、SpiraCSS では **プロパティの書き場所そのものに構造的な意味** を与えます。
+コンテナ / アイテム / 内部という責務の切り分けは Stylelint が検証するため、細かな規則を暗記する必要はありません。
+判断基準が機械的に扱えるため、AI による生成・自動修正とも相性が良い設計です。
+この原則は [設計原則](principles.md) の一文に集約されます。
+
 ### Variant / State を分離する
 
 SpiraCSS では、従来の Modifier を **Variant（見た目のバリエーション）** と **State（インタラクション状態）** に分け、責務と配置を明確にします。デフォルトでは data 属性で表現します。
@@ -57,6 +64,7 @@ SpiraCSS は、判断が揺れやすい部分を「局所的な不変条件」�
 - 親子構造（`Block > Block` / `Block > Element`）
 - 1 ファイル 1 ルート Block とファイル名の対応
 - Variant / State の分離と配置（data モード）
+- プロパティ配置（コンテナ / アイテム / 内部）
 - `@rel` コメントによる関係性の明示
 
 詳細は [Stylelint](tooling/stylelint.md) / [HTML CLI](tooling/html-cli.md) / [ツール概要](tooling/index.md) を参照してください。

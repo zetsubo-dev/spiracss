@@ -125,6 +125,7 @@ function normalizeClassAttributes(html: string, classAttribute: ClassAttribute):
 type HtmlFormatOptions = {
   naming: NamingOptions
   classAttribute: ClassAttribute
+  namingSource: string
 }
 
 function resolveClassAttribute(value: unknown): ClassAttribute {
@@ -135,15 +136,22 @@ async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFor
   const configPath = path.join(baseDir, 'spiracss.config.js')
   const config = await loadSpiracssConfig(configPath)
   const naming: NamingOptions = {}
+  let namingSource = 'stylelint.base.naming.customPatterns'
   let classAttribute: ClassAttribute = 'class'
   if (config && typeof config === 'object') {
     const stylelintCfg = (config as Record<string, unknown>).stylelint as
       | Record<string, unknown>
       | undefined
-    const classStructure = stylelintCfg?.classStructure as Record<string, unknown> | undefined
-    const namingValue = classStructure?.naming
-    if (namingValue && typeof namingValue === 'object') {
-      Object.assign(naming, namingValue)
+    const base = stylelintCfg?.base as Record<string, unknown> | undefined
+    const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
+    const baseNaming = base?.naming
+    const classNaming = classConfig?.naming
+    if (baseNaming && typeof baseNaming === 'object') {
+      Object.assign(naming, baseNaming)
+      namingSource = 'stylelint.base.naming.customPatterns'
+    } else if (classNaming && typeof classNaming === 'object') {
+      Object.assign(naming, classNaming)
+      namingSource = 'stylelint.class.naming.customPatterns'
     }
 
     const htmlFormat = (config as Record<string, unknown>).htmlFormat as
@@ -153,7 +161,7 @@ async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFor
       classAttribute = resolveClassAttribute(htmlFormat.classAttribute)
     }
   }
-  return { naming, classAttribute }
+  return { naming, classAttribute, namingSource }
 }
 
 /* ---------- placeholder insertion ---------- */
@@ -497,10 +505,10 @@ Examples:
     process.exit(1)
   }
 
-  const { naming, classAttribute } = await loadHtmlFormatOptionsFromConfig(rootDir)
+  const { naming, classAttribute, namingSource } = await loadHtmlFormatOptionsFromConfig(rootDir)
   warnInvalidCustomPatterns(naming, (message) => {
     console.error(message)
-  })
+  }, namingSource)
   const result = insertPlaceholdersWithInfo(html, naming, classAttribute)
 
   // If template syntax is detected, warn and skip writing files

@@ -1,7 +1,6 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-keyframes-naming.constants'
 import {
+  createRuleMessages,
   formatCode,
   formatConfigList,
   formatSelectorParseFailed,
@@ -13,7 +12,7 @@ import { formatWordCase } from '../utils/formatting'
 const exampleActionName = (actionCase: WordCase): string =>
   formatWordCase('fade in', actionCase)
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   needRoot: () =>
     `Place ${formatCode(
       '@keyframes'
@@ -51,7 +50,7 @@ export const messages = stylelint.utils.ruleMessages(ruleName, {
     `Cannot determine the root Block for ${formatCode(
       '@keyframes'
     )} naming. Add a root Block selector or configure ${formatCode(
-      'blockNameSource'
+      'blockSource'
     )}.`,
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])
 })

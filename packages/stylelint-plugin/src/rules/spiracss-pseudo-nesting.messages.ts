@@ -1,13 +1,12 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-pseudo-nesting.constants'
 import {
+  createRuleMessages,
   formatCode,
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
+export const messages = createRuleMessages(ruleName, {
   needNesting: () =>
     `Pseudo selectors must be nested with ${formatCode(
       '&'

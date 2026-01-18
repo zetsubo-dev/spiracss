@@ -14,14 +14,19 @@ export type VariantMode = SelectorVariantMode
 export type StateMode = SelectorStateMode
 
 export type Options = {
-  allowedPseudos: string[]
-  requireAtRoot: boolean
-  requireComment: boolean
-  requireTail: boolean
-  enforceWithCommentOnly: boolean
-  interactionCommentPattern: RegExp
+  pseudos: string[]
+  require: {
+    atRoot: boolean
+    comment: boolean
+    tail: boolean
+  }
+  commentOnly: boolean
+  comments: {
+    shared: RegExp
+    interaction: RegExp
+  }
   selectorPolicy: NormalizedSelectorPolicy
-  cacheSizes: NormalizedCacheSizes
+  cache: NormalizedCacheSizes
 }
 
 export type SelectorAttrState = {

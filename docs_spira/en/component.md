@@ -168,7 +168,7 @@ At its core, a component is expressed entirely as a repetition of `Block > (Bloc
 ### Expression modes
 
 Variant/State can be expressed with **data mode** (default/recommended) or **class mode**.  
-Choose per project/team selectorPolicy settings in `spiracss.config.js`.
+Choose in `spiracss.config.js` based on project/team policy.
 
 #### Data mode (default)
 
@@ -284,7 +284,7 @@ This section is a concrete application of the one-sentence principle in [Design 
 > **Internal property restrictions (validated by Stylelint `spiracss/property-placement`):**
 > - `padding`/`padding-*`, `overflow`/`overflow-*`, `width`, `height`, `min-*`, `max-*`, `inline-size`, `block-size` are treated as **internal properties** and are generally disallowed on child Blocks (selectors placed as `> .child-block` from a parent Block)
 > - Exception: `min-*` with a value of `0` (e.g., `min-width: 0`) is allowed on child Blocks (needed for flex/grid item-side use cases)
-> - Set `enableSizeInternal: false` to exclude size properties (`width` / `height` / `min-*` / `max-*` / `inline-size` / `block-size`) from internal properties
+> - Set `sizeInternal: false` to exclude size properties (`width` / `height` / `min-*` / `max-*` / `inline-size` / `block-size`) from internal properties
 
 #### Decision criteria
 
@@ -307,7 +307,7 @@ different contexts. `@include` is normally a different context, but mixin names 
 as transparent, so they are recognized as the same context. Extremely complex selectors (or selector explosions from deep nesting) are skipped to avoid false positives and performance issues.
 However, `position: relative` / `absolute` is an exception: if the family key cannot be determined, it causes an error (offset presence cannot be verified).
 
-**position restrictions (validated by Stylelint `spiracss/property-placement`, when `enablePosition: true`):**
+**position restrictions (validated by Stylelint `spiracss/property-placement`, when `position: true`):**
 - `position: fixed` / `sticky` on child Blocks is disallowed (it breaks out of the parent's layout context)
 - `position: relative` / `absolute` is allowed only when offset properties (`top` / `right` / `bottom` / `left` / `inset-*`) are declared in the same selector family and wrapper context
 - Offsets in different `@scope` blocks are considered different contexts and will cause an error

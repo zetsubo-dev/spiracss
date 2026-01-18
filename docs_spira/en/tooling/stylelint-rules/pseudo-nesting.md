@@ -1,36 +1,95 @@
 # spiracss/pseudo-nesting
 
-Requires pseudo-classes / pseudo-elements to be nested under `&`.
+Require pseudo-classes / pseudo-elements to be nested under `&`.
 
 ## Purpose
 
-- Keep structure and state responsibilities clear
+- Clarify boundaries between structure and state
 - Make selector intent easier to read
 
 ## OK
 
 ```scss
 .button {
-  &:hover {}
-  &::before {}
+  &:hover {
+    opacity: 0.8;
+  }
+  &::before {
+    content: "";
+  }
 }
 ```
 
 ## NG
 
 ```scss
-.button:hover {} // NG: not nested
+.button:hover { // NG: no nesting
+  opacity: 0.8;
+}
 ```
 
 ```scss
-& > .button:hover {} // NG: nest pseudo under the target selector
+& > .button:hover { // NG: pseudo should be nested under the target selector
+  opacity: 0.8;
+}
 ```
 
 ## Why
 
-- Pseudos should be read as part of the target selector's responsibility
+- Pseudos should read as responsibilities of the target selector
 
-## Configuration
+## Error list
+
+### needNesting (pseudos must be nested under `&`)
+
+
+
+**Example:**
+```scss
+// NG
+.button:hover {
+  opacity: 0.8;
+}
+
+// NG
+& > .button:hover {
+  opacity: 0.8;
+}
+
+// OK
+.button {
+  &:hover {
+    opacity: 0.8;
+  }
+}
+```
+
+**Reason:** make pseudos read as responsibilities of the target selector
+
+### selectorParseFailed (selector parse failed)
+
+
+**Example:**
+```scss
+// NG
+.button {
+  > : {
+    color: #111;
+  }
+}
+
+// OK
+.button {
+  > .item {
+    color: #111;
+  }
+}
+```
+
+**Reason:** unparseable selectors cannot be validated
+
+
+## Settings
 
 - [spiracss.config.js / stylelint.pseudo](../spiracss-config.md#stylelintpseudo)
 

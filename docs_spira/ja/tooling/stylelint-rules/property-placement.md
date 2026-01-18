@@ -11,7 +11,7 @@
 
 - page-root セレクタ（単独の `body` または単独の `#id`）ではレイアウト系プロパティを禁止
 - コンテナプロパティはルート Block / Element で許可、子 Block では禁止
-- アイテムプロパティは親の直下セレクタでのみ許可（基本は `> .child`。`+` / `~` は構造ルールを緩めた場合のみ対象）
+- アイテムプロパティは親の直下セレクタでのみ許可（基本は `> .child`。`+` / `~` は末尾の兄弟指定としてのみ許可）
 - 内部プロパティはルート Block / Element で許可、子 Block では禁止（padding / overflow / `sizeInternal` が有効な場合は width/height/min/max など）
 - 縦方向マージンの片側統一（`marginSide`）
 - `position` の制限（`position: true`）

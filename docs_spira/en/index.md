@@ -6,7 +6,7 @@ Key points:
 - Structural decisions can be derived from class names and HTML structure.
 - Property placement (container/item/internal) has structural meaning, and Stylelint guides the fine-grained rules so memorization is unnecessary.
 - `shared`/`interaction`/`rel` comment conventions can be treated as tool-verifiable contracts.
-- SpiraCSS projects should place [`spiracss.config.js`](tooling/spiracss-config.md) at the project root so that generation and validation follow the same selectorPolicy.
+- Place [`spiracss.config.js`](tooling/spiracss-config.md) at the project root so everything follows a shared policy.
 - Download [`spiracss-ai-agent-doc.md`](../ai/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
 
 Tool roles:

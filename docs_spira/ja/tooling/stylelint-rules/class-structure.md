@@ -166,13 +166,17 @@ SpiraCSS の命名規則とセレクタ構造を検証します。
 **例:**
 ```scss
 // NG
-.card-list .title {
-  margin-top: 8px;
+.card-list {
+  > .item > .title {
+    margin-top: 8px;
+  }
 }
 
 // OK
-.card-list > .title {
-  margin-top: 8px;
+.card-list {
+  > .item {
+    margin-top: 8px;
+  }
 }
 ```
 
@@ -184,8 +188,12 @@ SpiraCSS の命名規則とセレクタ構造を検証します。
 **例:**
 ```scss
 // NG
-.card-list > .price-tag > .amount {
-  font-weight: 700;
+.card-list {
+  > .price-tag {
+    > .amount {
+      font-weight: 700;
+    }
+  }
 }
 
 // OK
@@ -250,13 +258,17 @@ SpiraCSS の命名規則とセレクタ構造を検証します。
 **例:**
 ```scss
 // NG
-.card-list .title {
-  margin-top: 8px;
+.card-list {
+  .title {
+    margin-top: 8px;
+  }
 }
 
 // OK
-.card-list > .title {
-  margin-top: 8px;
+.card-list {
+  > .title {
+    margin-top: 8px;
+  }
 }
 ```
 

@@ -20,6 +20,7 @@ package-lock.json
 .claude/
 .serena/
 .cache/
+spiracss-property-placement-future.md
 
 # macOS
 .DS_Store

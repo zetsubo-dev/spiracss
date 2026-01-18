@@ -54,6 +54,8 @@ cat file.html | npx spiracss-html-to-scss --selection --stdin --base-dir src/com
 
 **注意**: `--selection` モードで class 属性を持つ要素が 1 つも無い場合はエラーになります。
 
+**注意**: `--ignore-structure-errors` を付けても、ルート要素が存在しない / 複数ある / `class` が無いなど、生成に必要な前提を満たさない場合はエラー終了します。
+
 **補足**: エラーメッセージの文言は変更される可能性があるため、文字列一致に依存しないでください。
 
 ### 出力例
@@ -125,6 +127,8 @@ npx spiracss-html-lint --root path/to/file.html --json
 | `DISALLOWED_STATE_ATTRIBUTE` | class モードで data-state/aria-* などの状態属性が使われている |
 | `INVALID_VARIANT_VALUE` | data モードのバリアント値が valueNaming に違反 |
 | `INVALID_STATE_VALUE` | data モードの状態値が valueNaming に違反 |
+| `UNBALANCED_HTML` | HTML の開始・終了タグが不整合 |
+| `MULTIPLE_ROOT_ELEMENTS` | ルートモードで複数のルート要素が検出された |
 
 **補足**:
 - `--selection` モードでは `class` を持つ要素のみ検証（該当要素が無い場合は `INVALID_BASE_CLASS`）

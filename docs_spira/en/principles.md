@@ -60,7 +60,7 @@ In **data mode** (default), represent Variant with `data-variant` and State with
 - Put `data-state` and ARIA states in the interaction section.
 - If state changes the appearance, implement it on the State side.
 
-Note: The default is data mode, but you can choose class mode or hybrid per project selectorPolicy (see [Components](component.md) / [spiracss.config.js](tooling/spiracss-config.md)).
+Note: The default is data mode, but you can choose class mode or hybrid per project policy (see [Components](component.md) / [spiracss.config.js](tooling/spiracss-config.md)).
 
 #### 3. Structure rules (parent-child)
 
@@ -96,9 +96,9 @@ Standardize your workflow with a shared config ([spiracss.config.js](tooling/spi
 
 - **Generate**: automate tedious parts (e.g. `@rel` comments and structural SCSS) with CLIs / VS Code extensions
 - **Validate**: Stylelint detects violations with the same criteria for both humans and AI
-- **Customize via config**: adjust naming, comment formats, validation strength, etc. in [spiracss.config.js](tooling/spiracss-config.md) to match project/team selectorPolicy
+- **Customize via config**: adjust naming, comment formats, validation strength, etc. in [spiracss.config.js](tooling/spiracss-config.md) to match project/team policy
 
-Because generation and validation both read the same config file, changing selectorPolicy in config keeps tools aligned. You can still hand-author styles, but the architecture is especially compatible with a “generate and validate” workflow.
+Because generation and validation both read the same config file, changing the config to fit your policy keeps tools aligned. You can still hand-author styles, but the architecture is especially compatible with a “generate and validate” workflow.
 
 ## Next steps
 

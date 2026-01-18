@@ -9,7 +9,7 @@
 
 ## 検証内容
 
-- 親 Block の `@rel` はルートスコープ先頭に配置（root Block 内は不可）
+- 親 Block の `@rel` はルートスコープ先頭に配置（`@use` / `@forward` / `@import` は前置可、root Block 内は不可）
 - 親 Block は同一スコープ内で最初の rule に置く（親リンク必須設定時）
 - `> .child-block` 直下ルールの最初のノードが `@rel` コメント
 - shared セクションは対象、interaction セクションはデフォルトで対象外

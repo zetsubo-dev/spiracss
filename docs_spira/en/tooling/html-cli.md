@@ -54,6 +54,8 @@ cat file.html | npx spiracss-html-to-scss --selection --stdin --base-dir src/com
 
 **Note**: In `--selection` mode, if no elements have a `class` attribute, the CLI exits with an error.
 
+**Note**: Even with `--ignore-structure-errors`, generation still fails when required preconditions are not met (no root element, multiple roots in root mode, or missing `class` on the root).
+
 **Note**: Error message text can change; do not depend on exact strings.
 
 ### Output example
@@ -125,6 +127,8 @@ npx spiracss-html-lint --root path/to/file.html --json
 | `DISALLOWED_STATE_ATTRIBUTE` | State attributes (e.g. `data-state`, `aria-*`) used in class mode |
 | `INVALID_VARIANT_VALUE` | Variant value violates `valueNaming` in data mode |
 | `INVALID_STATE_VALUE` | State value violates `valueNaming` in data mode |
+| `UNBALANCED_HTML` | HTML opening/closing tags are not balanced |
+| `MULTIPLE_ROOT_ELEMENTS` | Multiple root elements detected in root mode |
 
 **Notes:**
 - In `--selection` mode, only elements with a `class` attribute are validated (if none, `INVALID_BASE_CLASS`)

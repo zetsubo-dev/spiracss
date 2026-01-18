@@ -575,3 +575,26 @@ module.exports = {
 
 - Ensure the plugin is loaded in your Stylelint config
 - Ensure `spiracss.config.js` exists in the `cwd` where Stylelint is run (if running from a subdirectory, use `createRulesAsync(path)` to specify the config path explicitly)
+
+### Generated SCSS structure looks wrong
+
+- Ensure the `generator.globalScssModule` path is correct
+- Ensure HTML class names follow the naming rules
+
+## Related tools
+### Tools
+- [SpiraCSS Stylelint Plugin](stylelint.md)
+- [SpiraCSS HTML CLI](html-cli.md)
+- [SpiraCSS Comment Links](comment-links.md)
+- [SpiraCSS HTML to SCSS](html-to-scss.md)
+
+### Configuration example
+- [spiracss.config.example.js](spiracss.config.example.js)
+
+## SpiraCSS docs
+- [Design Principles](../principles.md)
+- [Quickstart](../quickstart.md)
+- [CSS Layers](../layers.md)
+- [Components](../component.md)
+- [Guidelines](../guidelines.md)
+- [Design Philosophy](../philosophy.md)

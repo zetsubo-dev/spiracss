@@ -333,8 +333,8 @@ const ensureConfigFileExists = (absolutePath: string): void => {
       `spiracss.config.js not found: ${absolutePath}\n\n` +
         `Place spiracss.config.js at the project root.\n` +
         `You can get a sample config here:\n` +
-        `https://raw.githubusercontent.com/zetsubo-dev/spiracss/master/docs_spira/ja/spiracss.config.example.js\n\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `https://spiracss.jp/downloads/spiracss.config.example.js\n\n` +
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 }
@@ -385,7 +385,7 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     throw new Error(
       `Invalid stylelint section in spiracss.config.js: ${configSource}\n` +
         `stylelint must be an object when provided.\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 
@@ -393,7 +393,7 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     throw new Error(
       `Missing aliasRoots section in spiracss.config.js: ${configSource}\n\n` +
         `aliasRoots is required for path resolution in spiracss/rel-comments.\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 
@@ -401,7 +401,7 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     throw new Error(
       `Invalid aliasRoots section in spiracss.config.js: ${configSource}\n` +
         `aliasRoots must be an object whose values are string arrays.\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 }
@@ -434,6 +434,16 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     return { ...(baseValue ?? {}), ...(override ?? {}) }
   }
 
+  const assignIfDefined = <T extends object, K extends keyof T>(
+    target: T,
+    key: K,
+    value: T[K] | undefined
+  ): void => {
+    if (value !== undefined) {
+      target[key] = value
+    }
+  }
+
   const baseComments = base?.comments
   const baseNaming = base?.naming
   const baseExternal = base?.external
@@ -442,32 +452,34 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   const basePaths = base?.paths
 
   const classConfig = { ...(stylelint?.class ?? {}) }
-  classConfig.comments = mergeObjects<CommentConfig>(
-    baseComments,
-    classConfig.comments
+  assignIfDefined(
+    classConfig,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, classConfig.comments)
   )
-  classConfig.external = mergeObjects<ExternalConfig>(
-    baseExternal,
-    classConfig.external
+  assignIfDefined(
+    classConfig,
+    'external',
+    mergeObjects<ExternalConfig>(baseExternal, classConfig.external)
   )
   if (classConfig.naming === undefined) {
-    classConfig.naming = baseNaming
+    assignIfDefined(classConfig, 'naming', baseNaming)
   }
   const classPolicy = classConfig.selectorPolicy ?? basePolicy
   if (classPolicy !== undefined) {
     classConfig.selectorPolicy = classPolicy
   }
   if (classConfig.cache === undefined) {
-    classConfig.cache = baseCache
+    assignIfDefined(classConfig, 'cache', baseCache)
   }
   if (classConfig.rootCase === undefined && generator?.rootFileCase !== undefined) {
     classConfig.rootCase = generator.rootFileCase
   }
   if (classConfig.childDir === undefined) {
-    classConfig.childDir = basePaths?.childDir
+    assignIfDefined(classConfig, 'childDir', basePaths?.childDir)
   }
   if (classConfig.componentsDirs === undefined) {
-    classConfig.componentsDirs = basePaths?.components
+    assignIfDefined(classConfig, 'componentsDirs', basePaths?.components)
   }
   if (classConfig.childDir === undefined && generator?.childScssDir) {
     classConfig.childDir = generator.childScssDir
@@ -480,87 +492,101 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   )
 
   const placementConfig = { ...(stylelint?.placement ?? {}) }
-  placementConfig.comments = mergeObjects<CommentConfig>(
-    baseComments,
-    placementConfig.comments
+  assignIfDefined(
+    placementConfig,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, placementConfig.comments)
   )
-  placementConfig.external = mergeObjects<ExternalConfig>(
-    sharedExternal,
-    placementConfig.external
+  assignIfDefined(
+    placementConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, placementConfig.external)
   )
   if (placementConfig.naming === undefined) {
-    placementConfig.naming = sharedNaming
+    assignIfDefined(placementConfig, 'naming', sharedNaming)
   }
   const placementPolicy = placementConfig.selectorPolicy ?? basePolicy
   if (placementPolicy !== undefined) {
     placementConfig.selectorPolicy = placementPolicy
   }
   if (placementConfig.cache === undefined) {
-    placementConfig.cache = baseCache
+    assignIfDefined(placementConfig, 'cache', baseCache)
   }
   if (placementConfig.elementDepth === undefined && classConfig.elementDepth !== undefined) {
     placementConfig.elementDepth = classConfig.elementDepth
   }
 
   const interactionScope = { ...(interactionScopeConfig ?? {}) }
-  interactionScope.comments = mergeObjects<CommentConfig>(
-    baseComments,
-    interactionScope.comments
+  assignIfDefined(
+    interactionScope,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, interactionScope.comments)
   )
   const interactionPolicy = interactionScope.selectorPolicy ?? basePolicy
   if (interactionPolicy !== undefined) {
     interactionScope.selectorPolicy = interactionPolicy
   }
   if (interactionScope.cache === undefined) {
-    interactionScope.cache = baseCache
+    assignIfDefined(interactionScope, 'cache', baseCache)
   }
 
   const interactionProps = { ...(interactionPropsConfig ?? {}) }
-  interactionProps.comments = mergeObjects<CommentConfig>(
-    baseComments,
-    interactionProps.comments
+  assignIfDefined(
+    interactionProps,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, interactionProps.comments)
   )
-  interactionProps.external = mergeObjects<ExternalConfig>(
-    sharedExternal,
-    interactionProps.external
+  assignIfDefined(
+    interactionProps,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, interactionProps.external)
   )
   if (interactionProps.naming === undefined) {
-    interactionProps.naming = sharedNaming
+    assignIfDefined(interactionProps, 'naming', sharedNaming)
   }
   if (interactionProps.cache === undefined) {
-    interactionProps.cache = baseCache
+    assignIfDefined(interactionProps, 'cache', baseCache)
   }
 
   const keyframesConfig = { ...(stylelint?.keyframes ?? {}) }
   const keyframesEnabled = keyframesConfig.enabled !== false
   delete keyframesConfig.enabled
-  keyframesConfig.external = mergeObjects<ExternalConfig>(
-    sharedExternal,
-    keyframesConfig.external
+  assignIfDefined(
+    keyframesConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, keyframesConfig.external)
   )
   if (keyframesConfig.naming === undefined) {
-    keyframesConfig.naming = sharedNaming
+    assignIfDefined(keyframesConfig, 'naming', sharedNaming)
   }
   if (keyframesConfig.cache === undefined) {
-    keyframesConfig.cache = baseCache
+    assignIfDefined(keyframesConfig, 'cache', baseCache)
   }
 
   const pseudoConfig = { ...(stylelint?.pseudo ?? {}) }
   if (pseudoConfig.cache === undefined) {
-    pseudoConfig.cache = baseCache
+    assignIfDefined(pseudoConfig, 'cache', baseCache)
   }
 
   const relConfig = { ...(stylelint?.rel ?? {}) }
-  relConfig.comments = mergeObjects<CommentConfig>(baseComments, relConfig.comments)
-  relConfig.external = mergeObjects<ExternalConfig>(sharedExternal, relConfig.external)
+  assignIfDefined(
+    relConfig,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, relConfig.comments)
+  )
+  assignIfDefined(
+    relConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, relConfig.external)
+  )
   if (relConfig.naming === undefined) {
-    relConfig.naming = sharedNaming
+    assignIfDefined(relConfig, 'naming', sharedNaming)
   }
   if (relConfig.cache === undefined) {
-    relConfig.cache = baseCache
+    assignIfDefined(relConfig, 'cache', baseCache)
   }
   if (relConfig.childDir === undefined) {
-    relConfig.childDir = basePaths?.childDir
+    assignIfDefined(relConfig, 'childDir', basePaths?.childDir)
   }
   if (!relConfig.childDir && generator?.childScssDir) {
     relConfig.childDir = generator.childScssDir

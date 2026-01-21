@@ -487,9 +487,9 @@ Child Block file:
 These links are optional. This document is self-contained.
 
 - https://spiracss.jp
-- https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md
-- https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/layers.md
-- https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/component.md
-- https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md
-- https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/stylelint.md
-- https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/html-cli.md
+- https://spiracss.jp/architecture/principles/
+- https://spiracss.jp/architecture/layers/
+- https://spiracss.jp/architecture/components/
+- https://spiracss.jp/configuration/
+- https://spiracss.jp/tooling/stylelint/
+- https://spiracss.jp/tooling/html-cli/

@@ -280,6 +280,6 @@ test/**
 
 ## 参考リンク
 
-- [SpiraCSS 設計原則](docs_spira/ja/principles.md)
+- [SpiraCSS 設計原則](https://spiracss.jp/ja/architecture/principles/)
 - [SpiraCSS Stylelint プラグイン README](packages/stylelint-plugin/README.md)
 - [VS Code 拡張開発ガイド](https://code.visualstudio.com/api)

@@ -6,13 +6,13 @@ SpiraCSS Stylelint plugin. Validates class structure, property placement, intera
 
 [SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for implementation with AI agents and tool-based validation, it aims to shorten development time and ensure consistent quality.
 
-Overview: [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md)
+Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
 
 Key points:
 - Structural decisions can be derived from class names and HTML structure.
 - `shared`/`interaction`/`rel` comment conventions can be treated as tool-verifiable contracts.
-- SpiraCSS projects should place [spiracss.config.js](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) at the project root so that generation and validation follow the same selectorPolicy.
-- Download [spiracss-ai-agent-doc.md](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ai/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
+- SpiraCSS projects should place [spiracss.config.js](https://spiracss.jp/configuration/) at the project root so that generation and validation follow the same selectorPolicy.
+- Download [spiracss-ai-agent-doc.md](https://spiracss.jp/downloads/spiracss-ai-agent-doc.md) and use it as a reference document for AI-agent workflows.
 
 This plugin validates those contracts at lint time, keeping structure verifiable.
 
@@ -28,13 +28,17 @@ Beta release. Breaking changes may still occur.
 ## Install
 
 ```bash
+yarn add -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
+```
+
+```bash
 npm install -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
 ```
 
 ## Usage
 
 The canonical setup guide is:
-- [Stylelint guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/stylelint.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md)\]
+- [Stylelint Plugin](https://spiracss.jp/tooling/stylelint/)
 
 ```js
 // stylelint.config.js (ESM)
@@ -105,14 +109,14 @@ Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use
   import { createRulesAsync } from '@spiracss/stylelint-plugin'
   const rules = await createRulesAsync('./spiracss.config.js')
   ```
-- `stylelint.pseudo` has no options; defaults apply even when omitted.
+- `stylelint.pseudo.enabled` disables the pseudo-nesting rule when set to `false` (defaults to `true`).
 
 ## Docs
 
-- [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/principles.md)\]
-- [Stylelint guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/stylelint.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md)\]
-- [Quickstart](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/quickstart.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/quickstart.md)\]
-- [spiracss.config.js guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/spiracss-config.md)\]
+- [Design Principles](https://spiracss.jp/architecture/principles/)
+- [Stylelint Plugin](https://spiracss.jp/tooling/stylelint/)
+- [Quickstart](https://spiracss.jp/introduction/quickstart/)
+- [Configuration](https://spiracss.jp/configuration/)
 
 ## Related Tools
 

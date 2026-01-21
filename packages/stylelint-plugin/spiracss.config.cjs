@@ -59,7 +59,9 @@ module.exports = {
     },
 
     // Write pseudo-classes/elements nested under &.
-    pseudo: {},
+    pseudo: {
+      enabled: true
+    },
 
     // Link comment/path validation rules between parent/child Blocks
     rel: {

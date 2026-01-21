@@ -125,6 +125,7 @@ type KeyframesNamingConfig = {
 }
 
 type PseudoNestingConfig = {
+  enabled?: boolean
   cache?: CacheSizes
 }
 
@@ -564,6 +565,8 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const pseudoConfig = { ...(stylelint?.pseudo ?? {}) }
+  const pseudoEnabled = pseudoConfig.enabled !== false
+  delete pseudoConfig.enabled
   if (pseudoConfig.cache === undefined) {
     assignIfDefined(pseudoConfig, 'cache', baseCache)
   }
@@ -601,7 +604,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     'spiracss/interaction-scope': [true, interactionScope],
     'spiracss/interaction-properties': [true, interactionProps],
     'spiracss/keyframes-naming': keyframesEnabled ? [true, keyframesConfig] : false,
-    'spiracss/pseudo-nesting': [true, pseudoConfig],
+    'spiracss/pseudo-nesting': pseudoEnabled ? [true, pseudoConfig] : false,
     'spiracss/rel-comments': [true, relConfig]
   }
 }

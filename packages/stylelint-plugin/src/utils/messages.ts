@@ -20,11 +20,12 @@ export type RuleMessageArg =
 
 export type RuleMessageArgs = RuleMessageArg[]
 
-const appendDocsLink = (message: string, ruleName: string): string => {
+const appendDocsLink = (message: string, ruleName: string, messageKey?: string): string => {
   const docsUrl = getRuleDocsUrl(ruleName)
   if (!docsUrl) return message
   if (message.includes('Docs:')) return message
-  const suffix = `Docs: ${docsUrl}`
+  const anchor = messageKey ? `#${messageKey}` : ''
+  const suffix = `Docs: ${docsUrl}${anchor}`
   const ruleTag = ` (${ruleName})`
   if (message.endsWith(ruleTag)) {
     return message.slice(0, -ruleTag.length) + ` ${suffix}` + ruleTag
@@ -45,11 +46,12 @@ export const createRuleMessages = <T extends Record<string, unknown>>(
       wrapped[key] = (...args: any[]) =>
         appendDocsLink(
           (value as (...args: any[]) => string)(...args),
-          ruleName
+          ruleName,
+          key
         )
       continue
     }
-    wrapped[key] = appendDocsLink(value as string, ruleName)
+    wrapped[key] = appendDocsLink(value as string, ruleName, key)
   }
   return stylelint.utils.ruleMessages(ruleName, wrapped) as T
 }

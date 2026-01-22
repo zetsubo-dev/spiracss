@@ -1,5 +1,5 @@
 template/
-spira-site/
+spiracss-site/
 AGENTS.md
 CLAUDE.md
 **/AGENTS.md
@@ -20,7 +20,6 @@ package-lock.json
 .claude/
 .serena/
 .cache/
-spiracss-property-placement-future.md
 
 # macOS
 .DS_Store

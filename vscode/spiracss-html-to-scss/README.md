@@ -8,9 +8,11 @@ VS Code extension that generates SpiraCSS SCSS files from HTML structure and can
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for implementation with AI agents and tool-based validation, it aims to shorten development time and ensure consistent quality.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Designed for AI agents and tool-based validation.
 
-Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
+This extension is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
+
+→ [See how it works](https://spiracss.jp)
 
 ## Requirements
 
@@ -39,7 +41,6 @@ Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
 
 ## Docs
 
-- [Design Principles](https://spiracss.jp/architecture/principles/)
 - [HTML to SCSS](https://spiracss.jp/tooling/html-to-scss/)
 - [Configuration](https://spiracss.jp/configuration/)
 
@@ -47,4 +48,4 @@ Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
 
 - [SpiraCSS Stylelint Plugin (npm)](https://www.npmjs.com/package/@spiracss/stylelint-plugin)
 - [SpiraCSS HTML CLI (npm)](https://www.npmjs.com/package/@spiracss/html-cli)
-- [SpiraCSS Comment Links (VS Code Marketplace)](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-comment-links)
+- SpiraCSS Comment Links ([VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-comment-links) / [Open VSX](https://open-vsx.org/extension/spiracss/spiracss-comment-links))

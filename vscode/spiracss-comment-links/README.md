@@ -8,9 +8,11 @@ VS Code extension that turns SpiraCSS link comments into clickable file links.
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for implementation with AI agents and tool-based validation, it aims to shorten development time and ensure consistent quality.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Designed for AI agents and tool-based validation.
 
-Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
+This extension is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
+
+→ [See how it works](https://spiracss.jp)
 
 ## Requirements
 
@@ -30,7 +32,6 @@ Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
 
 ## Docs
 
-- [Design Principles](https://spiracss.jp/architecture/principles/)
 - [Comment Links](https://spiracss.jp/tooling/comment-links/)
 - [Configuration](https://spiracss.jp/configuration/)
 
@@ -38,4 +39,4 @@ Overview: [Design Principles](https://spiracss.jp/architecture/principles/)
 
 - [SpiraCSS Stylelint Plugin (npm)](https://www.npmjs.com/package/@spiracss/stylelint-plugin)
 - [SpiraCSS HTML CLI (npm)](https://www.npmjs.com/package/@spiracss/html-cli)
-- [SpiraCSS HTML to SCSS (VS Code Marketplace)](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss)
+- SpiraCSS HTML to SCSS ([VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss) / [Open VSX](https://open-vsx.org/extension/spiracss/spiracss-html-to-scss))

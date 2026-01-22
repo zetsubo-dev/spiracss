@@ -105,6 +105,8 @@ export type {
   RelComment as RelCommentsRelComment
 } from './rules/spiracss-rel-comments.types'
 
+export type { Options as PageLayerOptions } from './rules/spiracss-page-layer.types'
+
 export type { Options as PropertyPlacementOptions } from './rules/spiracss-property-placement.types'
 
 export type { Options as KeyframesNamingOptions } from './rules/spiracss-keyframes-naming.types'

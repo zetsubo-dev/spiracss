@@ -6,6 +6,7 @@ const RULE_DOCS_PATHS: Record<string, string> = {
   'spiracss/property-placement': 'property-placement',
   'spiracss/interaction-scope': 'interaction-scope',
   'spiracss/interaction-properties': 'interaction-properties',
+  'spiracss/page-layer': 'page-layer',
   'spiracss/keyframes-naming': 'keyframes-naming',
   'spiracss/pseudo-nesting': 'pseudo-nesting',
   'spiracss/rel-comments': 'rel-comments'

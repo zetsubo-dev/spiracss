@@ -89,6 +89,17 @@ type RelCommentsConfig = {
   cache?: CacheSizes
 }
 
+type PageLayerConfig = {
+  enabled?: boolean
+  pageEntryAlias?: string
+  pageEntrySubdir?: string
+  componentsDirs?: string[]
+  aliasRoots?: Record<string, string[]>
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
+}
+
 type InteractionPropertiesConfig = {
   comments?: CommentConfig
   naming?: NamingOptions
@@ -135,10 +146,13 @@ type SpiracssConfig = {
   generator?: {
     rootFileCase?: ClassStructureOptions['root']['case']
     childScssDir?: string
+    pageEntryAlias?: string
+    pageEntrySubdir?: string
   }
   stylelint?: {
     base?: BaseConfig
     class?: ClassStructureConfig
+    pageLayer?: PageLayerConfig
     placement?: PropertyPlacementConfig
     interactionScope?: InteractionScopeConfig
     interactionProps?: InteractionPropertiesConfig
@@ -492,6 +506,33 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     classConfig.external
   )
 
+  const pageLayerConfig = { ...(stylelint?.pageLayer ?? {}) }
+  const pageLayerEnabled = pageLayerConfig.enabled !== false
+  delete pageLayerConfig.enabled
+  assignIfDefined(
+    pageLayerConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, pageLayerConfig.external)
+  )
+  if (pageLayerConfig.naming === undefined) {
+    assignIfDefined(pageLayerConfig, 'naming', sharedNaming)
+  }
+  if (pageLayerConfig.cache === undefined) {
+    assignIfDefined(pageLayerConfig, 'cache', baseCache)
+  }
+  if (pageLayerConfig.componentsDirs === undefined) {
+    assignIfDefined(pageLayerConfig, 'componentsDirs', basePaths?.components)
+  }
+  if (pageLayerConfig.pageEntryAlias === undefined && generator?.pageEntryAlias) {
+    pageLayerConfig.pageEntryAlias = generator.pageEntryAlias
+  }
+  if (pageLayerConfig.pageEntrySubdir === undefined && generator?.pageEntrySubdir !== undefined) {
+    pageLayerConfig.pageEntrySubdir = generator.pageEntrySubdir
+  }
+  if (pageLayerConfig.aliasRoots === undefined) {
+    pageLayerConfig.aliasRoots = spiracss.aliasRoots
+  }
+
   const placementConfig = { ...(stylelint?.placement ?? {}) }
   assignIfDefined(
     placementConfig,
@@ -600,6 +641,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
 
   return {
     'spiracss/class-structure': [true, classConfig],
+    'spiracss/page-layer': pageLayerEnabled ? [true, pageLayerConfig] : false,
     'spiracss/property-placement': [true, placementConfig],
     'spiracss/interaction-scope': [true, interactionScope],
     'spiracss/interaction-properties': [true, interactionProps],

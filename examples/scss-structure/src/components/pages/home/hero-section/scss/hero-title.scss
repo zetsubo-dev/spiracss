@@ -1,0 +1,22 @@
+@use "@styles/partials/global" as *;
+
+// @rel/../hero-section.scss
+
+.hero-title {
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1.375;
+  color: var(--color-bg);
+  text-align: center;
+
+  @include breakpoint-up(md) {
+    font-size: 3rem;
+    line-height: 1.33;
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

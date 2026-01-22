@@ -1,0 +1,28 @@
+@use "@styles/partials/global" as *;
+@use "sass:meta";
+
+// @assets/css/home.scss
+
+.card-list {
+  @include meta.load-css("scss");
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 2.5rem 0;
+
+  @include breakpoint-up(md) {
+    gap: 2rem;
+    padding: 3.75rem 0;
+  }
+
+  > .card-item {
+    // @rel/scss/card-item.scss
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

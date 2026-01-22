@@ -1,0 +1,41 @@
+@use "@styles/partials/global" as *;
+
+// Import global styles
+@use "@styles/partials/variables";
+@use "@styles/partials/reset";
+@use "@styles/partials/base";
+@use "@styles/partials/utilities";
+@use "@styles/partials/keyframes";
+
+// Import components used in this page
+@use "@components/common/site-header/site-header";
+@use "@components/pages/home/hero-section/hero-section";
+@use "@components/parts/card-list/card-list";
+
+.main-container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+
+  > .site-header {
+    // @components/common/site-header/site-header.scss
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  > .hero-section {
+    // @components/pages/home/hero-section/hero-section.scss
+    margin-top: 0;
+  }
+
+  > .card-list {
+    // @components/parts/card-list/card-list.scss
+    margin-top: 3.75rem;
+    padding-inline: 1.5rem;
+
+    @include breakpoint-up(md) {
+      margin-top: 5rem;
+      padding-inline: 2.5rem;
+    }
+  }
+}

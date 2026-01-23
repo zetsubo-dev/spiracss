@@ -2,7 +2,24 @@
 
 All notable changes to this package will be documented in this file.
 
-## 0.2.2
+## 0.3.0
+
+### Breaking Changes
+
+- Config schema aligned with the new stylelint config: naming/external settings now read from `stylelint.base` / `stylelint.class` (old `stylelint.classStructure` keys removed).
+- External allowlist renamed to `external.classes` / `external.prefixes`.
+
+### Changed
+
+- HTML lint and SCSS generation now use the new `external` option shape.
+- Config warnings now report the naming source.
+
+### Documentation
+
+- Wording update: "AI" → "AI agents" for consistency
+- Documentation moved to official site (spiracss.jp)
+
+## 0.2.2-beta
 
 ### Documentation
 
@@ -10,7 +27,7 @@ All notable changes to this package will be documented in this file.
 - Add Japanese documentation links to Docs section
 - Improve description wording for clarity
 
-## 0.2.1
+## 0.2.1-beta
 
 - First beta release.
 

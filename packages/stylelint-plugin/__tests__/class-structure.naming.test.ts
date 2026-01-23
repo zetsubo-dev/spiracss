@@ -1,5 +1,5 @@
 import assert from 'assert'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { invalidNameMessage, testRule, withClassMode } from './rule-test-utils.js'
@@ -586,7 +586,7 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
 
 describe('spiracss/class-structure - naming.customPatterns validation', () => {
   it('reports invalid customPatterns', async () => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.hero-banner { }',
       customSyntax: 'postcss-scss',
       config: {

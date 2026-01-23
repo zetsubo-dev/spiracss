@@ -1,5 +1,5 @@
 import assert from 'assert'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import pageLayer from '../dist/esm/rules/spiracss-page-layer.js'
 import { testRule } from './rule-test-utils.js'
@@ -139,7 +139,7 @@ describe('spiracss/page-layer - pageEntrySubdir empty', () => {
 
 describe('spiracss/page-layer - componentsDirs empty', () => {
   it('reports invalid componentsDirs', async () => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.page-root > .child-block { color: red; }',
       codeFilename: pageEntryFile,
       customSyntax: 'postcss-scss',

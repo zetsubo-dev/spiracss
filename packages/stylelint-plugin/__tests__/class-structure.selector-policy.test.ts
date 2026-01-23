@@ -1,5 +1,5 @@
 import assert from 'assert'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { invalidNameMessage, testRule, withClassMode, withDataMode } from './rule-test-utils.js'
@@ -415,7 +415,7 @@ describe('spiracss/class-structure - selectorPolicy validation', () => {
     selectorPolicy: Record<string, unknown>,
     description: string
   ): Promise<void> => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.hero-banner { }',
       customSyntax: 'postcss-scss',
       config: {

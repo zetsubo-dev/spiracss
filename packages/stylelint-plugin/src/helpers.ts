@@ -229,7 +229,12 @@ const createDynamicImportError = (absolutePath: string): Error =>
       `Use createRules(config) instead of createRulesAsync(path).`
   )
 
-const canRequire = typeof require === 'function'
+const isTsxRuntime = process.execArgv.some((arg, index) => {
+  if (arg !== '--import' && arg !== '--loader') return false
+  const loader = process.execArgv[index + 1] || ''
+  return loader.includes('tsx')
+})
+const canRequire = typeof require === 'function' && !isTsxRuntime
 // Keep dynamic import callable in CJS output (avoid TS rewriting it to require()).
 // Lazy initialization is safe here because module execution is single-threaded.
 let dynamicImport: ((specifier: string) => Promise<unknown>) | null = null

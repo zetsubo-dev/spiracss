@@ -28,11 +28,16 @@ const meta = {
   category: 'stylistic'
 }
 
+type Violation = {
+  index: number
+  endIndex: number
+}
+
 const collectViolations = (
   selector: string,
   selectorCache: SelectorParserCache
-): number[] => {
-  const indexes: number[] = []
+): Violation[] => {
+  const violations: Violation[] = []
   const selectors = selectorCache.parse(selector)
   selectors.forEach((sel) => {
     if (sel.parent?.type !== 'root') return
@@ -40,12 +45,14 @@ const collectViolations = (
     compounds.forEach((compound) => {
       if (compound.hasNesting) return
       compound.pseudos.forEach((pseudo) => {
-        indexes.push(pseudo.sourceIndex ?? 0)
+        const index = pseudo.sourceIndex ?? 0
+        const endIndex = index + pseudo.toString().length
+        violations.push({ index, endIndex })
       })
     })
   })
 
-  return indexes
+  return violations
 }
 
 const rule = createRule(
@@ -104,15 +111,16 @@ const rule = createRule(
         const selector: string = rule.selector || ''
         if (!selector.includes(':')) return
 
-        const indexes = collectViolations(selector, selectorCache)
-        if (indexes.length === 0) return
+        const violations = collectViolations(selector, selectorCache)
+        if (violations.length === 0) return
 
-        indexes.forEach((index) => {
+        violations.forEach(({ index, endIndex }) => {
           stylelint.utils.report({
             ruleName,
             result,
             node: rule,
             index,
+            endIndex,
             message: messages.needNesting()
           })
         })

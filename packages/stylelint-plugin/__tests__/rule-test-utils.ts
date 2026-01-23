@@ -1,9 +1,11 @@
-import { testRule as rawTestRule } from 'stylelint-test-rule-node'
+import assert from 'node:assert/strict'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { formatNamingHint } from '../dist/esm/rules/spiracss-class-structure.patterns.js'
 import { appendDocsLink } from '../dist/esm/utils/messages.js'
 import type { NamingOptions } from '../dist/esm/types.js'
+import { lint } from './stylelint-helpers.js'
+import type { LintOptions, LintResult } from './stylelint-helpers.js'
 
 const normalizeRootBlock = (code: string): string =>
   code.replace(/\.block(?![\w-])/g, '.block-name')
@@ -16,6 +18,7 @@ type TestCase =
       description?: string
       message?: string
       warnings?: Array<{ message: string }>
+      codeFilename?: string
       noNormalizeRootBlock?: boolean
     }
 
@@ -245,26 +248,99 @@ const normalizeRejectMessages = (
   })
 }
 
-type RawRuleConfig = Parameters<typeof rawTestRule>[0]
-type RuleConfig = Omit<RawRuleConfig, 'accept' | 'reject'> & {
+type RuleConfig = {
+  ruleName: string
+  plugins: Array<unknown>
+  config: unknown
   accept?: TestCase[]
   reject?: TestCase[]
+  customSyntax?: string
+  syntax?: string
+}
+
+const normalizeCaseItem = (item: TestCase): Exclude<TestCase, string> =>
+  typeof item === 'string' ? { code: item } : item
+
+const createLintOptions = (
+  config: RuleConfig,
+  code: string,
+  codeFilename?: string
+): LintOptions => {
+  const lintOptions: LintOptions = {
+    code,
+    config: {
+      plugins: config.plugins,
+      rules: {
+        [config.ruleName]: config.config
+      }
+    }
+  }
+  if (codeFilename) lintOptions.codeFilename = codeFilename
+  if (config.customSyntax) lintOptions.customSyntax = config.customSyntax
+  if (config.syntax) lintOptions.syntax = config.syntax
+  return lintOptions
+}
+
+const lintCode = async (
+  config: RuleConfig,
+  item: TestCase
+): Promise<LintResult> => {
+  const caseItem = normalizeCaseItem(item)
+  const lintOptions = createLintOptions(config, caseItem.code, caseItem.codeFilename)
+  return lint(lintOptions)
 }
 
 export const testRule = (config: RuleConfig): void => {
   const normalizedReject = normalizeRejectMessages(config.reject, config.ruleName)
-  if (config.ruleName !== classStructure.ruleName) {
-    rawTestRule({
-      ...config,
-      reject: normalizedReject
-    } as RawRuleConfig)
-    return
+  const acceptCases =
+    config.ruleName === classStructure.ruleName ? normalizeCases(config.accept) : config.accept
+  const rejectCases =
+    config.ruleName === classStructure.ruleName
+      ? normalizeRejectMessages(normalizeCases(config.reject), config.ruleName)
+      : normalizedReject
+
+  const runAccept = (item: TestCase, index: number) => {
+    const caseItem = normalizeCaseItem(item)
+    const title = caseItem.description ? `accepts ${caseItem.description}` : `accepts case ${index + 1}`
+    it(title, async () => {
+      const result = await lintCode(config, caseItem)
+      const warnings = result.results[0]?.warnings ?? []
+      const messages = warnings.map((warning) => warning.text)
+      assert.strictEqual(
+        warnings.length,
+        0,
+        messages.length ? `Expected no warnings, but got:\n${messages.join('\n')}` : undefined
+      )
+    })
   }
-  rawTestRule({
-    ...config,
-    accept: normalizeCases(config.accept),
-    reject: normalizeRejectMessages(normalizeCases(config.reject), config.ruleName)
-  } as RawRuleConfig)
+
+  const runReject = (item: TestCase, index: number) => {
+    const caseItem = normalizeCaseItem(item)
+    const title = caseItem.description ? `rejects ${caseItem.description}` : `rejects case ${index + 1}`
+    it(title, async () => {
+      const result = await lintCode(config, caseItem)
+      const warnings = result.results[0]?.warnings ?? []
+      const messages = warnings.map((warning) => warning.text)
+      if (caseItem.warnings?.length) {
+        const expected = caseItem.warnings.map((warning) => warning.message)
+        assert.deepStrictEqual(messages, expected)
+        return
+      }
+      if (caseItem.message) {
+        assert.strictEqual(
+          warnings.length,
+          1,
+          messages.length ? `Expected 1 warning, but got:\n${messages.join('\n')}` : undefined
+        )
+        assert.strictEqual(messages[0], caseItem.message)
+        return
+      }
+      assert.ok(messages.length > 0, 'Expected warnings, but got none.')
+    })
+  }
+
+  acceptCases?.forEach((item, index) => runAccept(item, index))
+  rejectCases?.forEach((item, index) => runReject(item, index))
 }
 
 const classModeSelectorPolicy = {

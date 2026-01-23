@@ -1,6 +1,6 @@
 {
   "name": "@spiracss/stylelint-plugin",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "type": "module",
   "description": "Stylelint plugin enforcing SpiraCSS conventions for class structure, property placement, interaction scope/properties, keyframes naming, pseudo nesting, page layer, and rel-comment links.",
   "homepage": "https://spiracss.jp",
@@ -60,7 +60,7 @@
     "build:cjs": "tsc -p tsconfig.build.cjs.json",
     "build:esm": "tsc -p tsconfig.build.esm.json && node scripts/fix-esm-output.cjs",
     "pretest": "yarn build",
-    "test": "node --import ./scripts/register-ts-node-esm.mjs ./scripts/run-mocha.mjs \"__tests__/**/*.test.ts\"",
+    "test": "TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx ./scripts/run-mocha.mjs \"__tests__/**/*.test.ts\"",
     "lint": "eslint src __tests__",
     "lint:test": "stylelint \"test/fixtures/**/*.scss\" --config stylelint.config.cjs"
   },
@@ -85,8 +85,8 @@
     "postcss": "^8.4.49",
     "postcss-scss": "^4.0.9",
     "stylelint": "^16.0.0",
-    "stylelint-test-rule-node": "^0.4.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.0"
   }
 }

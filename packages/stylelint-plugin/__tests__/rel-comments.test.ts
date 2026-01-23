@@ -2,7 +2,7 @@ import assert from 'assert'
 import fs from 'fs'
 import scss from 'postcss-scss'
 import type { RuleContext } from 'stylelint'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import relComments from '../dist/esm/rules/spiracss-rel-comments.js'
 import { testRule } from './rule-test-utils.js'
@@ -251,7 +251,7 @@ describe('spiracss/rel-comments - selector parse failure', () => {
 
 describe('spiracss/rel-comments - naming.customPatterns validation', () => {
   it('reports invalid customPatterns', async () => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.block {}',
       customSyntax: 'postcss-scss',
       config: {
@@ -577,7 +577,7 @@ describe('spiracss/rel-comments - validatePath error handling', () => {
     }) as typeof fs.existsSync
 
     try {
-      const result = await stylelint.lint({
+      const result = await lint({
         code: `
 .block {
   // @rel/forbidden.scss

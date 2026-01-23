@@ -5,8 +5,9 @@ type WarnReporter = (message: string) => void
 const CUSTOM_PATTERN_KEYS = ['block', 'element', 'modifier'] as const
 
 const formatCustomPatternKey = (
+  prefix: string,
   key: (typeof CUSTOM_PATTERN_KEYS)[number]
-): string => `stylelint.classStructure.naming.customPatterns.${key}`
+): string => `${prefix}.${key}`
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   if (!value || typeof value !== 'object') return false
@@ -16,13 +17,14 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 
 export const warnInvalidCustomPatterns = (
   naming: NamingOptions,
-  warn: WarnReporter
+  warn: WarnReporter,
+  prefix = 'stylelint.base.naming.customPatterns'
 ): void => {
   const raw = naming.customPatterns as unknown
   if (raw === undefined) return
   if (!isPlainObject(raw)) {
     warn(
-      'WARN [INVALID_CUSTOM_PATTERN] stylelint.classStructure.naming.customPatterns must be a plain object of RegExp values. Ignored.'
+      `WARN [INVALID_CUSTOM_PATTERN] ${prefix} must be a plain object of RegExp values. Ignored.`
     )
     return
   }
@@ -34,6 +36,7 @@ export const warnInvalidCustomPatterns = (
     if (!(value instanceof RegExp)) {
       warn(
         `WARN [INVALID_CUSTOM_PATTERN] ${formatCustomPatternKey(
+          prefix,
           key
         )} must be a RegExp. Ignored.`
       )
@@ -42,6 +45,7 @@ export const warnInvalidCustomPatterns = (
     if (value.flags.includes('g') || value.flags.includes('y')) {
       warn(
         `WARN [INVALID_CUSTOM_PATTERN] ${formatCustomPatternKey(
+          prefix,
           key
         )} must not include "g" or "y" flags. Ignored.`
       )

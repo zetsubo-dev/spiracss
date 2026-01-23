@@ -778,7 +778,7 @@ describe('generator-core', () => {
     const html = '<div class="swiper-slide hero-section"><div class="title"></div></div>'
     const generated = generateFromHtml(html, fixturesDir, true, {
       ...baseOptions,
-      allowExternalPrefixes: ['swiper-']
+      external: { prefixes: ['swiper-'] }
     })
     const root = generated.find((f) => f.path === 'hero-section.scss')
     assert.ok(!root, 'hero-section SCSS should not be generated when external class is first')
@@ -866,10 +866,10 @@ describe('generator-core', () => {
     )
   })
 
-  it('HTML lint ignores allowExternal classes in multiple base check', () => {
+  it('HTML lint ignores external classes in multiple base check', () => {
     const html = '<div class="hero-section swiper-slide">External</div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }, undefined, {
-      allowExternalClasses: ['swiper-slide']
+      classes: ['swiper-slide']
     })
     assert.ok(
       issues.every((i) => i.code !== 'MULTIPLE_BASE_CLASSES'),
@@ -880,7 +880,7 @@ describe('generator-core', () => {
   it('HTML lint reports invalid base when external class comes first', () => {
     const html = '<div class="swiper-slide hero-section"><div class="title"></div></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }, undefined, {
-      allowExternalPrefixes: ['swiper-']
+      prefixes: ['swiper-']
     })
     assert.ok(
       issues.some((i) => i.code === 'INVALID_BASE_CLASS'),
@@ -895,7 +895,7 @@ describe('generator-core', () => {
   it('HTML lint reports missing base when only external + modifiers/utilities exist', () => {
     const html = '<div class="swiper-slide -wide u-hidden"></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }, undefined, {
-      allowExternalPrefixes: ['swiper-']
+      prefixes: ['swiper-']
     })
     assert.ok(
       issues.some(
@@ -1177,7 +1177,7 @@ describe('generator-core', () => {
         variant: { mode: 'data', dataKeys: ['data-variant'] },
         state: { mode: 'data', dataKey: 'data-state', ariaKeys: [] }
       },
-      { allowExternalClasses: ['-wide'] }
+      { classes: ['-wide'] }
     )
     assert.ok(
       issues.every((i) => i.code !== 'DISALLOWED_MODIFIER'),

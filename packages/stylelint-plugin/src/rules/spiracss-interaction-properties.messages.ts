@@ -1,25 +1,57 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-interaction-properties.constants'
+import {
+  createRuleMessages,
+  formatCode,
+  formatPattern,
+  formatSelectorParseFailed,
+  type RuleMessageArgs
+} from '../utils/messages'
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
-  needInteraction: (prop: string) =>
-    `"${prop}" must be declared inside the SpiraCSS interaction section under the root Block (// --interaction, typically in @at-root &).`,
+export const messages = createRuleMessages(ruleName, {
+  needInteraction: (prop: string, pattern: RegExp) =>
+    `${formatCode(
+      prop
+    )} must be declared inside the SpiraCSS interaction section in root scope ` +
+    `(comment matching ${formatCode(
+      'comments.interaction'
+    )}, current: ${formatPattern(
+      pattern
+    )}; typically in ${formatCode('@at-root &')}).`,
   missingTransitionProperty: () =>
-    'Transition must include explicit property names (e.g., "transition: opacity 0.2s").',
+    `Transition must include explicit property names (e.g., ${formatCode(
+      'transition: opacity 0.2s'
+    )}).`,
   transitionAll: (prop: string) => {
     const example =
       prop === 'transition-property'
         ? 'transition-property: opacity'
         : 'transition: opacity 0.2s'
-    return `Avoid "${prop}: all". List explicit properties (e.g., "${example}").`
+    return `Avoid ${formatCode(
+      `${prop}: all`
+    )}. List explicit properties (e.g., ${formatCode(example)}).`
   },
   transitionNone: () =>
-    '"transition: none" / "transition-property: none" is not allowed. Use a tiny "transition-duration" instead (e.g., "transition-duration: 0.001s").',
+    `${formatCode(
+      'transition: none'
+    )} / ${formatCode(
+      'transition-property: none'
+    )} is not allowed. Use a tiny ${formatCode(
+      'transition-duration'
+    )} instead (e.g., ${formatCode('transition-duration: 0.001s')}).`,
   invalidTransitionProperty: (prop: string) =>
-    `Transition property "${prop}" is not allowed. Use explicit properties (no custom properties or keywords like inherit/initial/unset/revert/revert-layer).`,
-  initialOutsideInteraction: (prop: string, target: string) =>
-    `"${prop}" is transitioned for ${target}. Move its declarations into the interaction section.`,
-  selectorParseFailed: () =>
-    'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors.'
+    `Transition property ${formatCode(
+      prop
+    )} is not allowed. Use explicit properties (no custom properties or keywords like ${formatCode(
+      'inherit'
+    )}/${formatCode('initial')}/${formatCode('unset')}/${formatCode(
+      'revert'
+    )}/${formatCode('revert-layer')}).`,
+  initialOutsideInteraction: (prop: string, target: string, pattern: RegExp) =>
+    `${formatCode(prop)} is transitioned for ${formatCode(
+      target
+    )}. Move its declarations into the interaction section ` +
+    `(comment matching ${formatCode(
+      'comments.interaction'
+    )}, current: ${formatPattern(pattern)}).`,
+  selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])
 })

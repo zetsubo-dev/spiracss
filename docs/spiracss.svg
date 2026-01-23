@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="レイヤー 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 340 340">
+  <defs>
+    <linearGradient id="b" data-name="名称未設定グラデーション 3384" x1="39.505" y1="98.147" x2="308.469" y2="50.721" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b87fd"/>
+      <stop offset=".232" stop-color="#77a3fd"/>
+      <stop offset=".557" stop-color="#9ac5fd"/>
+      <stop offset=".824" stop-color="#afdafd"/>
+      <stop offset="1" stop-color="#b7e2fe"/>
+    </linearGradient>
+    <linearGradient id="c" data-name="名称未設定グラデーション 103" x1=".361" y1="282.066" x2="259.918" y2="224.485" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#da89f5"/>
+      <stop offset=".16" stop-color="#d585f4"/>
+      <stop offset=".335" stop-color="#c87cf2"/>
+      <stop offset=".518" stop-color="#b26def"/>
+      <stop offset=".707" stop-color="#9357ea"/>
+      <stop offset=".897" stop-color="#6c3ce4"/>
+      <stop offset="1" stop-color="#542be1"/>
+    </linearGradient>
+    <linearGradient id="d" data-name="名称未設定グラデーション 4" x1="149.992" y1="315.641" x2="248.802" y2="227.666" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7954f8"/>
+      <stop offset="1" stop-color="#2525d4"/>
+    </linearGradient>
+    <linearGradient id="e" data-name="名称未設定グラデーション 3389" x1="172.247" y1="262.608" x2="169.663" y2="134.275" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#15125e"/>
+      <stop offset="1" stop-color="#3a53f9"/>
+    </linearGradient>
+    <linearGradient id="f" data-name="名称未設定グラデーション 3076" x1="83.381" y1="100.857" x2="255.881" y2="94.833" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3a53f9"/>
+      <stop offset="1" stop-color="#80afff"/>
+    </linearGradient>
+    <linearGradient id="g" data-name="名称未設定グラデーション 560" x1="139.434" y1="33.212" x2="229.737" y2="280.542" gradientUnits="userSpaceOnUse">
+      <stop offset=".041" stop-color="#b7e2fe"/>
+      <stop offset=".17" stop-color="#bbd5fc"/>
+      <stop offset=".404" stop-color="#c8b4f9"/>
+      <stop offset=".678" stop-color="#db87f4"/>
+      <stop offset=".793" stop-color="#c57ff7"/>
+      <stop offset=".867" stop-color="#b57afb"/>
+      <stop offset="1" stop-color="#6d9afe"/>
+    </linearGradient>
+  </defs>
+  <rect width="340" height="340" rx="50" ry="50" style="fill: none;"/>
+  <g>
+    <path d="M292.513,105.562c-44.98-2.904-98.68-10.296-129.249-6.074-28.788,3.975-51.923,8.15-56.804,7.004-12.085-2.838-27.721,1.821-38.532,3.897-4.644.891-30.158,12.389-27.004-11.127,7.234-53.929,55.295-69.709,116.718-69.629,37.217.048,123.453,8.672,150.259,17.872l-15.389,58.058Z" style="fill: url(#b);"/>
+    <path d="M258.006,201.364c11.142,12.295,26.019,27.673,16.872,41.438-36.964,55.621-192.583,64.805-260.432,46.623l29.3-64.755c58.228,12.373,170.211,2.531,214.26-23.306" style="fill: url(#c);"/>
+    <path d="M299.394,224.604c-19.356,71.685-189.963,73.282-189.963,73.282,0,0,83.93-16.636,110.597-54.202,13.472-18.979,4.794-30.323,9.538-42.319l69.829,23.239Z" style="fill: url(#d);"/>
+    <path d="M102.727,115.21c-13.289,22.413,189.087,34.81,196.668,79.861-21.443,64.978-66.994,71.603-66.994,71.603,0,0,22.61-62.976-42.247-82.198-33.815-10.022-154.122-25.284-149.457-83.244l62.031,13.978Z" style="fill: url(#e);"/>
+    <path d="M54.971,108.592c-1.516-17.433-3.211-19.608,39.71-23.064,36.785-2.961,172.459,13.254,197.832,20.034-136.924-8.693-182.817-2.106-189.786,9.647l-47.756-6.617Z" style="fill: url(#f);"/>
+    <path d="M199.223,287.682c17.973-6.151,37.994-25.528,49.807-39.82,16.211-19.614,17.158-42.782-3.388-58.778-29.943-23.313-84.786-30.143-124.308-36.482-24.297-3.897-65.603-14.093-77.299-34.914-11.224-19.979,3.758-58.942,33.872-72.936-24.298,20.198-20.123,42.302-14.156,51.461,12.213,18.745,42.734,19.955,60.237,22.099l71.923,8.812c33.86,4.149,79.988,14.344,106.596,33.36,23.098,16.507,27.825,43.705,11.622,66.222-21.714,30.176-74.486,55.483-114.907,60.976Z" style="fill: url(#g);"/>
+  </g>
+</svg>

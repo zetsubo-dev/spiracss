@@ -2,13 +2,9 @@ import type { AtRule, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES } from '../utils/cache'
-import {
-  CACHE_SIZES_SCHEMA,
-  INTERACTION_COMMENT_PATTERN_SCHEMA,
-  SELECTOR_POLICY_SCHEMA
-} from '../utils/option-schema'
+import { CACHE_SCHEMA, COMMENTS_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule } from '../utils/postcss-helpers'
+import { selectorParseFailedArgs } from '../utils/messages'
 import { safeTestPattern } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
@@ -17,12 +13,8 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import {
-  isBoolean,
-  isPlainObject,
-  isString,
-  isStringArray
-} from '../utils/validate'
+import { getRuleDocsUrl } from '../utils/rule-docs'
+import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { ruleName } from './spiracss-interaction-scope.constants'
 import { messages } from './spiracss-interaction-scope.messages'
 import { normalizeOptions } from './spiracss-interaction-scope.options'
@@ -45,21 +37,21 @@ import {
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracssinteraction-scope',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Require interaction selectors to be scoped in SpiraCSS interaction sections.',
   category: 'stylistic'
 }
 
 const optionSchema = {
-  allowedPseudos: [isString],
+  pseudos: [isString],
   requireAtRoot: [isBoolean],
   requireComment: [isBoolean],
   requireTail: [isBoolean],
-  enforceWithCommentOnly: [isBoolean],
-  ...INTERACTION_COMMENT_PATTERN_SCHEMA,
-  ...SELECTOR_POLICY_SCHEMA,
-  ...CACHE_SIZES_SCHEMA
+  commentOnly: [isBoolean],
+  ...COMMENTS_SCHEMA,
+  ...POLICY_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const rule = createRule(
@@ -96,7 +88,7 @@ const rule = createRule(
       const options = normalizeOptions(rawOptions, handleInvalid)
       cache = {
         options,
-        allowedPseudoSet: new Set(options.allowedPseudos.map(normalizePseudo)),
+        allowedPseudoSet: new Set(options.pseudos.map(normalizePseudo)),
         policySets: buildSelectorPolicySets(options.selectorPolicy),
         hasInvalidOptions
       }
@@ -135,7 +127,7 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowedPseudos'],
+        ['pseudos'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
@@ -148,7 +140,7 @@ const rule = createRule(
 
       const checkedTailTargets = new WeakSet<AtRule>()
       let firstRule: Rule | null = null
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
 
@@ -162,7 +154,7 @@ const rule = createRule(
         const commentTarget = atRootNode || rule
         const comment = findCommentBefore(commentTarget)
         const hasInteractionComment = Boolean(
-          comment && safeTestPattern(options.interactionCommentPattern, comment)
+          comment && safeTestPattern(options.comments.interaction, comment)
         )
         const selectorAnalysis = analyzeSelector(
           selector,
@@ -178,15 +170,13 @@ const rule = createRule(
         const hasInteractionSelector = selectorAnalysis.hasAllowedPseudo || hasStateSelector
         const shouldCheckByComment = hasInteractionComment && (hasInteractionSelector || hasNest)
         const shouldCheckBySelector =
-          !options.enforceWithCommentOnly && hasInteractionSelector
+          !options.commentOnly && hasInteractionSelector
         const reports: string[] = []
 
         if (hasMixedStateVariant) {
-          const formatKeys = (keys: string[]): string =>
-            keys.length > 0 ? keys.map((key) => `"${key}"`).join(', ') : 'configured keys'
-          const variantKeys = formatKeys(Array.from(policySets.variantKeys))
-          const stateKeys = formatKeys([policySets.stateKey, ...Array.from(policySets.ariaKeys)])
-          reports.push(messages.mixedStateVariant(variantKeys, stateKeys))
+          const variantKeys = Array.from(policySets.variantKeys)
+          const stateKeys = [policySets.stateKey, ...Array.from(policySets.ariaKeys)]
+          reports.push(messages.mixedStateVariant(stateKeys, variantKeys))
         }
 
         if (!shouldCheckByComment && !shouldCheckBySelector) {
@@ -199,19 +189,21 @@ const rule = createRule(
           reports.push(messages.needRootBlock())
         }
 
-        if (options.requireAtRoot) {
+        if (options.require.atRoot) {
           if (!hasAtRootNesting || !hasNest) {
             reports.push(messages.needAtRoot())
           }
         }
 
-        if (options.requireComment) {
+        if (options.require.comment) {
           if (!hasInteractionComment) {
-            reports.push(messages.needComment())
+            reports.push(
+              messages.needComment(options.comments.interaction)
+            )
           }
         }
 
-        if (options.requireTail && hasInteractionComment && hasAtRootNesting && atRootNode) {
+        if (options.require.tail && hasInteractionComment && hasAtRootNesting && atRootNode) {
           // Check tail placement once per interaction section to reduce noise.
           if (!checkedTailTargets.has(atRootNode)) {
             checkedTailTargets.add(atRootNode)
@@ -237,7 +229,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

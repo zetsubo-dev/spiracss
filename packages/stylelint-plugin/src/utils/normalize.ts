@@ -7,7 +7,23 @@ import type {
   VariantMode
 } from '../types'
 
-const ERROR_PREFIX = '[spiracss]'
+const DEBUG_ENV = 'SPIRACSS_DEBUG'
+
+const shouldReportNormalizeError = (): boolean => {
+  const debug = process.env[DEBUG_ENV]
+  if (!debug) return false
+  if (debug === '1') return true
+  return debug
+    .split(',')
+    .map((entry) => entry.trim())
+    .includes('config')
+}
+
+const reportNormalizeError = (label: string, value: unknown): void => {
+  if (!shouldReportNormalizeError()) return
+  const detail = value instanceof RegExp ? value.toString() : String(value)
+  console.warn(`[spiracss] Invalid ${label}: ${detail}`)
+}
 
 export type InvalidOptionReporter = (
   optionName: string,
@@ -21,6 +37,10 @@ export const normalizeCommentPattern = (
   label = 'comment pattern',
   reportInvalid?: InvalidOptionReporter
 ): RegExp => {
+  const report = (value: unknown): void => {
+    if (reportInvalid) reportInvalid(label, value)
+    else reportNormalizeError(label, value)
+  }
   const isSafe = (regex: RegExp): boolean => {
     try {
       return safeRegex(regex)
@@ -30,7 +50,7 @@ export const normalizeCommentPattern = (
   }
   if (pattern instanceof RegExp) {
     if (!isSafe(pattern)) {
-      reportInvalid?.(label, pattern)
+      report(pattern)
       return fallback
     }
     return pattern
@@ -39,12 +59,12 @@ export const normalizeCommentPattern = (
     try {
       const regex = new RegExp(pattern, 'i')
       if (!isSafe(regex)) {
-        reportInvalid?.(label, pattern)
+        report(pattern)
         return fallback
       }
       return regex
     } catch {
-      reportInvalid?.(label, pattern)
+      report(pattern)
       return fallback
     }
   }
@@ -95,7 +115,7 @@ export const normalizeKeyList = (
   fieldName: string,
   reportInvalid?: InvalidOptionReporter
 ): string[] => {
-  const message = `${ERROR_PREFIX} ${fieldName} must be an array of non-empty strings.`
+  const message = `[spiracss] ${fieldName} must be an array of non-empty strings.`
   if (!Array.isArray(value)) {
     if (value !== undefined) {
       reportInvalid?.(fieldName, value, message)
@@ -141,7 +161,7 @@ export const normalizeSelectorPolicyBase = (
   const hasVariantMode = Object.prototype.hasOwnProperty.call(variant, 'mode')
   if (hasVariantMode && variantModeRaw !== 'data' && variantModeRaw !== 'class') {
     throw new Error(
-      `${ERROR_PREFIX} selectorPolicy.variant.mode must be "data" or "class".`
+      `[spiracss] selectorPolicy.variant.mode must be "data" or "class".`
     )
   }
   const variantMode: VariantMode = variantModeRaw ?? defaults.variant.mode
@@ -150,7 +170,7 @@ export const normalizeSelectorPolicyBase = (
   const hasStateMode = Object.prototype.hasOwnProperty.call(state, 'mode')
   if (hasStateMode && stateModeRaw !== 'data' && stateModeRaw !== 'class') {
     throw new Error(
-      `${ERROR_PREFIX} selectorPolicy.state.mode must be "data" or "class".`
+      `[spiracss] selectorPolicy.state.mode must be "data" or "class".`
     )
   }
   const stateMode: StateMode = stateModeRaw ?? defaults.state.mode
@@ -180,5 +200,33 @@ export const normalizeSelectorPolicyBase = (
       dataKey,
       ariaKeys
     }
+  }
+}
+
+const cloneSelectorPolicyBase = (
+  defaults: NormalizedSelectorPolicyBase
+): NormalizedSelectorPolicyBase => ({
+  variant: {
+    mode: defaults.variant.mode,
+    dataKeys: [...defaults.variant.dataKeys]
+  },
+  state: {
+    mode: defaults.state.mode,
+    dataKey: defaults.state.dataKey,
+    ariaKeys: [...defaults.state.ariaKeys]
+  }
+})
+
+export const safeNormalizeSelectorPolicyBase = (
+  raw: unknown,
+  defaults: NormalizedSelectorPolicyBase,
+  reportInvalid?: InvalidOptionReporter
+): NormalizedSelectorPolicyBase => {
+  try {
+    return normalizeSelectorPolicyBase(raw, defaults, reportInvalid)
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    reportInvalid?.('selectorPolicy', raw, detail)
+    return cloneSelectorPolicyBase(defaults)
   }
 }

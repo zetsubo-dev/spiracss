@@ -5,6 +5,7 @@ import type {
   StateMode as SelectorStateMode,
   VariantMode as SelectorVariantMode
 } from '../types'
+import type { SelectorPolicySetsBase } from '../utils/selector-policy'
 
 export type SelectorPolicy = SelectorPolicyBase
 export type NormalizedSelectorPolicy = NormalizedSelectorPolicyBase
@@ -13,14 +14,19 @@ export type VariantMode = SelectorVariantMode
 export type StateMode = SelectorStateMode
 
 export type Options = {
-  allowedPseudos: string[]
-  requireAtRoot: boolean
-  requireComment: boolean
-  requireTail: boolean
-  enforceWithCommentOnly: boolean
-  interactionCommentPattern: RegExp
+  pseudos: string[]
+  require: {
+    atRoot: boolean
+    comment: boolean
+    tail: boolean
+  }
+  commentOnly: boolean
+  comments: {
+    shared: RegExp
+    interaction: RegExp
+  }
   selectorPolicy: NormalizedSelectorPolicy
-  cacheSizes?: NormalizedCacheSizes
+  cache: NormalizedCacheSizes
 }
 
 export type SelectorAttrState = {
@@ -29,13 +35,7 @@ export type SelectorAttrState = {
   hasMixed: boolean
 }
 
-export type SelectorPolicySets = {
-  dataStateEnabled: boolean
-  dataVariantEnabled: boolean
-  stateKey: string
-  ariaKeys: Set<string>
-  variantKeys: Set<string>
-}
+export type SelectorPolicySets = SelectorPolicySetsBase
 
 export type SelectorAnalysis = SelectorAttrState & {
   hasAllowedPseudo: boolean

@@ -2,6 +2,7 @@ import { promises as fsp } from 'fs'
 import * as path from 'path'
 
 import {
+  type ExternalOptions,
   type HtmlLintIssue,
   lintHtmlStructure,
   type NamingOptions,
@@ -18,6 +19,9 @@ type ParsedArgs = {
   inputPath?: string
   json: boolean
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
 
 function parseArgs(argv: string[]): ParsedArgs {
   const mode: Mode = argv.includes('--selection') ? 'selection' : 'root'
@@ -45,8 +49,8 @@ async function readStdin(): Promise<string> {
 type LintConfig = {
   naming: NamingOptions
   selectorPolicy?: SelectorPolicy
-  allowExternalClasses?: string[]
-  allowExternalPrefixes?: string[]
+  external?: ExternalOptions
+  namingSource: string
 }
 
 async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
@@ -54,29 +58,47 @@ async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
   const config = await loadSpiracssConfig(configPath)
   if (config && typeof config === 'object') {
     const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-    const classStructure = stylelintCfg?.classStructure as Record<string, unknown> | undefined
-    const naming = classStructure?.naming
-    const allowExternalClasses = classStructure?.allowExternalClasses
-    const allowExternalPrefixes = classStructure?.allowExternalPrefixes
+    const base = stylelintCfg?.base as Record<string, unknown> | undefined
+    const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
     const selectorPolicy = config.selectorPolicy as Record<string, unknown> | undefined
-    const resolvedNaming =
-      naming && typeof naming === 'object' ? (naming as NamingOptions) : {}
-    const resolvedPolicy =
+    const resolvedSelectorPolicy =
       selectorPolicy && typeof selectorPolicy === 'object'
         ? (selectorPolicy as SelectorPolicy)
         : undefined
+    const baseNaming = base?.naming
+    const classNaming = classConfig?.naming
+    let resolvedNaming: NamingOptions = {}
+    let namingSource = 'stylelint.base.naming.customPatterns'
+    if (isRecord(baseNaming)) {
+      resolvedNaming = baseNaming as NamingOptions
+      namingSource = 'stylelint.base.naming.customPatterns'
+    } else if (isRecord(classNaming)) {
+      resolvedNaming = classNaming as NamingOptions
+      namingSource = 'stylelint.class.naming.customPatterns'
+    }
+    const baseExternal = base?.external
+    const classExternal = classConfig?.external
+    const external = {
+      ...(isRecord(baseExternal) ? baseExternal : {}),
+      ...(isRecord(classExternal) ? classExternal : {})
+    }
+    const classes = Array.isArray(external.classes)
+      ? external.classes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
+      : undefined
+    const prefixes = Array.isArray(external.prefixes)
+      ? external.prefixes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
+      : undefined
     return {
       naming: resolvedNaming,
-      selectorPolicy: resolvedPolicy,
-      allowExternalClasses: Array.isArray(allowExternalClasses)
-        ? allowExternalClasses.filter((item) => typeof item === 'string' && item.trim() !== '')
-        : undefined,
-      allowExternalPrefixes: Array.isArray(allowExternalPrefixes)
-        ? allowExternalPrefixes.filter((item) => typeof item === 'string' && item.trim() !== '')
-        : undefined
+      namingSource,
+      selectorPolicy: resolvedSelectorPolicy,
+      external: {
+        classes,
+        prefixes
+      }
     }
   }
-  return { naming: {}, selectorPolicy: undefined }
+  return { naming: {}, namingSource: 'stylelint.base.naming.customPatterns', selectorPolicy: undefined }
 }
 
 async function run(): Promise<void> {
@@ -91,11 +113,10 @@ async function run(): Promise<void> {
   }
 
   const rootDir = process.cwd()
-  const { naming, selectorPolicy, allowExternalClasses, allowExternalPrefixes } =
-    await loadConfigFromConfig(rootDir)
+  const { naming, namingSource, selectorPolicy, external } = await loadConfigFromConfig(rootDir)
   warnInvalidCustomPatterns(naming, (message) => {
     console.error(message)
-  })
+  }, namingSource)
 
   let html: string
   let filePath: string | undefined
@@ -108,10 +129,13 @@ async function run(): Promise<void> {
   }
 
   const isRootMode = args.mode === 'root'
-  const issues: HtmlLintIssue[] = lintHtmlStructure(html, isRootMode, naming, selectorPolicy, {
-    allowExternalClasses,
-    allowExternalPrefixes
-  })
+  const issues: HtmlLintIssue[] = lintHtmlStructure(
+    html,
+    isRootMode,
+    naming,
+    selectorPolicy,
+    external
+  )
 
   if (args.json) {
     console.log(

@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/zetsubo-dev/spiracss.git"
   },
-  "version": "0.2.2",
+  "version": "0.3.0",
   "license": "MIT",
   "publisher": "spiracss",
   "icon": "images/icon.png",
@@ -51,7 +51,7 @@
     "@types/vscode": "^1.99.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
-    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.7.0",
     "esbuild": "^0.25.1",

@@ -19,6 +19,30 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     "    layoutMixins: ['@include breakpoint-up(md)'],",
     "    rootFileCase: 'pascal'",
     '  },',
+    '  selectorPolicy: {',
+    "    variant: { mode: 'class' },",
+    "    state: { mode: 'class' }",
+    '  },',
+    '  htmlFormat: {',
+    "    classAttribute: 'className'",
+    '  }',
+    '}',
+    ''
+  ].join('\n')
+  const cjsDataConfigContent = [
+    'module.exports = {',
+    '  generator: {',
+    "    globalScssModule: '@styles/fixtures-global',",
+    "    pageEntryAlias: 'assets',",
+    "    pageEntrySubdir: 'css',",
+    "    childScssDir: 'scss-test',",
+    "    layoutMixins: ['@include breakpoint-up(md)'],",
+    "    rootFileCase: 'pascal'",
+    '  },',
+    '  selectorPolicy: {',
+    "    variant: { mode: 'data', dataKeys: ['data-variant'] },",
+    "    state: { mode: 'data', dataKey: 'data-state' }",
+    '  },',
     '  htmlFormat: {',
     "    classAttribute: 'className'",
     '  }',
@@ -35,6 +59,10 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     "    layoutMixins: ['@include breakpoint-up(md)'],",
     "    rootFileCase: 'camel'",
     '  },',
+    '  selectorPolicy: {',
+    "    variant: { mode: 'class' },",
+    "    state: { mode: 'class' }",
+    '  },',
     '  htmlFormat: {',
     "    classAttribute: 'className'",
     '  }',
@@ -44,6 +72,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
   const esmPackageJsonContent = JSON.stringify({ type: 'module' }, null, 2) + '\n'
   let originalConfig: string | null = null
   let originalPackageJson: string | null = null
+  let configWriteSeed = 0
 
   const removePath = (target: string): void => {
     if (!fs.existsSync(target)) return
@@ -52,6 +81,9 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
 
   const writeConfig = (content: string): void => {
     fs.writeFileSync(configPath, content, 'utf8')
+    const mtime = new Date(Date.now() + configWriteSeed)
+    configWriteSeed += 1
+    fs.utimesSync(configPath, mtime, mtime)
   }
 
   const writePackageJson = (content: string | null): void => {
@@ -69,6 +101,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     editor.selection = new vscode.Selection(fullRange.start, fullRange.end)
     return editor
   }
+
 
   suiteSetup(() => {
     if (fs.existsSync(configPath)) {
@@ -167,6 +200,44 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       // Cleanup
       removePath(rootFile)
       removePath(childDir)
+    }
+  })
+
+  test('Generate SCSS from data-mode fixture file', async function () {
+    this.timeout(10000)
+
+    const htmlFile = path.join(fixturesDir, 'html/data-box.html')
+    const docDir = path.dirname(htmlFile)
+    const childScssDir = 'scss-test'
+    const rootFile = path.join(docDir, 'DataBox.scss')
+    const childDir = path.join(docDir, childScssDir)
+    removePath(rootFile)
+    removePath(childDir)
+    writeConfig(cjsDataConfigContent)
+
+    try {
+      await openAndSelectAll(htmlFile)
+
+      const ext = vscode.extensions.getExtension('spiracss.spiracss-html-to-scss')
+      assert.ok(ext)
+      await ext.activate()
+
+      await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
+
+      assert.ok(fs.existsSync(rootFile), 'Root SCSS should be generated for data mode')
+      const rootScss = fs.readFileSync(rootFile, 'utf8')
+      assert.ok(
+        rootScss.includes('&[data-variant="primary"]'),
+        'data-variant selector should be present'
+      )
+      assert.ok(
+        rootScss.includes('&[data-state="loading"]'),
+        'data-state selector should be present'
+      )
+    } finally {
+      removePath(rootFile)
+      removePath(childDir)
+      writeConfig(cjsConfigContent)
     }
   })
 

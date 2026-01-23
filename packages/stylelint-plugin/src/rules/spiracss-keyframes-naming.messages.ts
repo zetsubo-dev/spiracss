@@ -1,37 +1,56 @@
-import stylelint from 'stylelint'
-
 import { ruleName } from './spiracss-keyframes-naming.constants'
+import {
+  createRuleMessages,
+  formatCode,
+  formatConfigList,
+  formatSelectorParseFailed,
+  type RuleMessageArgs
+} from '../utils/messages'
+import type { WordCase } from '../types'
+import { formatWordCase } from '../utils/formatting'
 
-const exampleActionName = (actionCase: string): string => {
-  switch (actionCase) {
-    case 'snake':
-      return 'fade_in'
-    case 'camel':
-      return 'fadeIn'
-    case 'pascal':
-      return 'FadeIn'
-    case 'kebab':
-    default:
-      return 'fade-in'
-  }
-}
+const exampleActionName = (actionCase: WordCase): string =>
+  formatWordCase('fade in', actionCase)
 
-export const messages = stylelint.utils.ruleMessages(ruleName, {
-  needRoot: () => 'Place @keyframes at the root level (not inside @media/@layer/etc).',
+export const messages = createRuleMessages(ruleName, {
+  needRoot: () =>
+    `Place ${formatCode(
+      '@keyframes'
+    )} at the root level (not inside ${formatCode(
+      '@media'
+    )}/${formatCode('@layer')}/etc).`,
   needTail: () =>
-    'Place @keyframes at the end of the file (only comments/blank lines may follow).',
-  invalidName: (name: string, block: string, actionCase: string, maxWords: number) =>
-    `Keyframes "${name}" must follow "${block}-{action}" or "${block}-{element}-{action}" (e.g., "${block}-${exampleActionName(
-      actionCase
-    )}" or "${block}-{element}-${exampleActionName(actionCase)}"; action: ${actionCase}, 1-${maxWords} words).`,
-  invalidSharedName: (name: string, prefix: string, actionCase: string, maxWords: number) =>
-    `Shared keyframes "${name}" must follow "${prefix}{action}" (e.g., "${prefix}${exampleActionName(
-      actionCase
-    )}"; action: ${actionCase}, 1-${maxWords} words).`,
-  sharedFileOnly: (name: string, prefix: string) =>
-    `Shared keyframes "${name}" (prefix "${prefix}") must be defined in a shared keyframes file (e.g., "keyframes.scss", or configure "sharedFiles").`,
+    `Place ${formatCode(
+      '@keyframes'
+    )} at the end of the file (only comments/blank lines may follow).`,
+  invalidName: (name: string, block: string, actionCase: WordCase, maxWords: number) =>
+    `Keyframes ${formatCode(name)} must follow ${formatCode(
+      `${block}-{action}`
+    )} or ${formatCode(
+      `${block}-{element}-{action}`
+    )} (e.g., ${formatCode(
+      `${block}-${exampleActionName(actionCase)}`
+    )} or ${formatCode(
+      `${block}-{element}-${exampleActionName(actionCase)}`
+    )}; action: ${formatCode(actionCase)}, 1-${maxWords} words).`,
+  invalidSharedName: (name: string, prefix: string, actionCase: WordCase, maxWords: number) =>
+    `Shared keyframes ${formatCode(name)} must follow ${formatCode(
+      `${prefix}{action}`
+    )} (e.g., ${formatCode(
+      `${prefix}${exampleActionName(actionCase)}`
+    )}; action: ${formatCode(actionCase)}, 1-${maxWords} words).`,
+  sharedFileOnly: (name: string, prefix: string, sharedFiles: Array<string | RegExp>) =>
+    `Shared keyframes ${formatCode(name)} (prefix ${formatCode(
+      prefix
+    )}) must be defined in a shared keyframes file ` +
+    `configured via ${formatCode('sharedFiles')} (current: ${formatConfigList(
+      sharedFiles
+    )}).`,
   missingBlock: () =>
-    'Cannot determine the root Block for @keyframes naming. Add a root Block selector or configure blockNameSource.',
-  selectorParseFailed: () =>
-    'Failed to parse one or more selectors, so keyframes naming checks may be incomplete.'
+    `Cannot determine the root Block for ${formatCode(
+      '@keyframes'
+    )} naming. Add a root Block selector or configure ${formatCode(
+      'blockSource'
+    )}.`,
+  selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])
 })

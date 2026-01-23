@@ -2,7 +2,7 @@ import assert from 'assert'
 import fs from 'fs'
 import scss from 'postcss-scss'
 import type { RuleContext } from 'stylelint'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import relComments from '../dist/esm/rules/spiracss-rel-comments.js'
 import { testRule } from './rule-test-utils.js'
@@ -14,12 +14,12 @@ describe('spiracss/rel-comments - basic checks', () => {
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        requireWhenMetaLoadCss: true,
+        requireScss: true,
+        requireMeta: true,
         validatePath: false, // File existence checks are disabled for tests.
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -83,9 +83,22 @@ describe('spiracss/rel-comments - basic checks', () => {
     @include meta.load-css('scss');
   }
 }`,
-        description: 'missing page entry comment (requireInScssDirectories violation)',
+        description: 'missing page entry comment (requireScss violation)',
         message:
-          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Example: "// @rel/../parent-block.scss" or "// @assets/...". (spiracss/rel-comments)'
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingParentRel (spiracss/rel-comments)'
+      },
+      {
+        code: `
+@use 'sass:meta';
+.home-section:has(:global(.foo)) {
+  > .child-block {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'missing page entry comment even with unverified :global selectors',
+        message:
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingParentRel (spiracss/rel-comments)'
       },
       {
         codeFilename: 'pages/home/scss/home.scss',
@@ -100,7 +113,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: '@rel on a root Block inside a root wrapper is treated as misplaced',
         message:
-          'Parent link comment must be at the top of the file (before the root Block). Move it above the root Block as the first line (e.g., @rel or @assets). (spiracss/rel-comments)'
+          'Parent link comment must be at the top of the file (before the root Block). Move it above the root Block as the first line (e.g., `// @rel/...`). Use a configured alias from `aliasRoots` (current: `none`). Docs: https://spiracss.jp/stylelint-rules/rel-comments/#misplacedParentRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -110,7 +123,7 @@ describe('spiracss/rel-comments - basic checks', () => {
 }`,
         description: 'parent link is required even with meta.load-css("scss/child")',
         message:
-          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Example: "// @rel/../parent-block.scss" or "// @assets/...". (spiracss/rel-comments)'
+          'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingParentRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -123,7 +136,7 @@ describe('spiracss/rel-comments - basic checks', () => {
   }
 }`,
         description: 'child Block name and @rel file name do not match',
-        message: 'Link comment must include "child-block.scss" for direct child ".child-block". Update the @rel path to match. (spiracss/rel-comments)'
+        message: 'Link comment must include `child-block.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       },
       {
         code: `
@@ -134,9 +147,9 @@ describe('spiracss/rel-comments - basic checks', () => {
     @include meta.load-css('scss');
   }
 }`,
-        description: 'missing child Block @rel comment (requireChildRelComments violation)',
+        description: 'missing child Block @rel comment (requireChild violation)',
         message:
-          'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       }
     ]
   })
@@ -149,12 +162,12 @@ describe('spiracss/rel-comments - root Block must be first rule', () => {
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        requireWhenMetaLoadCss: false,
+        requireScss: true,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -182,7 +195,7 @@ describe('spiracss/rel-comments - root Block must be first rule', () => {
 `,
         description: 'warn if root Block is not first',
         message:
-          'Root Block must be the first rule in its root scope (after @use/@forward/@import). Move it above other rules so the parent link comment can stay at the top. (spiracss/rel-comments)'
+          'Root Block must be the first rule in its root scope (after `@use`/`@forward`/`@import`). Move it above other rules so the parent link comment can stay at the top. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#rootBlockNotFirst (spiracss/rel-comments)'
       },
       {
         codeFilename: 'components/home/scss/home-section.scss',
@@ -195,7 +208,7 @@ describe('spiracss/rel-comments - root Block must be first rule', () => {
 `,
         description: 'warn if root Block is not first even inside wrapper',
         message:
-          'Root Block must be the first rule in its root scope (after @use/@forward/@import). Move it above other rules so the parent link comment can stay at the top. (spiracss/rel-comments)'
+          'Root Block must be the first rule in its root scope (after `@use`/`@forward`/`@import`). Move it above other rules so the parent link comment can stay at the top. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#rootBlockNotFirst (spiracss/rel-comments)'
       }
     ]
   })
@@ -208,12 +221,12 @@ describe('spiracss/rel-comments - selector parse failure', () => {
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: false
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -228,7 +241,7 @@ describe('spiracss/rel-comments - selector parse failure', () => {
         warnings: [
           {
             message:
-              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. (spiracss/rel-comments)'
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block > :`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#selectorParseFailed (spiracss/rel-comments)'
           }
         ]
       }
@@ -238,7 +251,7 @@ describe('spiracss/rel-comments - selector parse failure', () => {
 
 describe('spiracss/rel-comments - naming.customPatterns validation', () => {
   it('reports invalid customPatterns', async () => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.block {}',
       customSyntax: 'postcss-scss',
       config: {
@@ -247,12 +260,12 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
           'spiracss/rel-comments': [
             true,
             {
-              requireInScssDirectories: false,
-              requireWhenMetaLoadCss: false,
+              requireScss: false,
+              requireMeta: false,
               validatePath: false,
-              skipFilesWithoutRules: true,
-              requireChildRelComments: false,
-              requireParentRelComment: false,
+              skipNoRules: true,
+              requireChild: false,
+              requireParent: false,
               naming: {
                 customPatterns: {
                   block: 'invalid' as unknown as RegExp,
@@ -299,12 +312,12 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
     const run = relComments.rule(
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: false,
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: false,
         naming: {
           customPatterns: {
             block: 'invalid' as unknown as RegExp
@@ -319,15 +332,15 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
   })
 })
 
-describe('spiracss/rel-comments - requireWhenMetaLoadCss: false', () => {
+describe('spiracss/rel-comments - requireMeta: false', () => {
   testRule({
     plugins: [relComments],
     ruleName: relComments.ruleName,
     config: [
       true,
       {
-        requireWhenMetaLoadCss: false,
-        skipFilesWithoutRules: true
+        requireMeta: false,
+        skipNoRules: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -341,7 +354,7 @@ describe('spiracss/rel-comments - requireWhenMetaLoadCss: false', () => {
     @include meta.load-css('scss');
   }
 }`,
-        description: 'when requireWhenMetaLoadCss: false, comments are optional'
+        description: 'when requireMeta: false, comments are optional'
       }
     ]
   })
@@ -354,12 +367,12 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: true,
+        requireScss: false,
+        requireMeta: true,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: false,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: false,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -375,7 +388,7 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
         warnings: [
           {
             message:
-              'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Example: "// @rel/../parent-block.scss" or "// @assets/...". (spiracss/rel-comments)'
+              'Missing top-of-file link comment to the parent. Add it as the first line before the root Block. Use `// @rel/...` or a configured alias from `aliasRoots` (current: `none`). Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingParentRel (spiracss/rel-comments)'
           }
         ]
       }
@@ -383,15 +396,15 @@ describe('spiracss/rel-comments - missing parent link (no duplicate reports)', (
   })
 })
 
-describe('spiracss/rel-comments - skipFilesWithoutRules: true', () => {
+describe('spiracss/rel-comments - skipNoRules: true', () => {
   testRule({
     plugins: [relComments],
     ruleName: relComments.ruleName,
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        skipFilesWithoutRules: true
+        requireScss: true,
+        skipNoRules: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -421,12 +434,12 @@ describe('spiracss/rel-comments - multiple meta.load-css', () => {
     config: [
       true,
       {
-        requireInScssDirectories: true,
-        requireWhenMetaLoadCss: true,
+        requireScss: true,
+        requireMeta: true,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: true
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
       }
     ],
     customSyntax: 'postcss-scss',
@@ -459,12 +472,12 @@ describe('spiracss/rel-comments - validatePath: true', () => {
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: true,
+        requireScss: false,
+        requireMeta: true,
         validatePath: true,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: false,
         aliasRoots: {
           components: ['__tests__/fixtures/components'],
           'assets-v2': ['__tests__/fixtures/components'],
@@ -532,7 +545,7 @@ describe('spiracss/rel-comments - validatePath: true', () => {
   }
 }`,
         description: '@rel path to a missing file (reject)',
-        message: 'Link target not found: non-existent-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       },
       {
         code: `
@@ -544,7 +557,7 @@ describe('spiracss/rel-comments - validatePath: true', () => {
   }
 }`,
         description: '@components alias to a missing file (reject)',
-        message: 'Link target not found: @components/non-existent-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       }
     ]
   })
@@ -564,7 +577,7 @@ describe('spiracss/rel-comments - validatePath error handling', () => {
     }) as typeof fs.existsSync
 
     try {
-      const result = await stylelint.lint({
+      const result = await lint({
         code: `
 .block {
   // @rel/forbidden.scss
@@ -578,12 +591,12 @@ describe('spiracss/rel-comments - validatePath error handling', () => {
             'spiracss/rel-comments': [
               true,
               {
-                requireInScssDirectories: false,
-                requireWhenMetaLoadCss: false,
+                requireScss: false,
+                requireMeta: false,
                 validatePath: true,
-                skipFilesWithoutRules: true,
-                requireChildRelComments: false,
-                requireParentRelComment: false
+                skipNoRules: true,
+                requireChild: false,
+                requireParent: false
               }
             ]
           }
@@ -608,12 +621,12 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: false
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -684,7 +697,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'in normal sections, link comments are required directly under child Blocks',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -695,7 +708,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'non-link comments are an error',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -707,7 +720,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'link comments are required directly under child Blocks even inside @at-root &',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -718,7 +731,7 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'child Block comments are required inside the shared section',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       }
     ]
   })
@@ -732,14 +745,14 @@ describe('spiracss/rel-comments - child block comments opt-out in shared/interac
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: false,
+        requireScss: false,
+        requireMeta: false,
         validatePath: false,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireChildRelCommentsInShared: false,
-        requireChildRelCommentsInInteraction: false,
-        requireParentRelComment: false
+        skipNoRules: true,
+        requireChild: true,
+        requireChildShared: false,
+        requireChildInteraction: false,
+        requireParent: false
       }
     ],
     customSyntax: 'postcss-scss',
@@ -778,7 +791,7 @@ describe('spiracss/rel-comments - child block comments opt-out in shared/interac
   }
 }`,
         description: 'normal sections require child Block comments',
-        message: 'Missing child @rel comment. Add "// @rel/<child>.scss" as the first line inside each direct child rule ("> .child"). Example: "> .child { // @rel/child.scss }". (spiracss/rel-comments)'
+        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       }
     ]
   })
@@ -791,12 +804,12 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
     config: [
       true,
       {
-        requireInScssDirectories: false,
-        requireWhenMetaLoadCss: true,
+        requireScss: false,
+        requireMeta: true,
         validatePath: true,
-        skipFilesWithoutRules: true,
-        requireChildRelComments: true,
-        requireParentRelComment: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: false,
         aliasRoots: {
           components: ['__tests__/fixtures/components', '__tests__/fixtures/legacy'],
           shared: ['__tests__/fixtures/scss']
@@ -841,7 +854,7 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
   }
 }`,
         description: 'error when no file is found in any aliasRoots candidate',
-        message: 'Link target not found: @components/non-existent-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       },
       {
         code: `
@@ -853,7 +866,7 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
   }
 }`,
         description: 'undefined alias key is an error',
-        message: 'Link target not found: @unknown/unknown-block.scss. Fix the path or aliasRoots. (spiracss/rel-comments)'
+        message: 'Link target not found: `@unknown/unknown-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       }
     ]
   })

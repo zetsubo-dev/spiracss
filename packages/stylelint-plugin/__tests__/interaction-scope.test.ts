@@ -8,11 +8,11 @@ describe('spiracss/interaction-scope - basic checks', () => {
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover', ':focus', ':active'],
+        pseudos: [':hover', ':focus', ':active'],
         requireAtRoot: true,
         requireComment: true,
         requireTail: true,
-        interactionCommentPattern: /--interaction/i
+        comments: { interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -119,10 +119,10 @@ describe('spiracss/interaction-scope - basic checks', () => {
         description: 'missing @at-root (requireAtRoot: true violation)',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           },
           {
-            message: 'Add "// --interaction" immediately before the @at-root block. Example: // --interaction @at-root & { ... } (spiracss/interaction-scope)'
+            message: 'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
           }
         ]
       },
@@ -137,7 +137,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
         description: 'Reject @at-root without "&"',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           }
         ]
       },
@@ -156,7 +156,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
         description: 'omitting & inside @at-root & is an error',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           }
         ]
       },
@@ -173,7 +173,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
         description: 'Selectors without a leading "&" should error',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           }
         ]
       },
@@ -190,7 +190,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
         description: 'Leading combinator before "&" should error',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           }
         ]
       },
@@ -207,7 +207,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
         description: 'interaction block is inside a child rule',
         warnings: [
           {
-            message: 'The interaction block must be directly under the root Block. Move the @at-root block out of child rules. (spiracss/interaction-scope)'
+            message: 'The interaction block must be directly under the root Block. Move the `@at-root` block out of child rules. (spiracss/interaction-scope)'
           }
         ]
       },
@@ -220,7 +220,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
   }
 }`,
         description: 'missing comment (requireComment: true violation)',
-        message: 'Add "// --interaction" immediately before the @at-root block. Example: // --interaction @at-root & { ... } (spiracss/interaction-scope)'
+        message: 'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
       },
       {
         code: `
@@ -232,7 +232,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
   > .title {}
 }`,
         description: 'not placed at the end (requireTail: true violation)',
-        message: 'Place the @at-root interaction block at the end of the root Block (after all other rules). (spiracss/interaction-scope)'
+        message: 'Place the `@at-root` interaction block at the end of the root Block (after all other rules). (spiracss/interaction-scope)'
       },
       {
         code: `
@@ -246,7 +246,7 @@ describe('spiracss/interaction-scope - basic checks', () => {
   > .another {}
 }`,
         description: 'detect tail-placement violations even if the interaction block starts with declarations',
-        message: 'Place the @at-root interaction block at the end of the root Block (after all other rules). (spiracss/interaction-scope)'
+        message: 'Place the `@at-root` interaction block at the end of the root Block (after all other rules). (spiracss/interaction-scope)'
       }
     ]
   })
@@ -259,7 +259,7 @@ describe('spiracss/interaction-scope - selector parse failure', () => {
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover'],
+        pseudos: [':hover'],
         requireAtRoot: false,
         requireComment: false,
         requireTail: false
@@ -277,7 +277,7 @@ describe('spiracss/interaction-scope - selector parse failure', () => {
         warnings: [
           {
             message:
-              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. (spiracss/interaction-scope)'
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `.block > :`. (spiracss/interaction-scope)'
           }
         ]
       }
@@ -292,7 +292,7 @@ describe('spiracss/interaction-scope - requireAtRoot: false', () => {
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover'],
+        pseudos: [':hover'],
         requireAtRoot: false,
         requireComment: false,
         requireTail: false
@@ -304,6 +304,47 @@ describe('spiracss/interaction-scope - requireAtRoot: false', () => {
       {
         code: '.block { &:hover {} }',
         description: 'when requireAtRoot: false, @at-root is optional'
+      }
+    ]
+  })
+})
+
+describe('spiracss/interaction-scope - requireComment without @at-root', () => {
+  testRule({
+    plugins: [interactionScope],
+    ruleName: interactionScope.ruleName,
+    config: [
+      true,
+      withClassMode({
+        pseudos: [':hover'],
+        requireAtRoot: false,
+        requireComment: true,
+        requireTail: false,
+        comments: { interaction: /--interaction/i }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+.block {
+  // --interaction
+  &:hover {}
+}`,
+        description: 'comment is placed before the interaction rule'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+.block {
+  &:hover {}
+}`,
+        description: 'missing comment when requireComment: true',
+        message:
+          'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
       }
     ]
   })
@@ -356,10 +397,10 @@ describe('spiracss/interaction-scope - data-state / data-variant handling', () =
         description: 'data-state outside interaction is an error',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           },
           {
-            message: 'Add "// --interaction" immediately before the @at-root block. Example: // --interaction @at-root & { ... } (spiracss/interaction-scope)'
+            message: 'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
           }
         ]
       },
@@ -371,13 +412,13 @@ describe('spiracss/interaction-scope - data-state / data-variant handling', () =
         description: 'data-state and data-variant together are an error',
         warnings: [
           {
-            message: 'Do not mix state selectors ("data-state", "aria-expanded", "aria-selected", "aria-disabled") with variant selectors ("data-variant") in the same selector. Split into separate selectors. (spiracss/interaction-scope)'
+            message: 'Do not mix state selectors (`data-state`, `aria-expanded`, `aria-selected`, `aria-disabled`) with variant selectors (`data-variant`) in the same selector. Split into separate selectors. (spiracss/interaction-scope)'
           },
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           },
           {
-            message: 'Add "// --interaction" immediately before the @at-root block. Example: // --interaction @at-root & { ... } (spiracss/interaction-scope)'
+            message: 'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
           }
         ]
       }
@@ -392,11 +433,11 @@ describe('spiracss/interaction-scope - combined warnings', () => {
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover', ':focus'],
+        pseudos: [':hover', ':focus'],
         requireAtRoot: true,
         requireComment: true,
         requireTail: true,
-        interactionCommentPattern: /--interaction/i
+        comments: { interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -412,16 +453,16 @@ describe('spiracss/interaction-scope - combined warnings', () => {
         description: 'multiple pseudos with no @at-root and no comment',
         warnings: [
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           },
           {
-            message: 'Add "// --interaction" immediately before the @at-root block. Example: // --interaction @at-root & { ... } (spiracss/interaction-scope)'
+            message: 'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
           },
           {
-            message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+            message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
           },
           {
-            message: 'Add "// --interaction" immediately before the @at-root block. Example: // --interaction @at-root & { ... } (spiracss/interaction-scope)'
+            message: 'Add the interaction comment matching `comments.interaction` (current: `/--interaction/i`) immediately before the interaction rule (or the `@at-root` block when used). (spiracss/interaction-scope)'
           }
         ]
       }
@@ -429,14 +470,14 @@ describe('spiracss/interaction-scope - combined warnings', () => {
   })
 })
 
-describe('interaction-scope - ignored pseudos not in allowedPseudos', () => {
+describe('interaction-scope - ignored pseudos not in pseudos', () => {
   testRule({
     plugins: [interactionScope],
     ruleName: interactionScope.ruleName,
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover'],
+        pseudos: [':hover'],
         requireAtRoot: true,
         requireComment: false,
         requireTail: false
@@ -452,25 +493,25 @@ describe('interaction-scope - ignored pseudos not in allowedPseudos', () => {
     &:visited {}
   }
 }`,
-        description: ':visited not in allowedPseudos is ignored'
+        description: ':visited not in pseudos is ignored'
       }
     ]
   })
 })
 
-describe('interaction-scope - enforceWithCommentOnly', () => {
+describe('interaction-scope - commentOnly', () => {
   testRule({
     plugins: [interactionScope],
     ruleName: interactionScope.ruleName,
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover'],
+        pseudos: [':hover'],
         requireAtRoot: true,
         requireComment: true,
         requireTail: false,
-        interactionCommentPattern: /--interaction/i,
-        enforceWithCommentOnly: true
+        comments: { interaction: /--interaction/i },
+        commentOnly: true
       })
     ],
     customSyntax: 'postcss-scss',
@@ -478,7 +519,7 @@ describe('interaction-scope - enforceWithCommentOnly', () => {
     accept: [
       {
         code: '.block { &:hover {} }',
-        description: 'when enforceWithCommentOnly: true, skip checks without a comment'
+        description: 'when commentOnly: true, skip checks without a comment'
       }
     ],
 
@@ -490,7 +531,7 @@ describe('interaction-scope - enforceWithCommentOnly', () => {
   &:hover {}
 }`,
         description: 'when a comment exists, check requireAtRoot and others',
-        message: 'Interaction selectors (pseudos/state) must be inside "@at-root & { ... }" and each selector must start with "&". Example: // --interaction @at-root & { &:hover { ... } } (spiracss/interaction-scope)'
+        message: 'When `requireAtRoot` is enabled, interaction selectors (pseudos/state) must be inside `@at-root & { ... }` and each selector must start with `&`. (spiracss/interaction-scope)'
       }
     ]
   })
@@ -503,11 +544,11 @@ describe('interaction-scope - behavior inside @media/@supports', () => {
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover'],
+        pseudos: [':hover'],
         requireAtRoot: true,
         requireComment: true,
         requireTail: true,
-        interactionCommentPattern: /--interaction/i
+        comments: { interaction: /--interaction/i }
       })
     ],
     customSyntax: 'postcss-scss',
@@ -569,7 +610,7 @@ describe('interaction-scope - behavior inside @media/@supports', () => {
   > .another {}
 }`,
         description: 'not tail placement even inside @media is an error',
-        message: 'Place the @at-root interaction block at the end of the root Block (after all other rules). (spiracss/interaction-scope)'
+        message: 'Place the `@at-root` interaction block at the end of the root Block (after all other rules). (spiracss/interaction-scope)'
       }
     ]
   })
@@ -582,11 +623,11 @@ describe('interaction-scope - comment pattern flags', () => {
     config: [
       true,
       withClassMode({
-        allowedPseudos: [':hover'],
+        pseudos: [':hover'],
         requireAtRoot: true,
         requireComment: true,
         requireTail: true,
-        interactionCommentPattern: /--interaction/g
+        comments: { interaction: /--interaction/g }
       })
     ],
     customSyntax: 'postcss-scss',

@@ -4,14 +4,15 @@ import type { Comment, Node, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { createLruCache, DEFAULT_CACHE_SIZES } from '../utils/cache'
+import { createLruCache } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { normalizeCustomPattern } from '../utils/naming'
+import { selectorParseFailedArgs } from '../utils/messages'
 import {
-  CACHE_SIZES_SCHEMA,
-  INTERACTION_COMMENT_PATTERN_SCHEMA,
-  NAMING_SCHEMA,
-  SHARED_COMMENT_PATTERN_SCHEMA
+  CACHE_SCHEMA,
+  COMMENTS_SCHEMA,
+  EXTERNAL_SCHEMA,
+  NAMING_SCHEMA
 } from '../utils/option-schema'
 import {
   getCommentText,
@@ -27,21 +28,21 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import {
-  isAliasRoots,
-  isBoolean,
-  isPlainObject,
-  isString,
-  isStringArray
-} from '../utils/validate'
+import { getRuleDocsUrl } from '../utils/rule-docs'
+import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import {
   extractLinkTargets,
   normalizeRelPath,
+  resolveAliasCandidates,
   resolvePathCandidates
 } from './spiracss-rel-comments.alias'
 import { ruleName } from './spiracss-rel-comments.constants'
 import { messages } from './spiracss-rel-comments.messages'
 import { normalizeOptions } from './spiracss-rel-comments.options'
+import {
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 import {
   findFirstBodyNode,
   findTopRelComment,
@@ -66,29 +67,29 @@ import type { AliasRoots, RelComment } from './spiracss-rel-comments.types'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracssrel-comments',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Validate @rel and alias link comments in SpiraCSS files.',
   category: 'stylistic'
 }
 
+const ALIAS_KEY_PATTERN = /^[a-z][a-z0-9-]*$/
+
 const optionSchema = {
-  requireInScssDirectories: [isBoolean],
-  requireWhenMetaLoadCss: [isBoolean],
+  requireScss: [isBoolean],
+  requireMeta: [isBoolean],
+  requireParent: [isBoolean],
+  requireChild: [isBoolean],
+  requireChildShared: [isBoolean],
+  requireChildInteraction: [isBoolean],
   validatePath: [isBoolean],
-  skipFilesWithoutRules: [isBoolean],
-  requireChildRelComments: [isBoolean],
-  requireChildRelCommentsInShared: [isBoolean],
-  requireChildRelCommentsInInteraction: [isBoolean],
-  requireParentRelComment: [isBoolean],
-  childScssDir: [isString],
-  aliasRoots: [isAliasRoots],
-  ...SHARED_COMMENT_PATTERN_SCHEMA,
-  ...INTERACTION_COMMENT_PATTERN_SCHEMA,
+  skipNoRules: [isBoolean],
+  childDir: [isString],
+  aliasRoots: [isPlainObject],
+  ...COMMENTS_SCHEMA,
   ...NAMING_SCHEMA,
-  ...CACHE_SIZES_SCHEMA,
-  allowExternalClasses: [isString],
-  allowExternalPrefixes: [isString]
+  ...EXTERNAL_SCHEMA,
+  ...CACHE_SCHEMA
 }
 
 const rule = createRule(
@@ -143,11 +144,11 @@ const rule = createRule(
       }
       cache = {
         options,
-        aliasRoots: options.aliasRoots || {},
-        childScssDir: options.childScssDir || 'scss',
+        aliasRoots: options.paths.aliases || {},
+        childScssDir: options.paths.childDir || 'scss',
         commentPatterns: {
-          sharedCommentPattern: options.sharedCommentPattern,
-          interactionCommentPattern: options.interactionCommentPattern
+          sharedCommentPattern: options.comments.shared,
+          interactionCommentPattern: options.comments.interaction
         },
         hasInvalidOptions
       }
@@ -186,7 +187,7 @@ const rule = createRule(
 
       const hasInvalid = validateOptionsArrayFields(
         rawOptions,
-        ['allowExternalClasses', 'allowExternalPrefixes'],
+        ['external.classes', 'external.prefixes'],
         isStringArray,
         reportInvalid,
         (optionName) => `[spiracss] ${optionName} must be an array of non-empty strings.`
@@ -196,19 +197,38 @@ const rule = createRule(
       const { options, aliasRoots, childScssDir, commentPatterns, hasInvalidOptions } =
         getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
-
-      const cacheSizes = options.cacheSizes ?? DEFAULT_CACHE_SIZES
+      const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
       const pathExistsCache = createLruCache<string, boolean>(cacheSizes.path)
       const targetExistsCache = createLruCache<string, boolean>(cacheSizes.path)
+      const checkPathExists = (candidate: string): boolean => {
+        const cached = pathExistsCache.get(candidate)
+        if (cached !== undefined) return cached
+        const exists = fs.existsSync(candidate)
+        pathExistsCache.set(candidate, exists)
+        return exists
+      }
       const filePath: string = (result?.opts?.from as string) || ''
       const inScssDir = filePath.split(path.sep).includes(childScssDir)
       const containsRules = hasRuleNodes(root)
-      const needsRulesCheck = !options.skipFilesWithoutRules || containsRules
+      const needsRulesCheck = !options.skip.noRules || containsRules
       const firstRule = getFirstRuleNode(root)
       const projectRoot =
         (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
+      const aliasKeys = Object.keys(aliasRoots).filter((key) => {
+        if (!ALIAS_KEY_PATTERN.test(key) || key === 'rel') return false
+        const bases = Array.isArray(aliasRoots[key]) ? aliasRoots[key] : []
+        if (bases.length === 0) return false
+        const hasExistingBase = bases.some((base) => {
+          const resolvedBase = path.isAbsolute(base)
+            ? base
+            : path.resolve(projectRoot, base)
+          return checkPathExists(resolvedBase)
+        })
+        if (!hasExistingBase) return false
+        return resolveAliasCandidates(`@${key}`, projectRoot, aliasRoots).length > 0
+      })
       const hasMetaLoad = hasMetaLoadCss(root, childScssDir)
       const sharedRules = markSharedRules(root, commentPatterns)
       const interactionRules = markInteractionRules(root, commentPatterns)
@@ -222,9 +242,22 @@ const rule = createRule(
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
         if (typeof rule.selector !== 'string') return
-        if (rule.selector.includes(':global')) return
+        const selectorTexts = splitSelectors(rule.selector, selectorCache)
+        const localSelectors = selectorTexts
+          .map((selectorText) =>
+            stripGlobalSelectorForRoot(
+              selectorText,
+              selectorCache,
+              cacheSizes.selector,
+              { preserveCombinator: true }
+            )
+          )
+          .filter((selector): selector is string => Boolean(selector))
+        if (localSelectors.length === 0) return
 
-        const selectors = selectorCache.parse(rule.selector)
+        const selectors = localSelectors.flatMap((selector) =>
+          selectorCache.parse(selector)
+        )
         const rootBlocks = collectRootBlockNames(selectors, options)
         if (rootBlocks.length === 0) return
 
@@ -232,8 +265,8 @@ const rule = createRule(
         if (!firstRootBlockRule) firstRootBlockRule = rule
       })
 
-      const requiresMetaRel = options.requireWhenMetaLoadCss && hasMetaLoad
-      const requiresScssRel = options.requireInScssDirectories && inScssDir
+      const requiresMetaRel = options.require.meta && hasMetaLoad
+      const requiresScssRel = options.require.scss && inScssDir
 
       const relComments: RelComment[] = []
 
@@ -257,7 +290,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: comment,
-                message: messages.misplacedParentRel()
+                message: messages.misplacedParentRel(aliasKeys)
               })
               hasMisplacedParentRel = true
             }
@@ -268,7 +301,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: comment,
-                message: messages.misplacedParentRel()
+                message: messages.misplacedParentRel(aliasKeys)
               })
               hasMisplacedParentRel = true
               return
@@ -281,7 +314,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: comment,
-                message: messages.misplacedParentRel()
+                message: messages.misplacedParentRel(aliasKeys)
               })
             }
           }
@@ -290,7 +323,7 @@ const rule = createRule(
 
       const requiresParentRel =
         needsRulesCheck &&
-        options.requireParentRelComment &&
+        options.require.parent &&
         (requiresMetaRel || requiresScssRel)
 
       if (requiresParentRel) {
@@ -314,18 +347,18 @@ const rule = createRule(
             ruleName,
             result,
             node: targetNode,
-            message: messages.missingParentRel()
+            message: messages.missingParentRel(aliasKeys)
           })
         }
       }
 
-      if (options.requireChildRelComments && needsRulesCheck) {
+      if (options.require.child.enabled && needsRulesCheck) {
         allRules.forEach((rule: Rule) => {
           if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
           const isShared = sharedRules.has(rule)
           const isInteraction = interactionRules.has(rule)
-          if (isShared && !options.requireChildRelCommentsInShared) return
-          if (isInteraction && !options.requireChildRelCommentsInInteraction) return
+          if (isShared && !options.require.child.shared) return
+          if (isInteraction && !options.require.child.interaction) return
           const childBlocks = collectDirectChildBlocks(
             rule.selector || '',
             options,
@@ -339,7 +372,7 @@ const rule = createRule(
               ruleName,
               result,
               node: rule,
-              message: messages.missingChildRel()
+              message: messages.missingChildRel(aliasKeys)
             })
             return
           }
@@ -352,7 +385,7 @@ const rule = createRule(
               ruleName,
               result,
               node: rule,
-              message: messages.missingChildRel()
+              message: messages.missingChildRel(aliasKeys)
             })
             return
           }
@@ -376,7 +409,7 @@ const rule = createRule(
         })
       }
 
-      if (options.validatePath) {
+      if (options.validate.path) {
         const baseDir = filePath ? path.dirname(filePath) : process.cwd()
         const pathExists = (candidate: string): boolean => {
           if (pathExistsCache.has(candidate)) {
@@ -435,7 +468,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

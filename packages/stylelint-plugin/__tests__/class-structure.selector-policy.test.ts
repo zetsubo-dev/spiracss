@@ -1,5 +1,5 @@
 import assert from 'assert'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { invalidNameMessage, testRule, withClassMode, withDataMode } from './rule-test-utils.js'
@@ -11,8 +11,8 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -56,7 +56,12 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
         description: 'compound selectors inside :not() are out of scope'
       },
       {
-        code: '.block [data-variant="primary"] { color: red; }',
+        code: `
+.parent-block {
+  [data-variant="primary"] {
+    color: red;
+  }
+}`,
         description: 'reserved keys on descendants are out of scope'
       }
     ],
@@ -71,55 +76,55 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
       {
         code: '.block[data-variant="primary"] { > .title {} }',
         description: 'class mode disallows data-variant',
-        message: 'Attribute "data-variant" is disabled because selectorPolicy.variant.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block[aria-expanded="true"] { > .title {} }',
         description: 'class mode disallows state aria attributes',
-        message: 'Attribute "aria-expanded" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block { > .element[data-state="open"] {} }',
         description: 'class mode disallows data-state',
-        message: 'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block { &[data-state="open"] {} }',
         description: 'class mode also disallows data-state on &',
-        message: 'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block { &:not([data-state="open"]) {} }',
         description: 'class mode validates reserved keys inside :not()',
-        message: 'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block:is([data-variant="primary"]) { color: red; }',
         description: 'class mode validates reserved keys inside :is()',
-        message: 'Attribute "data-variant" is disabled because selectorPolicy.variant.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block:where([aria-expanded="true"]) { color: red; }',
         description: 'class mode validates reserved keys inside :where()',
-        message: 'Attribute "aria-expanded" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: ':not(.block) [data-variant="primary"] { color: red; }',
         description: 'error if root Block is missing even when a valid Block exists inside :not()',
         message:
-          'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+          'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
       },
       {
         code: '.foo:is(.block)[data-state="open"] { color: red; }',
         description: 'validate reserved keys even for SpiraCSS classes inside :is()',
-        message: 'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.foo:not(.block)[data-state="open"] { color: red; }',
@@ -127,18 +132,18 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
         warnings: [
           {
             message:
-              'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+              'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
       {
         code: '.foo:where(.block)[data-state="open"] { color: red; }',
         description: 'validate reserved keys even for SpiraCSS classes inside :where()',
-        message: 'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       }
     ]
   })
@@ -153,8 +158,8 @@ describe('spiracss/class-structure - attribute allowance in data mode', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -183,6 +188,42 @@ describe('spiracss/class-structure - attribute allowance in data mode', () => {
 
 
 
+
+
+describe('spiracss/class-structure - modifiers in data mode', () => {
+  testRule({
+    plugins: [classStructure],
+    ruleName: classStructure.ruleName,
+    config: [
+      true,
+      withDataMode({
+        elementDepth: 4,
+        childCombinator: false,
+        naming: { blockCase: 'kebab' },
+        selectorPolicy: {
+          variant: { dataKeys: ['data-theme', 'data-size'] }
+        }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    reject: [
+      {
+        code: `
+.block {
+  &.-primary {
+    > .title {}
+  }
+}
+        `,
+        description: 'modifier classes are disabled in data mode',
+        message:
+          'Modifier classes are disabled because `selectorPolicy.variant.mode` and `selectorPolicy.state.mode` are both `data`. Use variant attributes (current: `data-theme`, `data-size`) or state attributes (current: `data-state`, `aria-expanded`, `aria-selected`, `aria-disabled`) instead, or enable class mode in `selectorPolicy`. (spiracss/class-structure)'
+      }
+    ]
+  })
+})
+
 describe('spiracss/class-structure - data value naming', () => {
   testRule({
     plugins: [classStructure],
@@ -190,8 +231,8 @@ describe('spiracss/class-structure - data value naming', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -213,13 +254,13 @@ describe('spiracss/class-structure - data value naming', () => {
         code: '.block[data-variant="primary-dark-large"] { > .title {} }',
         description: '3+ words are invalid',
         message:
-          'Attribute "data-variant" value "primary-dark-large" does not match selectorPolicy valueNaming. Rename it to match the configured case/word rules. (spiracss/class-structure)'
+          'Attribute `data-variant` value `primary-dark-large` does not match `selectorPolicy` valueNaming (case: `kebab`, maxWords: `2`). Rename it to match the configured rules. (spiracss/class-structure)'
       },
       {
         code: '.block[data-state="open-modal-loading"] { > .title {} }',
         description: 'state with 3+ words is invalid',
         message:
-          'Attribute "data-state" value "open-modal-loading" does not match selectorPolicy valueNaming. Rename it to match the configured case/word rules. (spiracss/class-structure)'
+          'Attribute `data-state` value `open-modal-loading` does not match `selectorPolicy` valueNaming (case: `kebab`, maxWords: `2`). Rename it to match the configured rules. (spiracss/class-structure)'
       }
     ]
   })
@@ -230,8 +271,8 @@ describe('spiracss/class-structure - data value naming', () => {
     config: [
       true,
       withDataMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           valueNaming: { case: 'snake', maxWords: 2 },
@@ -263,13 +304,13 @@ describe('spiracss/class-structure - data value naming', () => {
         code: '.block[data-variant="primary-dark"] { > .title {} }',
         description: 'variant disallows kebab',
         message:
-          'Attribute "data-variant" value "primary-dark" does not match selectorPolicy valueNaming. Rename it to match the configured case/word rules. (spiracss/class-structure)'
+          'Attribute `data-variant` value `primary-dark` does not match `selectorPolicy` valueNaming (case: `snake`, maxWords: `2`). Rename it to match the configured rules. (spiracss/class-structure)'
       },
       {
         code: '.block[data-state="open_state"] { > .title {} }',
         description: 'state disallows 2 words',
         message:
-          'Attribute "data-state" value "open_state" does not match selectorPolicy valueNaming. Rename it to match the configured case/word rules. (spiracss/class-structure)'
+          'Attribute `data-state` value `open_state` does not match `selectorPolicy` valueNaming (case: `snake`, maxWords: `1`). Rename it to match the configured rules. (spiracss/class-structure)'
       }
     ]
   })
@@ -284,8 +325,8 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
     config: [
       true,
       {
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           variant: { mode: 'data', dataKeys: ['data-variant'] },
@@ -310,13 +351,13 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
       {
         code: '.block[data-state="open"] { > .title {} }',
         description: 'state=class disallows data-state',
-        message: 'Attribute "data-state" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block[aria-expanded="true"] { > .title {} }',
         description: 'state=class disallows aria',
         message:
-          'Attribute "aria-expanded" is disabled because selectorPolicy.state.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+          'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       }
     ]
   })
@@ -327,8 +368,8 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
     config: [
       true,
       {
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' },
         selectorPolicy: {
           variant: { mode: 'class' },
@@ -361,7 +402,7 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
       {
         code: '.block[data-variant="primary"] { > .title {} }',
         description: 'variant=class disallows data-variant',
-        message: 'Attribute "data-variant" is disabled because selectorPolicy.variant.mode is "class". Use modifier classes instead (e.g., "&.-primary"). (spiracss/class-structure)'
+        message: 'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       }
     ]
   })
@@ -374,7 +415,7 @@ describe('spiracss/class-structure - selectorPolicy validation', () => {
     selectorPolicy: Record<string, unknown>,
     description: string
   ): Promise<void> => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.hero-banner { }',
       customSyntax: 'postcss-scss',
       config: {

@@ -8,8 +8,8 @@ describe('spiracss/class-structure - basic Block/Element checks', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        childCombinator: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -24,24 +24,30 @@ describe('spiracss/class-structure - basic Block/Element checks', () => {
 
     reject: [
       {
+        code: '.hero-banner > .title {}',
+        description: 'top-level child selector must be nested under the Block',
+        message:
+          'Do not write child selectors at the top level. Selector: `.hero-banner > .title`. Nest it inside the Block (e.g., `.block { > .child { ... } }`). (spiracss/class-structure)'
+      },
+      {
         code: '.hero-banner { .title {} }',
-        description: 'enforceChildCombinator: true requires child selectors',
-        message: 'Use a direct-child combinator under the Block: "> .title". Example: ".block { > .title { ... } }". Shared/interaction sections are exempt. (spiracss/class-structure)'
+        description: 'childCombinator: true requires child selectors',
+        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: '.hero-banner { & .title {} }',
-        description: 'enforceChildCombinator: true rejects "& .child" descendant selectors',
-        message: 'Use a direct-child combinator under the Block: "> .title". Example: ".block { > .title { ... } }". Shared/interaction sections are exempt. (spiracss/class-structure)'
+        description: 'childCombinator: true rejects "& .child" descendant selectors',
+        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: '.hero-banner, .hero-banner.-primary { .title {} }',
         description: 'Block detection is stable with multiple selectors; missing child selector is an error',
         warnings: [
           {
-            message: 'Write modifier classes inside the Block using "&.<modifier>". Example: ".block { &.-primary { ... } }". Do not use ".block.-primary" or ".-primary" at top level. (spiracss/class-structure)'
+            message: 'Write modifier classes inside the Block using `&.<modifier>`. Example: `.block { &.-primary { ... } }`. Do not use `.block.-primary` or `.-primary` at top level. (spiracss/class-structure)'
           },
           {
-            message: 'Use a direct-child combinator under the Block: "> .title". Example: ".block { > .title { ... } }". Shared/interaction sections are exempt. (spiracss/class-structure)'
+            message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
           }
         ]
       },
@@ -49,22 +55,23 @@ describe('spiracss/class-structure - basic Block/Element checks', () => {
         code: '.hero-banner { > .feature-list .title {} }',
         description: 'grandchild selectors reaching into child Blocks are errors',
         message:
-          'Avoid chained selectors under ".hero-banner". Only target direct children ("> .child"). Move "title" styles into the child Block/Element file. (spiracss/class-structure)'
+          'Avoid chained selectors under `.hero-banner`. Only target direct children (`> .child`). Move `.title` styles into the child Block/Element file. (spiracss/class-structure)'
       }
     ]
   })
 })
 
 
-describe('spiracss/class-structure - enforceChildCombinator option', () => {
+describe('spiracss/class-structure - childCombinator option', () => {
   testRule({
     plugins: [classStructure],
     ruleName: classStructure.ruleName,
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
+        childNesting: true,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -73,7 +80,108 @@ describe('spiracss/class-structure - enforceChildCombinator option', () => {
     accept: [
       {
         code: '.hero-banner { .title {} }',
-        description: 'enforceChildCombinator: false allows missing child selector'
+        description: 'childCombinator: false allows missing child selector'
+      }
+    ]
+  })
+})
+
+describe('spiracss/class-structure - childNesting option', () => {
+  testRule({
+    plugins: [classStructure],
+    ruleName: classStructure.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
+        childCombinator: true,
+        childNesting: false,
+        naming: { blockCase: 'kebab' }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: '.hero-banner > .title {}',
+        description: 'childNesting: false allows top-level child selectors'
+      }
+    ]
+  })
+})
+
+describe('spiracss/class-structure - childNesting patterns', () => {
+  testRule({
+    plugins: [classStructure],
+    ruleName: classStructure.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
+        childCombinator: true,
+        childNesting: true,
+        naming: { blockCase: 'kebab' }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+@media (min-width: 768px) {
+  .hero-banner {
+    > .title {}
+  }
+}`,
+        description: 'nested child selector inside @media is allowed'
+      },
+      {
+        code: `
+:global(.scope) {
+  .hero-banner {
+    > .title {}
+  }
+}`,
+        description: 'child selector nested inside Block under a global wrapper is allowed'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+@media (min-width: 768px) {
+  .hero-banner > .title {}
+}`,
+        description: 'top-level child selector inside @media is rejected',
+        message:
+          'Do not write child selectors at the top level. Selector: `.hero-banner > .title`. Nest it inside the Block (e.g., `.block { > .child { ... } }`). (spiracss/class-structure)'
+      },
+      {
+        code: `
+:global(.scope) {
+  .hero-banner > .title {}
+}`,
+        description: 'top-level child selector inside global wrapper is rejected',
+        message:
+          'Do not write child selectors at the top level. Selector: `.hero-banner > .title`. Nest it inside the Block (e.g., `.block { > .child { ... } }`). (spiracss/class-structure)'
+      },
+      {
+        code: `
+.hero-banner > .title,
+.hero-banner > .body {
+  color: #111;
+}`,
+        description: 'child selector lists are rejected at the top level',
+        warnings: [
+          {
+            message:
+              'Do not write child selectors at the top level. Selector: `.hero-banner > .title`. Nest it inside the Block (e.g., `.block { > .child { ... } }`). (spiracss/class-structure)'
+          },
+          {
+            message:
+              'Do not write child selectors at the top level. Selector: `.hero-banner > .body`. Nest it inside the Block (e.g., `.block { > .child { ... } }`). (spiracss/class-structure)'
+          }
+        ]
       }
     ]
   })
@@ -87,8 +195,8 @@ describe('spiracss/class-structure - Element chain depth checks', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 2, // Allow Element depth up to 2 (Block > Element > Element)
-        enforceChildCombinator: false,
+        elementDepth: 2, // Allow Element depth up to 2 (Block > Element > Element)
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -104,9 +212,9 @@ describe('spiracss/class-structure - Element chain depth checks', () => {
     reject: [
       {
         code: '.hero-banner { .title { .subtitle { .text {} } } }',
-        description: 'Block > Element > Element > Element (depth=3) exceeds allowElementChainDepth: 2',
+        description: 'Block > Element > Element > Element (depth=3) exceeds elementDepth: 2',
         message:
-          'Element chain is too deep: ".subtitle" -> "text" (depth 3, max 2). Promote a segment to a Block or simplify the structure. (spiracss/class-structure)'
+          'Element chain is too deep: `.subtitle` -> `text` (depth 3, max 2). Promote a segment to a Block or simplify the structure. (spiracss/class-structure)'
       }
     ]
   })
@@ -120,10 +228,9 @@ describe('spiracss/class-structure - external class allowance', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
-        allowExternalClasses: ['swiper-container'],
-        allowExternalPrefixes: ['js-'],
+        elementDepth: 4,
+        childCombinator: false,
+        external: { classes: ['swiper-container'], prefixes: ['js-'] },
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -132,17 +239,16 @@ describe('spiracss/class-structure - external class allowance', () => {
     accept: [
       {
         code: '.swiper-container {}',
-        description: 'classes allowed by allowExternalClasses'
+        description: 'classes allowed by external.classes'
       },
       {
         code: '.js-toggle {}',
-        description: 'prefixes allowed by allowExternalPrefixes'
+        description: 'prefixes allowed by external.prefixes'
       },
       {
         code: '.hero-banner { &.js-toggle {} }',
-        description: 'allowExternalPrefixes also allows &. external classes'
+        description: 'external.prefixes also allows &. external classes'
       }
     ]
   })
 })
-

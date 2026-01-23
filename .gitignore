@@ -1,6 +1,8 @@
 template/
+spiracss-site/
 AGENTS.md
 CLAUDE.md
+DEVELOPMENT.md
 **/AGENTS.md
 **/CLAUDE.md
 node_modules/

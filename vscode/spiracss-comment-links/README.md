@@ -8,9 +8,11 @@ VS Code extension that turns SpiraCSS link comments into clickable file links.
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for AI-assisted implementation and tool-based validation, it aims to shorten development time and ensure consistent quality.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Designed for AI agents and tool-based validation.
 
-Overview: [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md)
+This extension is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
+
+→ [See how it works](https://spiracss.jp)
 
 ## Requirements
 
@@ -30,12 +32,11 @@ Overview: [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/b
 
 ## Docs
 
-- [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/principles.md)\]
-- [Comment Links guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/comment-links.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/comment-links.md)\]
-- [`spiracss.config.js` guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/spiracss-config.md)\]
+- [Comment Links](https://spiracss.jp/tooling/comment-links/)
+- [Configuration](https://spiracss.jp/configuration/)
 
 ## Related Tools
 
 - [SpiraCSS Stylelint Plugin (npm)](https://www.npmjs.com/package/@spiracss/stylelint-plugin)
 - [SpiraCSS HTML CLI (npm)](https://www.npmjs.com/package/@spiracss/html-cli)
-- [SpiraCSS HTML to SCSS (VS Code Marketplace)](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss)
+- SpiraCSS HTML to SCSS ([VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss) / [Open VSX](https://open-vsx.org/extension/spiracss/spiracss-html-to-scss))

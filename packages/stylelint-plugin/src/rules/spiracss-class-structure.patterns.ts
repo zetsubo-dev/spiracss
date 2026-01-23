@@ -1,36 +1,32 @@
 import type { NormalizedCacheSizes, WordCase } from '../types'
-import { createLruCache, DEFAULT_CACHE_SIZE } from '../utils/cache'
+import { createSharedCacheAccessor } from '../utils/cache'
 import {
   buildBlockPattern,
   normalizeBlockMaxWords,
   normalizeCustomPattern
 } from '../utils/naming'
+import { formatCode, formatPattern } from '../utils/messages'
 import type { InvalidOptionReporter } from '../utils/normalize'
 import type {
+  ClassifyOptions,
   Kind,
   NormalizedSelectorPolicy,
-  Options,
   Patterns,
   SelectorPolicyData,
   ValueNaming
 } from './spiracss-class-structure.types'
 
-type NamingHintOptions = Pick<Options, 'naming'>
+type NamingHintOptions = Pick<ClassifyOptions, 'naming'>
 
 const serializePattern = (pattern: RegExp | undefined): string =>
   pattern ? `${pattern.source}/${pattern.flags}` : ''
 
-const patternsCaches = new Map<number, ReturnType<typeof createLruCache<string, Patterns>>>()
+const normalizeWordCase = (value: unknown, fallback: WordCase): WordCase =>
+  value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
+    ? value
+    : fallback
 
-const getPatternsCache = (
-  maxSize: number
-): ReturnType<typeof createLruCache<string, Patterns>> => {
-  const cached = patternsCaches.get(maxSize)
-  if (cached) return cached
-  const created = createLruCache<string, Patterns>(maxSize)
-  patternsCaches.set(maxSize, created)
-  return created
-}
+const getPatternsCache = createSharedCacheAccessor<string, Patterns>()
 
 const buildValuePattern = (naming: ValueNaming): RegExp => {
   const maxWords = naming.maxWords
@@ -65,17 +61,18 @@ const buildValuePattern = (naming: ValueNaming): RegExp => {
 
 export const formatNamingHint = (options: NamingHintOptions): string => {
   const naming = options?.naming || {}
-  const blockCase: WordCase = naming.blockCase || 'kebab'
-  const elementCase: WordCase = naming.elementCase || 'kebab'
-  const modifierCase: WordCase = naming.modifierCase || 'kebab'
+  const blockCase: WordCase = normalizeWordCase(naming.blockCase, 'kebab')
+  const elementCase: WordCase = normalizeWordCase(naming.elementCase, 'kebab')
+  const modifierCase: WordCase = normalizeWordCase(naming.modifierCase, 'kebab')
   const modifierPrefix = naming.modifierPrefix ?? '-'
+  const prefixLabel = modifierPrefix === '' ? '(none)' : modifierPrefix
   const blockMaxWords = normalizeBlockMaxWords(naming.blockMaxWords)
   const parts = [
-    `blockCase=${blockCase}`,
-    `blockMaxWords=${blockMaxWords}`,
-    `elementCase=${elementCase}`,
-    `modifierCase=${modifierCase}`,
-    `modifierPrefix="${modifierPrefix}"`
+    `blockCase=${formatCode(blockCase)}`,
+    `blockMaxWords=${formatCode(String(blockMaxWords))}`,
+    `elementCase=${formatCode(elementCase)}`,
+    `modifierCase=${formatCode(modifierCase)}`,
+    `modifierPrefix=${formatCode(prefixLabel)}`
   ]
   const customParts: string[] = []
   const customBlock = normalizeCustomPattern(
@@ -90,23 +87,23 @@ export const formatNamingHint = (options: NamingHintOptions): string => {
     naming.customPatterns?.modifier,
     'naming.customPatterns.modifier'
   )
-  if (customBlock) customParts.push(`block=${customBlock}`)
-  if (customElement) customParts.push(`element=${customElement}`)
-  if (customModifier) customParts.push(`modifier=${customModifier}`)
+  if (customBlock) customParts.push(`block=${formatPattern(customBlock)}`)
+  if (customElement) customParts.push(`element=${formatPattern(customElement)}`)
+  if (customModifier) customParts.push(`modifier=${formatPattern(customModifier)}`)
   const customHint =
     customParts.length > 0 ? ` Custom patterns: ${customParts.join(', ')}.` : ''
   return `Naming: ${parts.join(', ')}.${customHint}`
 }
 
 export const buildPatterns = (
-  options: Options,
-  cacheSizes?: NormalizedCacheSizes,
+  options: ClassifyOptions,
+  cacheSizes: NormalizedCacheSizes,
   reportInvalid?: InvalidOptionReporter
 ): Patterns => {
   const naming = options.naming || {}
-  const blockCase: WordCase = naming.blockCase || 'kebab'
-  const elementCase: WordCase = naming.elementCase || 'kebab'
-  const modifierCase: WordCase = naming.modifierCase || 'kebab'
+  const blockCase: WordCase = normalizeWordCase(naming.blockCase, 'kebab')
+  const elementCase: WordCase = normalizeWordCase(naming.elementCase, 'kebab')
+  const modifierCase: WordCase = normalizeWordCase(naming.modifierCase, 'kebab')
   const modifierPrefix = naming.modifierPrefix ?? '-'
   const blockMaxWords = normalizeBlockMaxWords(naming.blockMaxWords)
 
@@ -137,13 +134,13 @@ export const buildPatterns = (
     serializePattern(customElement),
     serializePattern(customModifier)
   ].join('|')
-  const patternsCache = getPatternsCache(cacheSizes?.patterns ?? DEFAULT_CACHE_SIZE)
+  const patternsCache = getPatternsCache(cacheSizes.patterns)
   const cached = patternsCache.get(cacheKey)
   if (cached) return cached
 
   const blockRe = buildBlockPattern(
     naming,
-    cacheSizes?.naming ?? DEFAULT_CACHE_SIZE,
+    cacheSizes.naming,
     reportInvalid,
     {
       customBlock,
@@ -225,9 +222,13 @@ export const buildSelectorPolicyData = (
  * @param patterns - Compiled naming patterns for Block/Element/Modifier.
  * @returns Classification kind for the class name.
  */
-export const classify = (name: string, options: Options, patterns: Patterns): Kind => {
-  const { allowExternalClasses, allowExternalPrefixes } = options
-  if (allowExternalClasses.includes(name) || allowExternalPrefixes.some((p) => name.startsWith(p))) {
+export const classify = (
+  name: string,
+  options: ClassifyOptions,
+  patterns: Patterns
+): Kind => {
+  const external = options.external
+  if (external.classes.includes(name) || external.prefixes.some((p) => name.startsWith(p))) {
     return 'external'
   }
   if (patterns.modifierRe.test(name)) return 'modifier'

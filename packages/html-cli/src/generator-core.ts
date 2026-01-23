@@ -340,13 +340,17 @@ export type GeneratorOptions = {
   naming: NamingOptions
   rootFileCase?: FileNameCase
   selectorPolicy?: SelectorPolicy
-  allowExternalClasses?: string[]
-  allowExternalPrefixes?: string[]
+  external?: ExternalOptions
 }
 
-type ExternalClassOptions = {
-  allowExternalClasses?: string[]
-  allowExternalPrefixes?: string[]
+export type ExternalOptions = {
+  classes?: string[]
+  prefixes?: string[]
+}
+
+type NormalizedExternalOptions = {
+  classes: string[]
+  prefixes: string[]
 }
 
 export type GeneratedFile = {
@@ -706,24 +710,23 @@ export function classifyBaseClass(
 
 type BaseKind = 'block' | 'element' | 'invalid' | 'external'
 
-const normalizeExternalOptions = (raw?: ExternalClassOptions): Required<ExternalClassOptions> => {
-  const allowExternalClasses = Array.isArray(raw?.allowExternalClasses)
-    ? raw.allowExternalClasses.filter((item) => typeof item === 'string' && item.trim() !== '')
+const normalizeExternalOptions = (raw?: ExternalOptions): NormalizedExternalOptions => {
+  const classes = Array.isArray(raw?.classes)
+    ? raw.classes.filter((item) => typeof item === 'string' && item.trim() !== '')
     : []
-  const allowExternalPrefixes = Array.isArray(raw?.allowExternalPrefixes)
-    ? raw.allowExternalPrefixes.filter((item) => typeof item === 'string' && item.trim() !== '')
+  const prefixes = Array.isArray(raw?.prefixes)
+    ? raw.prefixes.filter((item) => typeof item === 'string' && item.trim() !== '')
     : []
-  return { allowExternalClasses, allowExternalPrefixes }
+  return { classes, prefixes }
 }
 
-const isExternalClass = (name: string, external: Required<ExternalClassOptions>): boolean =>
-  external.allowExternalClasses.includes(name) ||
-  external.allowExternalPrefixes.some((prefix) => name.startsWith(prefix))
+const isExternalClass = (name: string, external: NormalizedExternalOptions): boolean =>
+  external.classes.includes(name) || external.prefixes.some((prefix) => name.startsWith(prefix))
 
 const classifyBaseClassWithExternal = (
   name: string,
   naming: NamingOptions,
-  external: Required<ExternalClassOptions>
+  external: NormalizedExternalOptions
 ): BaseKind => {
   if (isExternalClass(name, external)) return 'external'
   return classifyBaseClass(name, naming)
@@ -732,7 +735,7 @@ const classifyBaseClassWithExternal = (
 const findFirstNonExternalBaseKind = (
   modifiers: string[],
   naming: NamingOptions,
-  external: Required<ExternalClassOptions>
+  external: NormalizedExternalOptions
 ): 'block' | 'element' | null => {
   let elementCandidate = false
   for (const modifier of modifiers) {
@@ -817,7 +820,7 @@ function buildValuePattern(naming: ValueNaming): RegExp {
 const filterModifierTokens = (
   modifiers: string[],
   naming: NamingOptions,
-  external?: Required<ExternalClassOptions>
+  external?: NormalizedExternalOptions
 ): string[] => {
   if (modifiers.length === 0) return []
   const pattern = buildModifierPattern(naming)
@@ -870,7 +873,7 @@ function splitClassModifiers(
   modifiers: string[],
   policy: NormalizedSelectorPolicy,
   naming?: NamingOptions,
-  external?: Required<ExternalClassOptions>
+  external?: NormalizedExternalOptions
 ): { variantClassModifiers: string[]; stateClassModifiers: string[] } {
   const modifierTokens = filterModifierTokens(modifiers, naming ?? {}, external)
   const variantClassModifiers: string[] = []
@@ -905,7 +908,7 @@ function buildStateSelectors(
   node: ComponentStructure,
   policy: NormalizedSelectorPolicy,
   naming: NamingOptions,
-  external: Required<ExternalClassOptions>
+  external: NormalizedExternalOptions
 ): string[] {
   const selectors = new Set<string>()
   const { stateClassModifiers } = splitClassModifiers(node.modifiers, policy, naming, external)
@@ -927,7 +930,7 @@ function collectElementStateEntries(
   node: ComponentStructure,
   policy: NormalizedSelectorPolicy,
   naming: NamingOptions,
-  external: Required<ExternalClassOptions>,
+  external: NormalizedExternalOptions,
   path: string[] = []
 ): ElementStateEntry[] {
   const entries: ElementStateEntry[] = []
@@ -1005,7 +1008,7 @@ function collectDeep(
   node: AnyNode,
   naming: NamingOptions,
   policy: NormalizedSelectorPolicy,
-  external: Required<ExternalClassOptions>,
+  external: NormalizedExternalOptions,
   depth = 0
 ): ComponentStructure[] {
   if (depth > MAX_DEPTH) return []
@@ -1030,7 +1033,7 @@ function buildTreeInternal(
   elem: Element,
   naming: NamingOptions,
   policy: NormalizedSelectorPolicy,
-  external: Required<ExternalClassOptions>,
+  external: NormalizedExternalOptions,
   depth = 0
 ): ComponentStructure | null {
   if (depth > MAX_DEPTH) return null
@@ -1123,7 +1126,7 @@ export function buildTree(
   elem: Element,
   naming: NamingOptions,
   selectorPolicy?: SelectorPolicy,
-  externalOptions?: ExternalClassOptions,
+  externalOptions?: ExternalOptions,
   depth?: number
 ): ComponentStructure | null
 export function buildTree(
@@ -1131,11 +1134,11 @@ export function buildTree(
   elem: Element,
   naming: NamingOptions,
   selectorPolicyOrDepth?: SelectorPolicy | number,
-  externalOptionsOrDepth?: ExternalClassOptions | number,
+  externalOptionsOrDepth?: ExternalOptions | number,
   depth = 0
 ): ComponentStructure | null {
   let selectorPolicy: SelectorPolicy | undefined
-  let externalOptions: ExternalClassOptions | undefined
+  let externalOptions: ExternalOptions | undefined
   let resolvedDepth = depth
   if (typeof selectorPolicyOrDepth === 'number') {
     resolvedDepth = selectorPolicyOrDepth
@@ -1160,7 +1163,7 @@ function lintNodeStructure(
   ancestorBlock: ComponentStructure | null,
   naming: NamingOptions,
   policy: NormalizedSelectorPolicy,
-  external: Required<ExternalClassOptions>,
+  external: NormalizedExternalOptions,
   pathStack: string[],
   isRootNode: boolean,
   isRootMode: boolean,
@@ -1370,7 +1373,7 @@ export function lintHtmlStructure(
   isRootMode: boolean,
   naming: NamingOptions,
   selectorPolicy?: SelectorPolicy,
-  externalOptions?: ExternalClassOptions
+  externalOptions?: ExternalOptions
 ): HtmlLintIssue[] {
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
   const sanitized = sanitizeHtml(raw)
@@ -1454,7 +1457,7 @@ function block(
   childScssDir: string,
   policy: NormalizedSelectorPolicy,
   naming: NamingOptions,
-  external: Required<ExternalClassOptions>,
+  external: NormalizedExternalOptions,
   isRoot: boolean = false
 ): string {
   const ind = indent(lv)
@@ -1619,7 +1622,7 @@ function scssContent(
   hint: string,
   opts: GeneratorOptions,
   policy: NormalizedSelectorPolicy,
-  external: Required<ExternalClassOptions>,
+  external: NormalizedExternalOptions,
   parentRootFileBase?: string
 ): string {
   const { globalScssModule, pageEntryPrefix, layoutMixins, childScssDir } = opts
@@ -1663,10 +1666,7 @@ export function generateFromHtml(
   const explicitRoot = detectExplicitRoot(sanitized)
   const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
   const policy = normalizeSelectorPolicy(opts.selectorPolicy)
-  const external = normalizeExternalOptions({
-    allowExternalClasses: opts.allowExternalClasses,
-    allowExternalPrefixes: opts.allowExternalPrefixes
-  })
+  const external = normalizeExternalOptions(opts.external)
 
   let roots: Element[]
   if (isRootMode) {
@@ -1780,10 +1780,7 @@ export function summarizeRootBlocks(
   const explicitRoot = detectExplicitRoot(sanitized)
   const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
   const policy = normalizeSelectorPolicy(opts.selectorPolicy)
-  const external = normalizeExternalOptions({
-    allowExternalClasses: opts.allowExternalClasses,
-    allowExternalPrefixes: opts.allowExternalPrefixes
-  })
+  const external = normalizeExternalOptions(opts.external)
 
   let roots: Element[]
   if (isRootMode) {

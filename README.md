@@ -1,27 +1,19 @@
-<p align="center">
-  <a href="https://spiracss.jp">
-    <img src="spiracss.svg" alt="SpiraCSS" width="200">
-  </a>
-</p>
+# SpiraCSS
 
-<p align="center">
-  <strong style="font-size: 2em;">SpiraCSS</strong><br>
-  <strong>S</strong>implified <strong>P</strong>ractical <strong>I</strong>ntegrated <strong>R</strong>elational <strong>A</strong>rchitecture for <strong>CSS</strong>
-</p>
+**No More Memorizing CSS Architecture.**
 
----
+The parent decides the child's layout; the child only styles its internals.
 
-SpiraCSS is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for AI-assisted implementation and tool-based validation, it aims to shorten development time and ensure consistent quality.
+SpiraCSS is a CSS architecture based on this single principle. Stylelint validates both humans and AI agents with the same criteria.
+
+→ [See How It Works](https://spiracss.jp/architecture/principles/)
+
+## Features
+
+- **Structure gives the answer** — Where does this style belong? The HTML structure already knows.
+- **Full Stylelint validation** — No need to memorize detailed rules. The tooling tells you.
+- **AI-agent-first design** — Error messages optimized for AI agents. Supports AI-agent-assisted fixes.
 
 ## Status
 
 Beta
-
-## Documentation
-
-- [English](docs_spira/en/index.md)
-- [日本語](docs_spira/ja/index.md)
-
-## Links
-
-Official site: https://spiracss.jp

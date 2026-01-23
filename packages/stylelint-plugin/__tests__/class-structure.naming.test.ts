@@ -1,5 +1,5 @@
 import assert from 'assert'
-import stylelint from 'stylelint'
+import { lint } from './stylelint-helpers.js'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { invalidNameMessage, testRule, withClassMode } from './rule-test-utils.js'
@@ -11,10 +11,9 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'camel'
         }
@@ -43,7 +42,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -56,7 +55,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -69,10 +68,9 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'pascal'
         }
@@ -101,7 +99,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -114,7 +112,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -127,10 +125,9 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'snake'
         }
@@ -159,7 +156,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -172,7 +169,7 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -189,8 +186,8 @@ describe('spiracss/class-structure - naming.blockMaxWords option', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: {
           blockCase: 'kebab',
           blockMaxWords: 3
@@ -219,7 +216,7 @@ describe('spiracss/class-structure - naming.blockMaxWords option', () => {
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       }
@@ -236,8 +233,8 @@ describe('spiracss/class-structure - naming default word count', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        enforceChildCombinator: false,
+        elementDepth: 4,
+        childCombinator: false,
         naming: { blockCase: 'kebab' }
       })
     ],
@@ -249,7 +246,7 @@ describe('spiracss/class-structure - naming default word count', () => {
         description: 'Block names require at least 2 words by default',
         noNormalizeRootBlock: true,
         message:
-          'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+          'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
       }
     ]
   })
@@ -264,10 +261,9 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           modifierPrefix: '_'
         }
@@ -290,7 +286,7 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
       {
         code: `.hero-banner { &.-primary {} }`,
         description: '"-" prefix does not match as modifier in "_" mode (invalid)',
-        message: 'Only modifier classes may be appended to "&". Found "-primary". Use "&.<modifier>". Example: "&._primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&._primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -301,10 +297,9 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           modifierPrefix: '--'
         }
@@ -327,7 +322,7 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
       {
         code: `.hero-banner { &.-primary {} }`,
         description: '"-" prefix does not match as modifier in "--" mode (invalid)',
-        message: 'Only modifier classes may be appended to "&". Found "-primary". Use "&.<modifier>". Example: "&.--primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&.--primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -342,10 +337,9 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           elementCase: 'camel',
           modifierCase: 'camel'
@@ -385,7 +379,7 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
       {
         code: `.hero-banner { &.-primary-large {} }`,
         description: 'kebab-case Modifier is invalid in camelCase mode',
-        message: 'Only modifier classes may be appended to "&". Found "-primary-large". Use "&.<modifier>". Example: "&.-primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primary-large`. Use `&.<modifier>`. Example: `&.-primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -396,10 +390,9 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           elementCase: 'pascal',
           modifierCase: 'pascal'
@@ -439,7 +432,7 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
       {
         code: `.hero-banner { &.-primaryLarge {} }`,
         description: 'camelCase Modifier is invalid in PascalCase mode',
-        message: 'Only modifier classes may be appended to "&". Found "-primaryLarge". Use "&.<modifier>". Example: "&.-Primary". If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message: 'Only modifier classes may be appended to `&`. Found `-primaryLarge`. Use `&.<modifier>`. Example: `&.-Primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -454,10 +447,9 @@ describe('spiracss/class-structure - naming.customPatterns (all specified)', () 
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           customPatterns: {
             block: /^b-[a-z]+$/,
@@ -533,10 +525,9 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
     config: [
       true,
       withClassMode({
-        allowElementChainDepth: 4,
-        allowExternalClasses: [],
-        allowExternalPrefixes: [],
-        enforceChildCombinator: true,
+        elementDepth: 4,
+        external: { classes: [], prefixes: [] },
+        childCombinator: true,
         naming: {
           blockCase: 'kebab',
           customPatterns: {
@@ -574,7 +565,7 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
           },
           {
             message:
-              'No root Block found. Define a top-level Block selector that matches the naming rules (e.g., ".hero-banner { ... }"). (spiracss/class-structure)'
+              'No root Block found. Define a top-level Block selector that matches the naming rules. (spiracss/class-structure)'
           }
         ]
       },
@@ -595,7 +586,7 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
 
 describe('spiracss/class-structure - naming.customPatterns validation', () => {
   it('reports invalid customPatterns', async () => {
-    const result = await stylelint.lint({
+    const result = await lint({
       code: '.hero-banner { }',
       customSyntax: 'postcss-scss',
       config: {

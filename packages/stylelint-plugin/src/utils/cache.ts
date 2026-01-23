@@ -5,6 +5,7 @@ export type LruCache<K, V> = {
   get: (key: K) => V | undefined
   set: (key: K, value: V) => void
   has: (key: K) => boolean
+  delete: (key: K) => boolean
 }
 
 export const DEFAULT_CACHE_SIZE = 1000
@@ -14,6 +15,8 @@ export const DEFAULT_CACHE_SIZES: NormalizedCacheSizes = {
   naming: DEFAULT_CACHE_SIZE,
   path: DEFAULT_CACHE_SIZE
 }
+
+const MAX_SHARED_CACHE_VARIANTS = 8
 
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value > 0
@@ -40,25 +43,25 @@ export const normalizeCacheSizes = (
     selector: normalizeCacheSize(
       raw.selector,
       DEFAULT_CACHE_SIZES.selector,
-      'cacheSizes.selector',
+      'cache.selector',
       reportInvalid
     ),
     patterns: normalizeCacheSize(
       raw.patterns,
       DEFAULT_CACHE_SIZES.patterns,
-      'cacheSizes.patterns',
+      'cache.patterns',
       reportInvalid
     ),
     naming: normalizeCacheSize(
       raw.naming,
       DEFAULT_CACHE_SIZES.naming,
-      'cacheSizes.naming',
+      'cache.naming',
       reportInvalid
     ),
     path: normalizeCacheSize(
       raw.path,
       DEFAULT_CACHE_SIZES.path,
-      'cacheSizes.path',
+      'cache.path',
       reportInvalid
     )
   }
@@ -100,6 +103,31 @@ export const createLruCache = <K, V>(maxSize: number): LruCache<K, V> => {
   return {
     get,
     set,
-    has: (key: K) => cache.has(key)
+    has: (key: K) => cache.has(key),
+    delete: (key: K) => cache.delete(key)
   }
+}
+
+export const createSharedCacheAccessor = <K, V>(): ((maxSize: number) => LruCache<K, V>) => {
+  const caches = new Map<number, LruCache<K, V>>()
+  return (maxSize: number) => getSharedLruCache(caches, maxSize)
+}
+
+export const getSharedLruCache = <K, V>(
+  caches: Map<number, LruCache<K, V>>,
+  maxSize: number
+): LruCache<K, V> => {
+  const cached = caches.get(maxSize)
+  if (cached) {
+    caches.delete(maxSize)
+    caches.set(maxSize, cached)
+    return cached
+  }
+  const created = createLruCache<K, V>(maxSize)
+  caches.set(maxSize, created)
+  if (caches.size > MAX_SHARED_CACHE_VARIANTS) {
+    const oldestKey = caches.keys().next().value
+    if (oldestKey !== undefined) caches.delete(oldestKey)
+  }
+  return created
 }

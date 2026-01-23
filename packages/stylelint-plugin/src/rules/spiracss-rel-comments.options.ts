@@ -1,30 +1,45 @@
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
+import type { CacheSizes } from '../types'
+import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
   normalizeBoolean,
-  normalizeCommentPattern,
-  normalizeString,
-  normalizeStringArray
+  normalizeString
 } from '../utils/normalize'
+import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
+import { isAliasRoots } from '../utils/validate'
 import type { Options } from './spiracss-rel-comments.types'
 
 const defaultOptions: Options = {
-  requireInScssDirectories: true,
-  requireWhenMetaLoadCss: true,
-  validatePath: true,
-  skipFilesWithoutRules: true,
-  requireChildRelComments: true,
-  requireChildRelCommentsInShared: true,
-  requireChildRelCommentsInInteraction: false,
-  requireParentRelComment: true,
-  childScssDir: 'scss',
-  aliasRoots: undefined,
-  sharedCommentPattern: /--shared/i,
-  interactionCommentPattern: /--interaction/i,
+  require: {
+    scss: true,
+    meta: true,
+    parent: true,
+    child: {
+      enabled: true,
+      shared: true,
+      interaction: false
+    }
+  },
+  validate: {
+    path: true
+  },
+  skip: {
+    noRules: true
+  },
+  paths: {
+    childDir: 'scss',
+    aliases: undefined
+  },
+  comments: {
+    shared: /--shared/i,
+    interaction: /--interaction/i
+  },
   naming: undefined,
-  allowExternalClasses: [],
-  allowExternalPrefixes: [],
-  cacheSizes: DEFAULT_CACHE_SIZES
+  external: {
+    classes: [],
+    prefixes: []
+  },
+  cache: DEFAULT_CACHE_SIZES
 }
 
 export const normalizeOptions = (
@@ -32,74 +47,91 @@ export const normalizeOptions = (
   reportInvalid?: InvalidOptionReporter
 ): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
-  const raw = opt as Partial<Options> & {
-    sharedCommentPattern?: RegExp | string
-    interactionCommentPattern?: RegExp | string
+  const raw = opt as {
+    requireScss?: boolean
+    requireMeta?: boolean
+    requireParent?: boolean
+    requireChild?: boolean
+    requireChildShared?: boolean
+    requireChildInteraction?: boolean
+    validatePath?: boolean
+    skipNoRules?: boolean
+    childDir?: string
+    aliasRoots?: Options['paths']['aliases']
+    comments?: { shared?: RegExp | string; interaction?: RegExp | string }
+    cache?: CacheSizes
+    naming?: Options['naming']
+    external?: Options['external']
   }
-  const fallbackChildScssDir = defaultOptions.childScssDir ?? 'scss'
-
+  const common = normalizeCommonOptions(
+    raw,
+    pickCommonDefaults(defaultOptions),
+    reportInvalid
+  )
+  const fallbackChildDir = defaultOptions.paths.childDir ?? 'scss'
+  const normalizeAliases = (value: unknown): Options['paths']['aliases'] => {
+    if (value === undefined) return defaultOptions.paths.aliases
+    if (isAliasRoots(value)) return value
+    reportInvalid?.(
+      'aliasRoots',
+      value,
+      '[spiracss] aliasRoots must be an object whose values are string arrays.'
+    )
+    return defaultOptions.paths.aliases
+  }
   return {
-    requireInScssDirectories: normalizeBoolean(
-      raw.requireInScssDirectories,
-      defaultOptions.requireInScssDirectories,
-      { coerce: true }
-    ),
-    requireWhenMetaLoadCss: normalizeBoolean(
-      raw.requireWhenMetaLoadCss,
-      defaultOptions.requireWhenMetaLoadCss,
-      { coerce: true }
-    ),
-    validatePath: normalizeBoolean(raw.validatePath, defaultOptions.validatePath, {
-      coerce: true
-    }),
-    skipFilesWithoutRules: normalizeBoolean(
-      raw.skipFilesWithoutRules,
-      defaultOptions.skipFilesWithoutRules,
-      { coerce: true }
-    ),
-    requireChildRelComments: normalizeBoolean(
-      raw.requireChildRelComments,
-      defaultOptions.requireChildRelComments,
-      { coerce: true }
-    ),
-    requireChildRelCommentsInShared: normalizeBoolean(
-      raw.requireChildRelCommentsInShared,
-      defaultOptions.requireChildRelCommentsInShared,
-      { coerce: true }
-    ),
-    requireChildRelCommentsInInteraction: normalizeBoolean(
-      raw.requireChildRelCommentsInInteraction,
-      defaultOptions.requireChildRelCommentsInInteraction,
-      { coerce: true }
-    ),
-    requireParentRelComment: normalizeBoolean(
-      raw.requireParentRelComment,
-      defaultOptions.requireParentRelComment,
-      { coerce: true }
-    ),
-    childScssDir: normalizeString(raw.childScssDir, fallbackChildScssDir),
-    aliasRoots: raw.aliasRoots || defaultOptions.aliasRoots,
-    sharedCommentPattern: normalizeCommentPattern(
-      raw.sharedCommentPattern,
-      defaultOptions.sharedCommentPattern,
-      'sharedCommentPattern',
-      reportInvalid
-    ),
-    interactionCommentPattern: normalizeCommentPattern(
-      raw.interactionCommentPattern,
-      defaultOptions.interactionCommentPattern,
-      'interactionCommentPattern',
-      reportInvalid
-    ),
-    naming: raw.naming || defaultOptions.naming,
-    allowExternalClasses: normalizeStringArray(
-      raw.allowExternalClasses,
-      defaultOptions.allowExternalClasses
-    ),
-    allowExternalPrefixes: normalizeStringArray(
-      raw.allowExternalPrefixes,
-      defaultOptions.allowExternalPrefixes
-    ),
-    cacheSizes: normalizeCacheSizes(raw.cacheSizes, reportInvalid)
+    require: {
+      scss: normalizeBoolean(
+        raw.requireScss,
+        defaultOptions.require.scss,
+        { coerce: true }
+      ),
+      meta: normalizeBoolean(
+        raw.requireMeta,
+        defaultOptions.require.meta,
+        { coerce: true }
+      ),
+      parent: normalizeBoolean(
+        raw.requireParent,
+        defaultOptions.require.parent,
+        { coerce: true }
+      ),
+      child: {
+        enabled: normalizeBoolean(
+          raw.requireChild,
+          defaultOptions.require.child.enabled,
+          { coerce: true }
+        ),
+        shared: normalizeBoolean(
+          raw.requireChildShared,
+          defaultOptions.require.child.shared,
+          { coerce: true }
+        ),
+        interaction: normalizeBoolean(
+          raw.requireChildInteraction,
+          defaultOptions.require.child.interaction,
+          { coerce: true }
+        )
+      }
+    },
+    validate: {
+      path: normalizeBoolean(
+        raw.validatePath,
+        defaultOptions.validate.path,
+        { coerce: true }
+      )
+    },
+    skip: {
+      noRules: normalizeBoolean(
+        raw.skipNoRules,
+        defaultOptions.skip.noRules,
+        { coerce: true }
+      )
+    },
+    paths: {
+      childDir: normalizeString(raw.childDir, fallbackChildDir),
+      aliases: normalizeAliases(raw.aliasRoots)
+    },
+    ...common
   }
 }

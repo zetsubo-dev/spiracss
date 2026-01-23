@@ -1,4 +1,4 @@
-import type { FileNameCase } from '../types'
+import type { FileNameCase, WordCase } from '../types'
 
 const splitWords = (input: string): string[] => {
   if (!input.trim()) return []
@@ -10,20 +10,18 @@ const splitWords = (input: string): string[] => {
 }
 
 /**
- * Formats a file base name into the configured case.
+ * Formats a word or phrase into the configured case.
  */
-export const formatFileBase = (input: string, fileCase: FileNameCase): string => {
+export const formatWordCase = (input: string, caseName: WordCase): string => {
   if (!input) return input
-  if (fileCase === 'preserve') return input
-
   const words = splitWords(input)
   if (words.length === 0) return input
 
-  const lower = words.map((w) => w.toLowerCase())
+  const lower = words.map((word) => word.toLowerCase())
   const capitalize = (word: string): string =>
     word ? word[0].toUpperCase() + word.slice(1) : ''
 
-  switch (fileCase) {
+  switch (caseName) {
     case 'kebab':
       return lower.join('-')
     case 'snake':
@@ -37,4 +35,13 @@ export const formatFileBase = (input: string, fileCase: FileNameCase): string =>
     default:
       return input
   }
+}
+
+/**
+ * Formats a file base name into the configured case.
+ */
+export const formatFileBase = (input: string, fileCase: FileNameCase): string => {
+  if (!input) return input
+  if (fileCase === 'preserve') return input
+  return formatWordCase(input, fileCase)
 }

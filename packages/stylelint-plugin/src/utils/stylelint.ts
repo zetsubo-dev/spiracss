@@ -40,7 +40,7 @@ export const reportInvalidOption = (
 
 export type ArrayOption = { name: string; value: unknown }
 
-export const validateArrayOptions = (
+const validateArrayOptions = (
   options: ArrayOption[],
   isValid: (value: unknown) => boolean,
   reportInvalid?: (optionName: string, value: unknown, detail?: string) => void,
@@ -67,6 +67,19 @@ export const validateOptionsArrayFields = (
   const optionsObject =
     rawOptions && typeof rawOptions === 'object' ? (rawOptions as Record<string, unknown>) : null
   if (!optionsObject) return false
-  const arrayOptions = fieldNames.map((name) => ({ name, value: optionsObject[name] }))
+  const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+    if (!path.includes('.')) return obj[path]
+    const segments = path.split('.').filter(Boolean)
+    let current: unknown = obj
+    for (const segment of segments) {
+      if (!current || typeof current !== 'object') return undefined
+      current = (current as Record<string, unknown>)[segment]
+    }
+    return current
+  }
+  const arrayOptions = fieldNames.map((name) => ({
+    name,
+    value: getNestedValue(optionsObject, name)
+  }))
   return validateArrayOptions(arrayOptions, isValid, reportInvalid, detail)
 }

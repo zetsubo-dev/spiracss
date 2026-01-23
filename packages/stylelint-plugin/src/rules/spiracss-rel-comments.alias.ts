@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 
 import type { AliasRoots } from './spiracss-rel-comments.types'
+import { createLruCache, DEFAULT_CACHE_SIZE } from '../utils/cache'
 
 const ALIAS_NAME_PATTERN = '[a-z][a-z0-9-]*'
 const aliasTargetRe = new RegExp(
@@ -33,18 +34,67 @@ const reportAliasError = (error: unknown): void => {
   console.warn(`[spiracss] Alias resolution failed: ${message}`)
 }
 
-const isWithinProjectRoot = (projectRoot: string, candidate: string): boolean => {
-  try {
-    const normalizedRoot = fs.realpathSync(projectRoot)
-    const normalizedCandidate = fs.realpathSync(candidate)
-    const relative = path.relative(normalizedRoot, normalizedCandidate)
-    if (!relative) return true
-    if (relative === '..' || relative.startsWith(`..${path.sep}`)) return false
-    return !path.isAbsolute(relative)
-  } catch (error) {
-    reportAliasError(error)
-    return false
+type RealpathCacheEntry =
+  | { status: 'ok'; value: string }
+  | { status: 'error' }
+
+const realpathCache = createLruCache<string, RealpathCacheEntry>(DEFAULT_CACHE_SIZE)
+
+const resolveRealpath = (target: string): string | null => {
+  const cached = realpathCache.get(target)
+  if (cached) {
+    // Re-resolve on cache hits to keep watch-mode accuracy (not a performance optimization).
+    const targetExists = fs.existsSync(target)
+    if (cached.status === 'ok') {
+      if (!targetExists) {
+        realpathCache.delete(target)
+        return null
+      }
+      try {
+        const resolved = fs.realpathSync(target)
+        if (resolved === cached.value && fs.existsSync(resolved)) return resolved
+        realpathCache.set(target, { status: 'ok', value: resolved })
+        return resolved
+      } catch {
+        realpathCache.delete(target)
+        return null
+      }
+    } else {
+      // Re-check on cache hit in case a previously failing path becomes available.
+      if (!targetExists) return null
+      realpathCache.delete(target)
+    }
   }
+  try {
+    const resolved = fs.realpathSync(target)
+    realpathCache.set(target, { status: 'ok', value: resolved })
+    return resolved
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException | undefined)?.code
+    if (code !== 'ENOENT') {
+      reportAliasError(error)
+      realpathCache.set(target, { status: 'error' })
+    }
+    // Do not cache ENOENT so newly created files can be resolved in the same run.
+    return null
+  }
+}
+
+const isWithinProjectRoot = (projectRoot: string, candidate: string): boolean => {
+  const normalizedRoot = resolveRealpath(projectRoot) ?? path.resolve(projectRoot)
+  const absoluteCandidate = path.resolve(candidate)
+  const resolvedCandidate = resolveRealpath(absoluteCandidate)
+  const normalizedCandidate = resolvedCandidate
+    ? resolvedCandidate
+    : (() => {
+        const parentDir = path.dirname(absoluteCandidate)
+        const resolvedParent = resolveRealpath(parentDir) ?? path.resolve(parentDir)
+        return path.resolve(resolvedParent, path.basename(absoluteCandidate))
+      })()
+  const relative = path.relative(normalizedRoot, normalizedCandidate)
+  if (!relative) return true
+  if (relative === '..' || relative.startsWith(`..${path.sep}`)) return false
+  return !path.isAbsolute(relative)
 }
 
 export const extractLinkTargets = (text: string | undefined | null): string[] => {

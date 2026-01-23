@@ -1,14 +1,20 @@
 import type { CacheSizes } from '../types'
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
-import { type InvalidOptionReporter, normalizeCommentPattern, normalizeStringArray } from '../utils/normalize'
+import { DEFAULT_CACHE_SIZES } from '../utils/cache'
+import { type InvalidOptionReporter } from '../utils/normalize'
+import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import type { Options } from './spiracss-interaction-properties.types'
 
 const defaultOptions: Options = {
-  sharedCommentPattern: /--shared/i,
-  interactionCommentPattern: /--interaction/i,
-  allowExternalClasses: [],
-  allowExternalPrefixes: [],
-  cacheSizes: DEFAULT_CACHE_SIZES
+  comments: {
+    shared: /--shared/i,
+    interaction: /--interaction/i
+  },
+  naming: undefined,
+  external: {
+    classes: [],
+    prefixes: []
+  },
+  cache: DEFAULT_CACHE_SIZES
 }
 
 export const normalizeOptions = (
@@ -17,32 +23,12 @@ export const normalizeOptions = (
 ): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
   const raw = opt as Partial<Options> & {
-    sharedCommentPattern?: RegExp | string
-    interactionCommentPattern?: RegExp | string
-    cacheSizes?: CacheSizes
+    comments?: { shared?: RegExp | string; interaction?: RegExp | string }
+    cache?: CacheSizes
   }
-  return {
-    sharedCommentPattern: normalizeCommentPattern(
-      raw.sharedCommentPattern,
-      defaultOptions.sharedCommentPattern,
-      'sharedCommentPattern',
-      reportInvalid
-    ),
-    interactionCommentPattern: normalizeCommentPattern(
-      raw.interactionCommentPattern,
-      defaultOptions.interactionCommentPattern,
-      'interactionCommentPattern',
-      reportInvalid
-    ),
-    naming: raw.naming,
-    allowExternalClasses: normalizeStringArray(
-      raw.allowExternalClasses,
-      defaultOptions.allowExternalClasses
-    ),
-    allowExternalPrefixes: normalizeStringArray(
-      raw.allowExternalPrefixes,
-      defaultOptions.allowExternalPrefixes
-    ),
-    cacheSizes: normalizeCacheSizes(raw.cacheSizes, reportInvalid)
-  }
+  return normalizeCommonOptions(
+    raw,
+    pickCommonDefaults(defaultOptions),
+    reportInvalid
+  ) as Options
 }

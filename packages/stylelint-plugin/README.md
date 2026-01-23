@@ -1,20 +1,14 @@
 # @spiracss/stylelint-plugin
 
-SpiraCSS Stylelint plugin. Validates class structure, interaction scope/properties, keyframes naming, pseudo nesting, and rel-comment links.
+SpiraCSS Stylelint plugin. Validates class structure, property placement, interaction scope/properties, keyframes naming, pseudo nesting, and rel-comment links.
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture built on minimal structural principles derived from HTML/CSS. It reduces inconsistencies in structural decisions that are common in CSS design by replacing individual intuition with clear principles. Designed for AI-assisted implementation and tool-based validation, it aims to shorten development time and ensure consistent quality.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Designed for AI agents and tool-based validation.
 
-Overview: [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md)
+This plugin is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
 
-Key points:
-- Structural decisions can be derived from class names and HTML structure.
-- `shared`/`interaction`/`rel` comment conventions can be treated as tool-verifiable contracts.
-- SpiraCSS projects should place [`spiracss.config.js`](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) at the project root so that generation and validation follow the same policy.
-- Download [spiracss-ai-doc.md](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ai/spiracss-ai-doc.md) and use it as a reference document for AI-assisted workflows.
-
-This plugin validates those contracts at lint time, keeping structure verifiable.
+→ [See how it works](https://spiracss.jp)
 
 ## Status
 
@@ -28,13 +22,17 @@ Beta release. Breaking changes may still occur.
 ## Install
 
 ```bash
+yarn add -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
+```
+
+```bash
 npm install -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
 ```
 
 ## Usage
 
 The canonical setup guide is:
-- [Stylelint guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/stylelint.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md)\]
+- [Stylelint Plugin](https://spiracss.jp/tooling/stylelint/)
 
 ```js
 // stylelint.config.js (ESM)
@@ -105,17 +103,15 @@ Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use
   import { createRulesAsync } from '@spiracss/stylelint-plugin'
   const rules = await createRulesAsync('./spiracss.config.js')
   ```
-- `pseudoNesting` has no options; defaults apply even when omitted.
+- `stylelint.pseudo.enabled` disables the pseudo-nesting rule when set to `false` (defaults to `true`).
 
 ## Docs
 
-- [SpiraCSS Design Principles](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/principles.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/principles.md)\]
-- [Stylelint guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/stylelint.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md)\]
-- [Quickstart](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/quickstart.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/quickstart.md)\]
-- [`spiracss.config.js` guide](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/en/tooling/spiracss-config.md) | \[[JA](https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/spiracss-config.md)\]
+- [Stylelint Plugin](https://spiracss.jp/tooling/stylelint/)
+- [Configuration](https://spiracss.jp/configuration/)
 
 ## Related Tools
 
 - [SpiraCSS HTML CLI (npm)](https://www.npmjs.com/package/@spiracss/html-cli)
-- [SpiraCSS Comment Links (VS Code Marketplace)](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-comment-links)
-- [SpiraCSS HTML to SCSS (VS Code Marketplace)](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss)
+- SpiraCSS Comment Links ([VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-comment-links) / [Open VSX](https://open-vsx.org/extension/spiracss/spiracss-comment-links))
+- SpiraCSS HTML to SCSS ([VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-html-to-scss) / [Open VSX](https://open-vsx.org/extension/spiracss/spiracss-html-to-scss))

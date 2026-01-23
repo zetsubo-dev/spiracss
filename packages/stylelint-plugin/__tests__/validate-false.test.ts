@@ -27,8 +27,8 @@ describe('validate=false - rule behavior', () => {
     const run = classStructure.rule(
       true,
       {
-        allowExternalClasses: [''],
-        enforceChildCombinator: true,
+        external: { classes: [''] },
+        childCombinator: true,
         naming: { blockCase: 'kebab' }
       },
       {} as RuleContext
@@ -44,7 +44,7 @@ describe('validate=false - rule behavior', () => {
     const run = interactionScope.rule(
       true,
       {
-        allowedPseudos: ['']
+        pseudos: ['']
       },
       {} as RuleContext
     )

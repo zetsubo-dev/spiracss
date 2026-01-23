@@ -31,22 +31,49 @@ export type NormalizedSelectorPolicy = NormalizedSelectorPolicyBase & {
   state: NormalizedSelectorPolicyBase['state'] & { valueNaming: ValueNaming }
 }
 
-export type Options = {
-  allowElementChainDepth: number
-  allowExternalClasses: string[]
-  allowExternalPrefixes: string[]
-  enforceChildCombinator: boolean
-  enforceSingleRootBlock: boolean
-  enforceRootFileName: boolean
-  rootFileCase: FileNameCase
-  childScssDir: string
-  componentsDirs: string[]
-  naming?: NamingOptions
-  sharedCommentPattern: RegExp
-  interactionCommentPattern: RegExp
-  selectorPolicy: NormalizedSelectorPolicy
-  cacheSizes?: NormalizedCacheSizes
+export type ElementOptions = {
+  depth: number
 }
+
+export type ExternalOptions = {
+  classes: string[]
+  prefixes: string[]
+}
+
+export type ChildOptions = {
+  combinator: boolean
+  nesting: boolean
+}
+
+export type RootOptions = {
+  single: boolean
+  file: boolean
+  case: FileNameCase
+}
+
+export type PathsOptions = {
+  childDir: string
+  components: string[]
+}
+
+export type CommentOptions = {
+  shared: RegExp
+  interaction: RegExp
+}
+
+export type Options = {
+  element: ElementOptions
+  external: ExternalOptions
+  child: ChildOptions
+  root: RootOptions
+  paths: PathsOptions
+  naming?: NamingOptions
+  comments: CommentOptions
+  selectorPolicy: NormalizedSelectorPolicy
+  cache: NormalizedCacheSizes
+}
+
+export type ClassifyOptions = Pick<Options, 'external' | 'naming'>
 
 export type Patterns = {
   blockRe: RegExp

@@ -1,0 +1,28 @@
+@use "@styles/partials/global" as *;
+
+// Import global styles
+@use "@styles/partials/variables";
+@use "@styles/partials/reset";
+@use "@styles/partials/base";
+@use "@styles/partials/utilities";
+@use "@styles/partials/keyframes";
+
+// Import components used in this page
+@use "@components/common/site-header/site-header";
+@use "@components/pages/about/about-content/about-content";
+
+.main-container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+
+  > .site-header {
+    // @components/common/site-header/site-header.scss
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  > .about-content {
+    // @components/pages/about/about-content/about-content.scss
+  }
+}

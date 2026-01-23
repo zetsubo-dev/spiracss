@@ -4,6 +4,7 @@ import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { isAtRule, isComment, isContainer } from '../utils/postcss-helpers'
 import { getCommentText, isRuleInRootScope } from '../utils/section'
 import type { SelectorParserCache } from '../utils/selector'
+import { buildSelectorPolicySetsBase } from '../utils/selector-policy'
 import type {
   NormalizedSelectorPolicy,
   SelectorAnalysis,
@@ -13,16 +14,24 @@ import type {
 export const normalizePseudo = (value: string): string => `:${value.replace(/^:+/, '')}`
 
 type NodeContainer = Node & { nodes?: Node[] }
+const nodeIndexCache = new WeakMap<NodeContainer, Map<Node, number>>()
+
+const getNodeIndex = (container: NodeContainer, node: Node): number => {
+  let indexMap = nodeIndexCache.get(container)
+  if (!indexMap) {
+    indexMap = new Map<Node, number>()
+    const nodes = container.nodes ?? []
+    nodes.forEach((item, index) => {
+      indexMap?.set(item, index)
+    })
+    nodeIndexCache.set(container, indexMap)
+  }
+  return indexMap.get(node) ?? -1
+}
 
 export const buildSelectorPolicySets = (
   policy: NormalizedSelectorPolicy
-): SelectorPolicySets => ({
-  dataStateEnabled: policy.state.mode === 'data',
-  dataVariantEnabled: policy.variant.mode === 'data',
-  stateKey: policy.state.dataKey,
-  ariaKeys: new Set(policy.state.ariaKeys),
-  variantKeys: new Set(policy.variant.dataKeys)
-})
+): SelectorPolicySets => buildSelectorPolicySetsBase(policy)
 
 export const analyzeSelector = (
   selector: string,
@@ -58,13 +67,17 @@ export const analyzeSelector = (
       sel.walkAttributes((attr) => {
         const name = attr.attribute || ''
         if (!name) return
-        if (policySets.dataVariantEnabled && policySets.variantKeys.has(name)) {
+        const normalizedName = name.toLowerCase()
+        if (
+          policySets.dataVariantEnabled &&
+          policySets.variantKeys.has(normalizedName)
+        ) {
           selectorHasVariant = true
         }
-        if (policySets.dataStateEnabled && name === policySets.stateKey) {
+        if (policySets.dataStateEnabled && normalizedName === policySets.stateKey) {
           selectorHasState = true
         }
-        if (policySets.dataStateEnabled && policySets.ariaKeys.has(name)) {
+        if (policySets.dataStateEnabled && policySets.ariaKeys.has(normalizedName)) {
           selectorHasState = true
         }
       })
@@ -120,7 +133,17 @@ export const findCommentBefore = (node: Node): string | null => {
     const parent: Node | undefined = current.parent
     if (!isContainer(parent) || !parent.nodes) return null
 
-    const idx = parent.nodes.findIndex((node) => node === current)
+    const idx = getNodeIndex(parent, current)
+    if (idx === -1) {
+      // Node not found in the cached index; walk up to keep the search resilient.
+      current = parent
+      continue
+    }
+    if (idx === 0) {
+      // No preceding siblings in this container; keep walking up.
+      current = parent
+      continue
+    }
     for (let i = idx - 1; i >= 0; i -= 1) {
       const sibling = parent.nodes[i]
       if (isComment(sibling)) {

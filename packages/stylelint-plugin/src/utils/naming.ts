@@ -1,5 +1,6 @@
 import type { NamingOptions, WordCase } from '../types'
-import { createLruCache, DEFAULT_CACHE_SIZE } from './cache'
+import { DEFAULT_CACHE_SIZE, createSharedCacheAccessor } from './cache'
+import type { InvalidOptionReporter } from './normalize'
 
 export const normalizeBlockMaxWords = (value: unknown): number => {
   const normalized =
@@ -11,8 +12,6 @@ export const normalizeBlockMaxWords = (value: unknown): number => {
 
 const serializePattern = (pattern: RegExp | undefined): string =>
   pattern ? `${pattern.source}/${pattern.flags}` : ''
-
-type InvalidOptionReporter = (optionName: string, value: unknown, detail?: string) => void
 
 export const normalizeCustomPattern = (
   value: unknown,
@@ -35,17 +34,7 @@ export const normalizeCustomPattern = (
   return undefined
 }
 
-const blockPatternCaches = new Map<number, ReturnType<typeof createLruCache<string, RegExp>>>()
-
-const getBlockPatternCache = (
-  maxSize: number
-): ReturnType<typeof createLruCache<string, RegExp>> => {
-  const cached = blockPatternCaches.get(maxSize)
-  if (cached) return cached
-  const created = createLruCache<string, RegExp>(maxSize)
-  blockPatternCaches.set(maxSize, created)
-  return created
-}
+const getBlockPatternCache = createSharedCacheAccessor<string, RegExp>()
 
 /**
  * Builds a RegExp for Block naming with caching.

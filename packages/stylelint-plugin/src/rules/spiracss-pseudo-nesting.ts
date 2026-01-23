@@ -2,16 +2,19 @@ import type { Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { DEFAULT_CACHE_SIZES, normalizeCacheSizes } from '../utils/cache'
-import { CACHE_SIZES_SCHEMA } from '../utils/option-schema'
+import { normalizeCacheSizes } from '../utils/cache'
+import { selectorParseFailedArgs } from '../utils/messages'
+import { CACHE_SCHEMA } from '../utils/option-schema'
 import {
   collectCompoundSegments,
   createSelectorCacheWithErrorFlag,
   type SelectorParserCache
 } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isPlainObject } from '../utils/validate'
 import { ruleName } from './spiracss-pseudo-nesting.constants'
+import { messages } from './spiracss-pseudo-nesting.messages'
 
 // SpiraCSS: pseudo-classes/elements must be nested under &.
 // - Example: .btn { &:hover { ... } } / .btn { &::before { ... } }
@@ -19,24 +22,22 @@ import { ruleName } from './spiracss-pseudo-nesting.constants'
 export { ruleName }
 
 const meta = {
-  url: 'https://github.com/zetsubo-dev/spiracss/blob/master/docs_spira/ja/tooling/stylelint.md#spiracsspseudo-nesting',
+  url: getRuleDocsUrl(ruleName),
   fixable: false,
   description: 'Require pseudo selectors to be nested under "&" in SpiraCSS.',
   category: 'stylistic'
 }
 
-const messages = stylelint.utils.ruleMessages(ruleName, {
-  needNesting: () =>
-    'Pseudo selectors must be nested with "&" on the same compound. Example: ".btn { &:hover { ... } }" or ".btn { &::before { ... } }". For child targets, use "> .btn { &:hover { ... } }" (not "> .btn:hover" or "& > .btn:hover").',
-  selectorParseFailed: () =>
-    'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors.'
-})
+type Violation = {
+  index: number
+  endIndex: number
+}
 
 const collectViolations = (
   selector: string,
   selectorCache: SelectorParserCache
-): number[] => {
-  const indexes: number[] = []
+): Violation[] => {
+  const violations: Violation[] = []
   const selectors = selectorCache.parse(selector)
   selectors.forEach((sel) => {
     if (sel.parent?.type !== 'root') return
@@ -44,12 +45,14 @@ const collectViolations = (
     compounds.forEach((compound) => {
       if (compound.hasNesting) return
       compound.pseudos.forEach((pseudo) => {
-        indexes.push(pseudo.sourceIndex ?? 0)
+        const index = pseudo.sourceIndex ?? 0
+        const endIndex = index + pseudo.toString().length
+        violations.push({ index, endIndex })
       })
     })
   })
 
-  return indexes
+  return violations
 }
 
 const rule = createRule(
@@ -82,7 +85,7 @@ const rule = createRule(
           },
           {
             actual: rawOptions,
-            possible: CACHE_SIZES_SCHEMA,
+            possible: CACHE_SCHEMA,
             optional: true
           }
         )
@@ -95,9 +98,10 @@ const rule = createRule(
           }
         : undefined
 
-      const cacheSizes = rawOptions
-        ? normalizeCacheSizes((rawOptions as { cacheSizes?: unknown }).cacheSizes, reportInvalid)
-        : DEFAULT_CACHE_SIZES
+      const cacheSizes = normalizeCacheSizes(
+        (rawOptions as { cache?: unknown } | null | undefined)?.cache,
+        reportInvalid
+      )
 
       let firstRule: Rule | null = null
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
@@ -107,15 +111,16 @@ const rule = createRule(
         const selector: string = rule.selector || ''
         if (!selector.includes(':')) return
 
-        const indexes = collectViolations(selector, selectorCache)
-        if (indexes.length === 0) return
+        const violations = collectViolations(selector, selectorCache)
+        if (violations.length === 0) return
 
-        indexes.forEach((index) => {
+        violations.forEach(({ index, endIndex }) => {
           stylelint.utils.report({
             ruleName,
             result,
             node: rule,
             index,
+            endIndex,
             message: messages.needNesting()
           })
         })
@@ -127,7 +132,9 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(),
+          message: messages.selectorParseFailed(
+            ...selectorParseFailedArgs(selectorState.getErrorSelector())
+          ),
           severity: 'warning'
         })
       }

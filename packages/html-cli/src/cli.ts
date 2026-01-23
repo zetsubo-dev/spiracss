@@ -24,6 +24,9 @@ type ParsedArgs = {
   json: boolean
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
 function isFileNameCase(value: string): value is FileNameCase {
   return (
     value === 'preserve' ||
@@ -71,7 +74,9 @@ async function readStdin(): Promise<string> {
   })
 }
 
-async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions> {
+async function loadGeneratorOptions(
+  rootDir: string
+): Promise<GeneratorOptions & { namingSource: string }> {
   const defaultGlobalScssModule = '@styles/partials/global'
   const defaultPageAlias = 'assets'
   const defaultPageSubdir = 'css'
@@ -85,17 +90,19 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions> 
   let layoutMixins = defaultLayoutMixins
   let naming: NamingOptions = {}
   let rootFileCase: FileNameCase = defaultRootFileCase
+  let namingSource = 'stylelint.base.naming.customPatterns'
   let selectorPolicy: SelectorPolicy | undefined
-  let allowExternalClasses: string[] = []
-  let allowExternalPrefixes: string[] = []
+  let externalClasses: string[] = []
+  let externalPrefixes: string[] = []
 
   const configPath = path.join(rootDir, 'spiracss.config.js')
   const config = await loadSpiracssConfig(configPath)
   if (config && typeof config === 'object') {
     const generator = config.generator as Record<string, unknown> | undefined
     const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-    const classStructure = stylelintCfg?.classStructure as Record<string, unknown> | undefined
-    const policy = config.selectorPolicy as Record<string, unknown> | undefined
+    const base = stylelintCfg?.base as Record<string, unknown> | undefined
+    const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
+    const selectorPolicyConfig = config.selectorPolicy as Record<string, unknown> | undefined
 
     const entry = generator?.globalScssModule
     if (typeof entry === 'string' && entry.trim() !== '') {
@@ -122,31 +129,41 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions> 
       rootFileCase = fileCase
     }
 
-    const namingCfg = classStructure?.naming
-    if (namingCfg && typeof namingCfg === 'object') {
-      naming = namingCfg as NamingOptions
+    const baseNaming = base?.naming
+    const classNaming = classConfig?.naming
+    if (isRecord(baseNaming)) {
+      naming = baseNaming as NamingOptions
+      namingSource = 'stylelint.base.naming.customPatterns'
+    } else if (isRecord(classNaming)) {
+      naming = classNaming as NamingOptions
+      namingSource = 'stylelint.class.naming.customPatterns'
     }
 
-    if (Array.isArray(classStructure?.allowExternalClasses)) {
-      allowExternalClasses = classStructure.allowExternalClasses.filter(
+    const baseExternal = base?.external
+    const classExternal = classConfig?.external
+    const external = {
+      ...(isRecord(baseExternal) ? baseExternal : {}),
+      ...(isRecord(classExternal) ? classExternal : {})
+    }
+    if (Array.isArray(external.classes)) {
+      externalClasses = external.classes.filter(
+        (item: unknown) => typeof item === 'string' && item.trim() !== ''
+      )
+    }
+    if (Array.isArray(external.prefixes)) {
+      externalPrefixes = external.prefixes.filter(
         (item: unknown) => typeof item === 'string' && item.trim() !== ''
       )
     }
 
-    if (Array.isArray(classStructure?.allowExternalPrefixes)) {
-      allowExternalPrefixes = classStructure.allowExternalPrefixes.filter(
-        (item: unknown) => typeof item === 'string' && item.trim() !== ''
-      )
-    }
-
-    if (policy && typeof policy === 'object') {
-      selectorPolicy = policy as SelectorPolicy
+    if (selectorPolicyConfig && typeof selectorPolicyConfig === 'object') {
+      selectorPolicy = selectorPolicyConfig as SelectorPolicy
     }
   }
 
   warnInvalidCustomPatterns(naming, (message) => {
     console.error(message)
-  })
+  }, namingSource)
 
   return {
     globalScssModule,
@@ -156,8 +173,11 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions> 
     naming,
     rootFileCase,
     selectorPolicy,
-    allowExternalClasses,
-    allowExternalPrefixes
+    external: {
+      classes: externalClasses,
+      prefixes: externalPrefixes
+    },
+    namingSource
   }
 }
 
@@ -202,10 +222,13 @@ async function run(): Promise<void> {
   }
 
   const isRootMode = args.mode === 'root'
-  const structureIssues = lintHtmlStructure(html, isRootMode, options.naming, options.selectorPolicy, {
-    allowExternalClasses: options.allowExternalClasses,
-    allowExternalPrefixes: options.allowExternalPrefixes
-  })
+  const structureIssues = lintHtmlStructure(
+    html,
+    isRootMode,
+    options.naming,
+    options.selectorPolicy,
+    options.external
+  )
 
   if (structureIssues.length > 0) {
     if (args.ignoreStructureErrors) {

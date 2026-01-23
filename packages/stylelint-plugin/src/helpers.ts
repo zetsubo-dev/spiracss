@@ -15,83 +15,150 @@ import type {
   SelectorPolicy as InteractionScopeSelectorPolicy
 } from './rules/spiracss-interaction-scope.types'
 import type { Options as KeyframesNamingOptions } from './rules/spiracss-keyframes-naming.types'
+import type { Options as PropertyPlacementOptions } from './rules/spiracss-property-placement.types'
 import type { Options as PseudoNestingOptions } from './rules/spiracss-pseudo-nesting.types'
 import type { Options as RelCommentsOptions } from './rules/spiracss-rel-comments.types'
-import type { CacheSizes } from './types'
+import type { CacheSizes, NamingOptions } from './types'
 import { isAliasRoots, isPlainObject } from './utils/validate'
 
-type ClassStructureConfig = Partial<
-  Omit<
-    ClassStructureOptions,
-    'selectorPolicy' | 'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'
-  >
-> & {
+type CommentConfig = {
+  shared?: RegExp | string
+  interaction?: RegExp | string
+}
+
+type ExternalConfig = {
+  classes?: string[]
+  prefixes?: string[]
+}
+
+type BasePathsConfig = {
+  childDir?: string
+  components?: string[]
+}
+
+type BaseConfig = {
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
   selectorPolicy?: ClassStructureSelectorPolicy
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+  cache?: CacheSizes
+  paths?: BasePathsConfig
 }
 
-type InteractionScopeConfig = Partial<
-  Omit<InteractionScopeOptions, 'selectorPolicy' | 'interactionCommentPattern' | 'cacheSizes'>
-> & {
+type ClassStructureConfig = {
+  elementDepth?: number
+  childCombinator?: boolean
+  childNesting?: boolean
+  rootSingle?: boolean
+  rootFile?: boolean
+  rootCase?: ClassStructureOptions['root']['case']
+  childDir?: string
+  componentsDirs?: string[]
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  selectorPolicy?: ClassStructureSelectorPolicy
+  cache?: CacheSizes
+}
+
+type InteractionScopeConfig = {
+  pseudos?: InteractionScopeOptions['pseudos']
+  requireAtRoot?: boolean
+  requireComment?: boolean
+  requireTail?: boolean
+  commentOnly?: boolean
+  comments?: CommentConfig
   selectorPolicy?: InteractionScopeSelectorPolicy
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+  cache?: CacheSizes
 }
 
-type RelCommentsConfig = Partial<
-  Omit<RelCommentsOptions, 'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'>
-> & {
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+type RelCommentsConfig = {
+  requireScss?: boolean
+  requireMeta?: boolean
+  requireParent?: boolean
+  requireChild?: boolean
+  requireChildShared?: boolean
+  requireChildInteraction?: boolean
+  validatePath?: boolean
+  skipNoRules?: boolean
+  childDir?: string
+  aliasRoots?: Record<string, string[]>
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
 }
 
-type InteractionPropertiesConfig = Partial<
-  Omit<
-    InteractionPropertiesOptions,
-    'sharedCommentPattern' | 'interactionCommentPattern' | 'cacheSizes'
-  >
-> & {
-  sharedCommentPattern?: RegExp | string
-  interactionCommentPattern?: RegExp | string
-  cacheSizes?: CacheSizes
+type PageLayerConfig = {
+  enabled?: boolean
+  pageEntryAlias?: string
+  pageEntrySubdir?: string
+  componentsDirs?: string[]
+  aliasRoots?: Record<string, string[]>
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
 }
 
-type KeyframesNamingConfig = Partial<
-  Omit<KeyframesNamingOptions, 'sharedFiles' | 'ignoreFiles' | 'ignorePatterns' | 'cacheSizes'>
-> & {
+type InteractionPropertiesConfig = {
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
+}
+
+type PropertyPlacementConfig = {
+  elementDepth?: number
+  marginSide?: PropertyPlacementOptions['margin']['side']
+  position?: boolean
+  sizeInternal?: boolean
+  responsiveMixins?: string[]
+  comments?: CommentConfig
+  naming?: NamingOptions
+  external?: ExternalConfig
+  selectorPolicy?: ClassStructureSelectorPolicy
+  cache?: CacheSizes
+}
+
+type KeyframesNamingConfig = {
+  enabled?: boolean
+  actionMaxWords?: number
+  blockSource?: KeyframesNamingOptions['block']['source']
+  blockWarnMissing?: boolean
+  sharedPrefixes?: string[]
   sharedFiles?: Array<string | RegExp>
   ignoreFiles?: Array<string | RegExp>
   ignorePatterns?: Array<string | RegExp>
-  cacheSizes?: CacheSizes
-  enabled?: boolean
+  ignoreSkipPlacement?: boolean
+  naming?: NamingOptions
+  external?: ExternalConfig
+  cache?: CacheSizes
 }
 
-type PseudoNestingConfig = Partial<Omit<PseudoNestingOptions, 'cacheSizes'>> & {
-  cacheSizes?: CacheSizes
+type PseudoNestingConfig = {
+  enabled?: boolean
+  cache?: CacheSizes
 }
 
 type SpiracssConfig = {
   aliasRoots?: Record<string, string[]>
   selectorPolicy?: ClassStructureSelectorPolicy
   generator?: {
-    rootFileCase?: ClassStructureOptions['rootFileCase']
+    rootFileCase?: ClassStructureOptions['root']['case']
     childScssDir?: string
+    pageEntryAlias?: string
+    pageEntrySubdir?: string
   }
   stylelint?: {
-    cacheSizes?: CacheSizes
-    classStructure?: ClassStructureConfig
+    base?: BaseConfig
+    class?: ClassStructureConfig
+    pageLayer?: PageLayerConfig
+    placement?: PropertyPlacementConfig
     interactionScope?: InteractionScopeConfig
-    interactionProperties?: InteractionPropertiesConfig
-    keyframesNaming?: KeyframesNamingConfig
-    pseudoNesting?: PseudoNestingConfig
-    relComments?: RelCommentsConfig
-    sectionCommentPatterns?: {
-      shared?: RegExp | string
-      interaction?: RegExp | string
-    }
+    interactionProps?: InteractionPropertiesConfig
+    keyframes?: KeyframesNamingConfig
+    pseudo?: PseudoNestingConfig
+    rel?: RelCommentsConfig
   }
 }
 
@@ -130,36 +197,63 @@ const isRequireEsmError = (error: unknown): boolean => {
   return message.includes('ERR_REQUIRE_ESM')
 }
 
-const canRequire = typeof require === 'function'
-// Keep dynamic import in CJS output (avoid TS transforming it to require()).
+const createEsmPathError = (): Error =>
+  new Error(
+    `In ESM environments, createRules() cannot accept a file path.\n` +
+      `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
+      `Example: import config from './spiracss.config.js'`
+  )
+
+const createConfigLoadError = (source: string, cause?: unknown): Error => {
+  const error = new Error(
+    `Failed to load spiracss.config.js: ${source}\n\n` +
+      `Ensure the config file format is valid.`
+  )
+  if (cause !== undefined) {
+    ;(error as Error & { cause?: unknown }).cause = cause
+  }
+  return error
+}
+
+const createRequireEsmLoadError = (absolutePath: string): Error =>
+  new Error(
+    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
+      `In ESM projects ("type": "module"), require() is unavailable.\n` +
+      `Use createRulesAsync(path) or import the config and pass it to createRules(config).`
+  )
+
+const createDynamicImportError = (absolutePath: string): Error =>
+  new Error(
+    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
+      `Dynamic import is unavailable in this environment.\n` +
+      `Use createRules(config) instead of createRulesAsync(path).`
+  )
+
+const isTsxRuntime = process.execArgv.some((arg, index) => {
+  if (arg !== '--import' && arg !== '--loader') return false
+  const loader = process.execArgv[index + 1] || ''
+  return loader.includes('tsx')
+})
+const canRequire = typeof require === 'function' && !isTsxRuntime
+// Keep dynamic import callable in CJS output (avoid TS rewriting it to require()).
+// Lazy initialization is safe here because module execution is single-threaded.
 let dynamicImport: ((specifier: string) => Promise<unknown>) | null = null
 
 const loadConfigFromPath = (absolutePath: string): SpiracssConfig => {
   if (!canRequire) {
-    throw new Error(
-      `In ESM environments, createRules() cannot accept a file path.\n` +
-        `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
-        `Example: import config from './spiracss.config.js'`
-    )
+    throw createEsmPathError()
   }
   try {
     const loaded = resolveConfigModule(require(absolutePath))
     if (!loaded) {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `Ensure the config file format is valid.`
-      )
+      throw createConfigLoadError(absolutePath)
     }
     return loaded
   } catch (error) {
     if (isRequireEsmError(error)) {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `In ESM projects ("type": "module"), require() is unavailable.\n` +
-          `Use createRulesAsync(path) or import the config and pass it to createRules(config).`
-      )
+      throw createRequireEsmLoadError(absolutePath)
     }
-    throw error
+    throw createConfigLoadError(absolutePath, error)
   }
 }
 
@@ -168,29 +262,27 @@ const loadConfigFromPathAsync = async (absolutePath: string): Promise<SpiracssCo
     try {
       const loaded = resolveConfigModule(require(absolutePath))
       if (!loaded) {
-        throw new Error(
-          `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-            `Ensure the config file format is valid.`
-        )
+        throw createConfigLoadError(absolutePath)
       }
       return loaded
     } catch (error) {
       if (!isRequireEsmError(error)) {
-        throw error
+        throw createConfigLoadError(absolutePath, error)
       }
     }
   }
 
   const moduleUrl = pathToFileURL(absolutePath).href
   if (!canRequire) {
-    const loaded = resolveConfigModule(await import(moduleUrl))
-    if (!loaded) {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `Ensure the config file format is valid.`
-      )
+    try {
+      const loaded = resolveConfigModule(await import(moduleUrl))
+      if (!loaded) {
+        throw createConfigLoadError(absolutePath)
+      }
+      return loaded
+    } catch (error) {
+      throw createConfigLoadError(absolutePath, error)
     }
-    return loaded
   }
 
   if (!dynamicImport) {
@@ -200,145 +292,111 @@ const loadConfigFromPathAsync = async (absolutePath: string): Promise<SpiracssCo
         'return import(specifier)'
       ) as (specifier: string) => Promise<unknown>
     } catch {
-      throw new Error(
-        `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-          `Dynamic import is unavailable in this environment.\n` +
-          `Use createRules(config) instead of createRulesAsync(path).`
-      )
+      throw createDynamicImportError(absolutePath)
     }
   }
 
-  const loaded = resolveConfigModule(await dynamicImport(moduleUrl))
-  if (!loaded) {
+  try {
+    const loaded = resolveConfigModule(await dynamicImport(moduleUrl))
+    if (!loaded) {
+      throw createConfigLoadError(absolutePath)
+    }
+    return loaded
+  } catch (error) {
+    throw createConfigLoadError(absolutePath, error)
+  }
+}
+
+type ConfigTarget = {
+  configSource: string
+  absolutePath?: string
+  spiracss?: SpiracssConfig
+}
+
+const resolveConfigTarget = (
+  configPathOrConfig?: string | SpiracssConfig,
+  options?: { requireSync?: boolean }
+): ConfigTarget => {
+  if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
+    if (options?.requireSync && !canRequire) {
+      throw createEsmPathError()
+    }
+    const resolvedPath = configPathOrConfig || './spiracss.config.js'
+    const absolutePath = path.resolve(resolvedPath)
+    return { configSource: absolutePath, absolutePath }
+  }
+  return { spiracss: configPathOrConfig, configSource: 'spiracss.config.js (object)' }
+}
+
+const ensureConfigFileExists = (absolutePath: string): void => {
+  let hasConfig = false
+  try {
+    hasConfig = fs.existsSync(absolutePath)
+  } catch (error) {
+    const code = getErrorCode(error)
+    if (
+      code === 'EACCES' ||
+      code === 'EPERM' ||
+      code === 'ELOOP' ||
+      code === 'ENOTDIR' ||
+      code === 'EISDIR'
+    ) {
+      throw new Error(
+        `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
+          `Check permissions and path state.`
+      )
+    }
+    throw error
+  }
+  if (!hasConfig) {
     throw new Error(
-      `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-        `Ensure the config file format is valid.`
+      `spiracss.config.js not found: ${absolutePath}\n\n` +
+        `Place spiracss.config.js at the project root.\n` +
+        `You can get a sample config here:\n` +
+        `https://spiracss.jp/downloads/spiracss.config.example.js\n\n` +
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
-  return loaded
+}
+
+const finalizeConfig = (
+  spiracss: SpiracssConfig | undefined,
+  configSource: string
+): { spiracss: SpiracssConfig; configSource: string } => {
+  if (!spiracss || typeof spiracss !== 'object') {
+    throw createConfigLoadError(configSource)
+  }
+  return { spiracss, configSource }
 }
 
 const resolveSpiracssConfig = (
   configPathOrConfig?: string | SpiracssConfig
 ): { spiracss: SpiracssConfig; configSource: string } => {
-  let spiracss: SpiracssConfig | undefined
-  let configSource = 'spiracss.config.js'
-
-  if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
-    if (!canRequire) {
-      throw new Error(
-        `In ESM environments, createRules() cannot accept a file path.\n` +
-          `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
-          `Example: import config from './spiracss.config.js'`
-      )
-    }
-    // Default to ./spiracss.config.js in the caller's working directory.
-    const resolvedPath = configPathOrConfig || './spiracss.config.js'
-    const absolutePath = path.resolve(resolvedPath)
-    configSource = absolutePath
-
-    // Check file existence.
-    let hasConfig = false
-    try {
-      hasConfig = fs.existsSync(absolutePath)
-    } catch (error) {
-      const code = getErrorCode(error)
-      if (
-        code === 'EACCES' ||
-        code === 'EPERM' ||
-        code === 'ELOOP' ||
-        code === 'ENOTDIR' ||
-        code === 'EISDIR'
-      ) {
-        throw new Error(
-          `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-            `Check permissions and path state.`
-        )
-      }
-      throw error
-    }
-    if (!hasConfig) {
-      throw new Error(
-        `spiracss.config.js not found: ${absolutePath}\n\n` +
-          `Place spiracss.config.js at the project root.\n` +
-          `You can get a sample config here:\n` +
-          `https://raw.githubusercontent.com/zetsubo-dev/spiracss/master/docs_spira/ja/spiracss.config.example.js\n\n` +
-          `See docs_spira/ja/tooling/spiracss-config.md for details.`
-      )
-    }
-
-    spiracss = loadConfigFromPath(absolutePath)
-  } else {
-    spiracss = configPathOrConfig
-    configSource = 'spiracss.config.js (object)'
+  const target = resolveConfigTarget(configPathOrConfig, { requireSync: true })
+  if (target.spiracss) return finalizeConfig(target.spiracss, target.configSource)
+  const absolutePath = target.absolutePath
+  // Defensive guard: resolveConfigTarget sets absolutePath for path-based configs.
+  if (!absolutePath) {
+    throw new Error('Missing config path for spiracss.config.js.')
   }
-
-  if (!spiracss || typeof spiracss !== 'object') {
-    throw new Error(
-      `Failed to load spiracss.config.js: ${configSource}\n\n` +
-        `Ensure the config file format is valid.`
-    )
-  }
-
-  return { spiracss, configSource }
+  ensureConfigFileExists(absolutePath)
+  const spiracss = loadConfigFromPath(absolutePath)
+  return finalizeConfig(spiracss, target.configSource)
 }
 
 const resolveSpiracssConfigAsync = async (
   configPathOrConfig?: string | SpiracssConfig
 ): Promise<{ spiracss: SpiracssConfig; configSource: string }> => {
-  let spiracss: SpiracssConfig | undefined
-  let configSource = 'spiracss.config.js'
-
-  if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
-    // Default to ./spiracss.config.js in the caller's working directory.
-    const resolvedPath = configPathOrConfig || './spiracss.config.js'
-    const absolutePath = path.resolve(resolvedPath)
-    configSource = absolutePath
-
-    // Check file existence.
-    let hasConfig = false
-    try {
-      hasConfig = fs.existsSync(absolutePath)
-    } catch (error) {
-      const code = getErrorCode(error)
-      if (
-        code === 'EACCES' ||
-        code === 'EPERM' ||
-        code === 'ELOOP' ||
-        code === 'ENOTDIR' ||
-        code === 'EISDIR'
-      ) {
-        throw new Error(
-          `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-            `Check permissions and path state.`
-        )
-      }
-      throw error
-    }
-    if (!hasConfig) {
-      throw new Error(
-        `spiracss.config.js not found: ${absolutePath}\n\n` +
-          `Place spiracss.config.js at the project root.\n` +
-          `You can get a sample config here:\n` +
-          `https://raw.githubusercontent.com/zetsubo-dev/spiracss/master/docs_spira/ja/spiracss.config.example.js\n\n` +
-          `See docs_spira/ja/tooling/spiracss-config.md for details.`
-      )
-    }
-
-    spiracss = await loadConfigFromPathAsync(absolutePath)
-  } else {
-    spiracss = configPathOrConfig
-    configSource = 'spiracss.config.js (object)'
+  const target = resolveConfigTarget(configPathOrConfig)
+  if (target.spiracss) return finalizeConfig(target.spiracss, target.configSource)
+  const absolutePath = target.absolutePath
+  // Defensive guard: resolveConfigTarget sets absolutePath for path-based configs.
+  if (!absolutePath) {
+    throw new Error('Missing config path for spiracss.config.js.')
   }
-
-  if (!spiracss || typeof spiracss !== 'object') {
-    throw new Error(
-      `Failed to load spiracss.config.js: ${configSource}\n\n` +
-        `Ensure the config file format is valid.`
-    )
-  }
-
-  return { spiracss, configSource }
+  ensureConfigFileExists(absolutePath)
+  const spiracss = await loadConfigFromPathAsync(absolutePath)
+  return finalizeConfig(spiracss, target.configSource)
 }
 
 const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): void => {
@@ -347,7 +405,7 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     throw new Error(
       `Invalid stylelint section in spiracss.config.js: ${configSource}\n` +
         `stylelint must be an object when provided.\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 
@@ -355,7 +413,7 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     throw new Error(
       `Missing aliasRoots section in spiracss.config.js: ${configSource}\n\n` +
         `aliasRoots is required for path resolution in spiracss/rel-comments.\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 
@@ -363,92 +421,238 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     throw new Error(
       `Invalid aliasRoots section in spiracss.config.js: ${configSource}\n` +
         `aliasRoots must be an object whose values are string arrays.\n` +
-        `See docs_spira/ja/tooling/spiracss-config.md for details.`
+        `See https://spiracss.jp/configuration/ for details.`
     )
   }
 }
 
 const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
-  const sectionCommentPatterns =
-    spiracss.stylelint?.sectionCommentPatterns &&
-    typeof spiracss.stylelint.sectionCommentPatterns === 'object'
-      ? spiracss.stylelint.sectionCommentPatterns
+  const stylelint =
+    spiracss.stylelint && typeof spiracss.stylelint === 'object'
+      ? spiracss.stylelint
       : undefined
-  const cacheSizes = spiracss.stylelint?.cacheSizes
-  const sharedCommentPattern = sectionCommentPatterns?.shared
-  const interactionCommentPattern = sectionCommentPatterns?.interaction
-  const generator = spiracss.generator && typeof spiracss.generator === 'object'
-    ? spiracss.generator
-    : undefined
+  const base =
+    stylelint?.base && typeof stylelint.base === 'object' ? stylelint.base : undefined
+  const interactionScopeConfig =
+    stylelint?.interactionScope && typeof stylelint.interactionScope === 'object'
+      ? stylelint.interactionScope
+      : undefined
+  const interactionPropsConfig =
+    stylelint?.interactionProps && typeof stylelint.interactionProps === 'object'
+      ? stylelint.interactionProps
+      : undefined
+  const generator =
+    spiracss.generator && typeof spiracss.generator === 'object'
+      ? spiracss.generator
+      : undefined
 
-  const withFallback = <T extends object, K extends keyof T>(
+  const mergeObjects = <T extends object>(
+    baseValue?: Partial<T>,
+    override?: Partial<T>
+  ): Partial<T> | undefined => {
+    if (!baseValue && !override) return undefined
+    return { ...(baseValue ?? {}), ...(override ?? {}) }
+  }
+
+  const assignIfDefined = <T extends object, K extends keyof T>(
     target: T,
     key: K,
     value: T[K] | undefined
   ): void => {
-    if (value === undefined) return
-    if (target[key] !== undefined) return
-    target[key] = value
+    if (value !== undefined) {
+      target[key] = value
+    }
   }
 
-  const classStructure = { ...spiracss.stylelint?.classStructure }
-  if (spiracss.selectorPolicy) {
-    classStructure.selectorPolicy = spiracss.selectorPolicy
+  const baseComments = base?.comments
+  const baseNaming = base?.naming
+  const baseExternal = base?.external
+  const baseCache = base?.cache
+  const basePolicy = base?.selectorPolicy ?? spiracss.selectorPolicy
+  const basePaths = base?.paths
+
+  const classConfig = { ...(stylelint?.class ?? {}) }
+  assignIfDefined(
+    classConfig,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, classConfig.comments)
+  )
+  assignIfDefined(
+    classConfig,
+    'external',
+    mergeObjects<ExternalConfig>(baseExternal, classConfig.external)
+  )
+  if (classConfig.naming === undefined) {
+    assignIfDefined(classConfig, 'naming', baseNaming)
   }
-  withFallback(classStructure, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(classStructure, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(classStructure, 'rootFileCase', generator?.rootFileCase)
-  withFallback(classStructure, 'childScssDir', generator?.childScssDir)
-  withFallback(classStructure, 'cacheSizes', cacheSizes)
-
-  const interactionScope = { ...spiracss.stylelint?.interactionScope }
-  if (spiracss.selectorPolicy && interactionScope.selectorPolicy === undefined) {
-    interactionScope.selectorPolicy = spiracss.selectorPolicy
+  const classPolicy = classConfig.selectorPolicy ?? basePolicy
+  if (classPolicy !== undefined) {
+    classConfig.selectorPolicy = classPolicy
   }
-  withFallback(interactionScope, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(interactionScope, 'cacheSizes', cacheSizes)
+  if (classConfig.cache === undefined) {
+    assignIfDefined(classConfig, 'cache', baseCache)
+  }
+  if (classConfig.rootCase === undefined && generator?.rootFileCase !== undefined) {
+    classConfig.rootCase = generator.rootFileCase
+  }
+  if (classConfig.childDir === undefined) {
+    assignIfDefined(classConfig, 'childDir', basePaths?.childDir)
+  }
+  if (classConfig.componentsDirs === undefined) {
+    assignIfDefined(classConfig, 'componentsDirs', basePaths?.components)
+  }
+  if (classConfig.childDir === undefined && generator?.childScssDir) {
+    classConfig.childDir = generator.childScssDir
+  }
 
-  const interactionProperties = { ...spiracss.stylelint?.interactionProperties }
-  withFallback(interactionProperties, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(interactionProperties, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(interactionProperties, 'naming', classStructure.naming)
-  withFallback(interactionProperties, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(interactionProperties, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(interactionProperties, 'cacheSizes', cacheSizes)
+  const sharedNaming = baseNaming ?? classConfig.naming
+  const sharedExternal = mergeObjects<ExternalConfig>(
+    baseExternal,
+    classConfig.external
+  )
 
-  const keyframesNaming = { ...spiracss.stylelint?.keyframesNaming }
-  const keyframesNamingEnabled = keyframesNaming.enabled !== false
-  delete keyframesNaming.enabled
-  withFallback(keyframesNaming, 'naming', classStructure.naming)
-  withFallback(keyframesNaming, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(keyframesNaming, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(keyframesNaming, 'cacheSizes', cacheSizes)
+  const pageLayerConfig = { ...(stylelint?.pageLayer ?? {}) }
+  const pageLayerEnabled = pageLayerConfig.enabled !== false
+  delete pageLayerConfig.enabled
+  assignIfDefined(
+    pageLayerConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, pageLayerConfig.external)
+  )
+  if (pageLayerConfig.naming === undefined) {
+    assignIfDefined(pageLayerConfig, 'naming', sharedNaming)
+  }
+  if (pageLayerConfig.cache === undefined) {
+    assignIfDefined(pageLayerConfig, 'cache', baseCache)
+  }
+  if (pageLayerConfig.componentsDirs === undefined) {
+    assignIfDefined(pageLayerConfig, 'componentsDirs', basePaths?.components)
+  }
+  if (pageLayerConfig.pageEntryAlias === undefined && generator?.pageEntryAlias) {
+    pageLayerConfig.pageEntryAlias = generator.pageEntryAlias
+  }
+  if (pageLayerConfig.pageEntrySubdir === undefined && generator?.pageEntrySubdir !== undefined) {
+    pageLayerConfig.pageEntrySubdir = generator.pageEntrySubdir
+  }
+  if (pageLayerConfig.aliasRoots === undefined) {
+    pageLayerConfig.aliasRoots = spiracss.aliasRoots
+  }
 
-  const pseudoNesting = { ...spiracss.stylelint?.pseudoNesting }
-  withFallback(pseudoNesting, 'cacheSizes', cacheSizes)
+  const placementConfig = { ...(stylelint?.placement ?? {}) }
+  assignIfDefined(
+    placementConfig,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, placementConfig.comments)
+  )
+  assignIfDefined(
+    placementConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, placementConfig.external)
+  )
+  if (placementConfig.naming === undefined) {
+    assignIfDefined(placementConfig, 'naming', sharedNaming)
+  }
+  const placementPolicy = placementConfig.selectorPolicy ?? basePolicy
+  if (placementPolicy !== undefined) {
+    placementConfig.selectorPolicy = placementPolicy
+  }
+  if (placementConfig.cache === undefined) {
+    assignIfDefined(placementConfig, 'cache', baseCache)
+  }
+  if (placementConfig.elementDepth === undefined && classConfig.elementDepth !== undefined) {
+    placementConfig.elementDepth = classConfig.elementDepth
+  }
 
-  const relComments = { ...spiracss.stylelint?.relComments }
-  withFallback(relComments, 'sharedCommentPattern', sharedCommentPattern)
-  withFallback(relComments, 'interactionCommentPattern', interactionCommentPattern)
-  withFallback(relComments, 'childScssDir', generator?.childScssDir)
-  withFallback(relComments, 'naming', classStructure.naming)
-  withFallback(relComments, 'allowExternalClasses', classStructure.allowExternalClasses)
-  withFallback(relComments, 'allowExternalPrefixes', classStructure.allowExternalPrefixes)
-  withFallback(relComments, 'cacheSizes', cacheSizes)
+  const interactionScope = { ...(interactionScopeConfig ?? {}) }
+  assignIfDefined(
+    interactionScope,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, interactionScope.comments)
+  )
+  const interactionPolicy = interactionScope.selectorPolicy ?? basePolicy
+  if (interactionPolicy !== undefined) {
+    interactionScope.selectorPolicy = interactionPolicy
+  }
+  if (interactionScope.cache === undefined) {
+    assignIfDefined(interactionScope, 'cache', baseCache)
+  }
+
+  const interactionProps = { ...(interactionPropsConfig ?? {}) }
+  assignIfDefined(
+    interactionProps,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, interactionProps.comments)
+  )
+  assignIfDefined(
+    interactionProps,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, interactionProps.external)
+  )
+  if (interactionProps.naming === undefined) {
+    assignIfDefined(interactionProps, 'naming', sharedNaming)
+  }
+  if (interactionProps.cache === undefined) {
+    assignIfDefined(interactionProps, 'cache', baseCache)
+  }
+
+  const keyframesConfig = { ...(stylelint?.keyframes ?? {}) }
+  const keyframesEnabled = keyframesConfig.enabled !== false
+  delete keyframesConfig.enabled
+  assignIfDefined(
+    keyframesConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, keyframesConfig.external)
+  )
+  if (keyframesConfig.naming === undefined) {
+    assignIfDefined(keyframesConfig, 'naming', sharedNaming)
+  }
+  if (keyframesConfig.cache === undefined) {
+    assignIfDefined(keyframesConfig, 'cache', baseCache)
+  }
+
+  const pseudoConfig = { ...(stylelint?.pseudo ?? {}) }
+  const pseudoEnabled = pseudoConfig.enabled !== false
+  delete pseudoConfig.enabled
+  if (pseudoConfig.cache === undefined) {
+    assignIfDefined(pseudoConfig, 'cache', baseCache)
+  }
+
+  const relConfig = { ...(stylelint?.rel ?? {}) }
+  assignIfDefined(
+    relConfig,
+    'comments',
+    mergeObjects<CommentConfig>(baseComments, relConfig.comments)
+  )
+  assignIfDefined(
+    relConfig,
+    'external',
+    mergeObjects<ExternalConfig>(sharedExternal, relConfig.external)
+  )
+  if (relConfig.naming === undefined) {
+    assignIfDefined(relConfig, 'naming', sharedNaming)
+  }
+  if (relConfig.cache === undefined) {
+    assignIfDefined(relConfig, 'cache', baseCache)
+  }
+  if (relConfig.childDir === undefined) {
+    assignIfDefined(relConfig, 'childDir', basePaths?.childDir)
+  }
+  if (!relConfig.childDir && generator?.childScssDir) {
+    relConfig.childDir = generator.childScssDir
+  }
+  if (relConfig.aliasRoots === undefined) {
+    relConfig.aliasRoots = spiracss.aliasRoots
+  }
 
   return {
-    'spiracss/class-structure': [true, classStructure],
+    'spiracss/class-structure': [true, classConfig],
+    'spiracss/page-layer': pageLayerEnabled ? [true, pageLayerConfig] : false,
+    'spiracss/property-placement': [true, placementConfig],
     'spiracss/interaction-scope': [true, interactionScope],
-    'spiracss/interaction-properties': [true, interactionProperties],
-    'spiracss/keyframes-naming': keyframesNamingEnabled ? [true, keyframesNaming] : false,
-    'spiracss/pseudo-nesting': [true, pseudoNesting],
-    'spiracss/rel-comments': [
-      true,
-      {
-        ...relComments,
-        aliasRoots: spiracss.aliasRoots
-      }
-    ]
+    'spiracss/interaction-properties': [true, interactionProps],
+    'spiracss/keyframes-naming': keyframesEnabled ? [true, keyframesConfig] : false,
+    'spiracss/pseudo-nesting': pseudoEnabled ? [true, pseudoConfig] : false,
+    'spiracss/rel-comments': [true, relConfig]
   }
 }
 

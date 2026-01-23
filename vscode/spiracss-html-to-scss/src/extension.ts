@@ -15,7 +15,8 @@ import {
   type SelectorPolicy,
   summarizeRootBlocks
 } from '@spiracss/html-cli'
-import { existsSync, promises as fsp, statSync } from 'fs'
+import { existsSync, promises as fsp, readFileSync, statSync } from 'fs'
+import { createRequire } from 'module'
 import * as path from 'path'
 import { pathToFileURL } from 'url'
 import * as vscode from 'vscode'
@@ -38,6 +39,17 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 /* ---------- workspace / config loading ---------- */
+const isModuleWorkspace = (root: string): boolean => {
+  const pkgPath = path.join(root, 'package.json')
+  if (!existsSync(pkgPath)) return false
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { type?: string }
+    return pkg.type === 'module'
+  } catch {
+    return false
+  }
+}
+
 function getWorkspaceRoot(uri: vscode.Uri): string | undefined {
   const folder = vscode.workspace.getWorkspaceFolder(uri)
   return folder?.uri.fsPath
@@ -77,6 +89,19 @@ async function loadSpiracssConfig(uri: vscode.Uri): Promise<SpiracssConfig | und
   if (!root) return undefined
   const configPath = path.join(root, 'spiracss.config.js')
   if (!existsSync(configPath)) return undefined
+
+  if (!isModuleWorkspace(root)) {
+    try {
+      const require = createRequire(__filename)
+      const resolved = require.resolve(configPath)
+      delete require.cache[resolved]
+      const config = require(resolved)
+      return normalizeConfigModule(config)
+    } catch (error) {
+      warnConfigLoadError(root, error)
+      return undefined
+    }
+  }
 
   // Load via ESM (disable cache with cacheBuster)
   try {

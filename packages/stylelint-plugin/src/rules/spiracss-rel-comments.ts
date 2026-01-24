@@ -6,6 +6,7 @@ import stylelint from 'stylelint'
 
 import { createLruCache } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
+import { formatFileBase } from '../utils/formatting'
 import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
 import {
@@ -86,6 +87,7 @@ const optionSchema = {
   skipNoRules: [isBoolean],
   childDir: [isString],
   aliasRoots: [isPlainObject],
+  fileCase: [isString],
   ...COMMENTS_SCHEMA,
   ...NAMING_SCHEMA,
   ...EXTERNAL_SCHEMA,
@@ -397,12 +399,18 @@ const rule = createRule(
           )
 
           childBlocks.forEach((child) => {
-            if (!targetNames.has(`${child}.scss`)) {
+            const expectedBase = formatFileBase(child, options.fileCase)
+            const expectedFiles = [
+              `${expectedBase}.scss`,
+              `${expectedBase}.module.scss`
+            ]
+            const hasExpected = expectedFiles.some((name) => targetNames.has(name))
+            if (!hasExpected) {
               stylelint.utils.report({
                 ruleName,
                 result,
                 node: rule,
-                message: messages.childMismatch(child)
+                message: messages.childMismatch(child, expectedFiles)
               })
             }
           })

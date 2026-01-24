@@ -39,6 +39,18 @@ describe('spiracss/rel-comments - basic checks', () => {
       },
       {
         code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/child-block.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'page entry comment + child Block @rel comment (module)'
+      },
+      {
+        code: `
 @use 'sass:meta';
 @media (min-width: 768px) {
   // @assets/css/home.scss
@@ -136,7 +148,7 @@ describe('spiracss/rel-comments - basic checks', () => {
   }
 }`,
         description: 'child Block name and @rel file name do not match',
-        message: 'Link comment must include `child-block.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message: 'Link comment must include `child-block.scss`, `child-block.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       },
       {
         code: `
@@ -150,6 +162,318 @@ describe('spiracss/rel-comments - basic checks', () => {
         description: 'missing child Block @rel comment (requireChild violation)',
         message:
           'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+      }
+    ]
+  })
+})
+
+describe('spiracss/rel-comments - fileCase option', () => {
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'pascal',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false, // File existence checks are disabled for tests.
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/ChildBlock.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'accept PascalCase file name when fileCase=pascal'
+      },
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/ChildBlock.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'accept PascalCase module file name when fileCase=pascal'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'reject kebab-case file name when fileCase=pascal',
+        message: 'Link comment must include `ChildBlock.scss`, `ChildBlock.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+})
+
+describe('spiracss/rel-comments - fileCase variants', () => {
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'kebab',
+        naming: { blockCase: 'pascal' },
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.HomeSection {
+  > .ChildBlock {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'kebab fileCase expects kebab filenames even for PascalCase classes'
+      },
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.HomeSection {
+  > .ChildBlock {
+    // @rel/scss/child-block.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'kebab fileCase accepts module suffix'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.HomeSection {
+  > .ChildBlock {
+    // @rel/scss/ChildBlock.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'kebab fileCase rejects PascalCase filename',
+        message: 'Link comment must include `child-block.scss`, `child-block.module.scss` for direct child `.ChildBlock`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'snake',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/child_block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'snake fileCase expects snake filenames'
+      },
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/child_block.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'snake fileCase accepts module suffix'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'snake fileCase rejects kebab filename',
+        message: 'Link comment must include `child_block.scss`, `child_block.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'camel',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/childBlock.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'camel fileCase expects camel filenames'
+      },
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/childBlock.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'camel fileCase accepts module suffix'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .child-block {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'camel fileCase rejects kebab filename',
+        message: 'Link comment must include `childBlock.scss`, `childBlock.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+})
+
+describe('spiracss/rel-comments - fileCase default preserve', () => {
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        naming: { blockCase: 'camel' },
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.homeSection {
+  > .childBlock {
+    // @rel/scss/childBlock.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'default preserve keeps camelCase filename'
+      },
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.homeSection {
+  > .childBlock {
+    // @rel/scss/childBlock.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'default preserve allows module suffix'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.homeSection {
+  > .childBlock {
+    // @rel/scss/child-block.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'default preserve rejects kebab filename for camelCase class',
+        message: 'Link comment must include `childBlock.scss`, `childBlock.module.scss` for direct child `.childBlock`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })

@@ -1,6 +1,6 @@
 import type { Comment } from 'postcss'
 
-import type { NamingOptions, NormalizedCacheSizes } from '../types'
+import type { FileNameCase, NamingOptions, NormalizedCacheSizes } from '../types'
 
 export type AliasRoots = Record<string, string[]>
 
@@ -15,6 +15,7 @@ export type Options = {
       interaction: boolean
     }
   }
+  fileCase: FileNameCase
   validate: {
     path: boolean
   }

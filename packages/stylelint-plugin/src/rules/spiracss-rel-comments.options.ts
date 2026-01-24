@@ -9,6 +9,26 @@ import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { isAliasRoots } from '../utils/validate'
 import type { Options } from './spiracss-rel-comments.types'
 
+const isWordCase = (value: unknown): value is Exclude<Options['fileCase'], 'preserve'> =>
+  value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
+
+const normalizeFileCase = (
+  value: unknown,
+  fallback: Options['fileCase'],
+  reportInvalid?: InvalidOptionReporter
+): Options['fileCase'] => {
+  if (value === 'preserve') return value
+  if (isWordCase(value)) return value
+  if (value !== undefined) {
+    reportInvalid?.(
+      'fileCase',
+      value,
+      '[spiracss] fileCase must be "preserve" | "kebab" | "snake" | "camel" | "pascal".'
+    )
+  }
+  return fallback
+}
+
 const defaultOptions: Options = {
   require: {
     scss: true,
@@ -20,6 +40,7 @@ const defaultOptions: Options = {
       interaction: false
     }
   },
+  fileCase: 'preserve',
   validate: {
     path: true
   },
@@ -58,6 +79,7 @@ export const normalizeOptions = (
     skipNoRules?: boolean
     childDir?: string
     aliasRoots?: Options['paths']['aliases']
+    fileCase?: Options['fileCase']
     comments?: { shared?: RegExp | string; interaction?: RegExp | string }
     cache?: CacheSizes
     naming?: Options['naming']
@@ -114,6 +136,7 @@ export const normalizeOptions = (
         )
       }
     },
+    fileCase: normalizeFileCase(raw.fileCase, defaultOptions.fileCase, reportInvalid),
     validate: {
       path: normalizeBoolean(
         raw.validatePath,

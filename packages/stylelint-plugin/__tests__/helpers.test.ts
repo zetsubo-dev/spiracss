@@ -95,6 +95,27 @@ describe('helpers/createRules', () => {
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
 
+  it('propagates class.rootCase to rel.fileCase when not specified', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/components']
+      },
+      stylelint: {
+        class: {
+          rootCase: 'pascal'
+        },
+        rel: {}
+      }
+    })
+
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { fileCase?: unknown }
+    ]
+    assert.strictEqual(relComments[0], true)
+    assert.strictEqual(relComments[1].fileCase, 'pascal')
+  })
+
   it('disables keyframes-naming when enabled is false', () => {
     const rules = createRules({
       aliasRoots: {

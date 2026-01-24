@@ -83,6 +83,7 @@ type RelCommentsConfig = {
   skipNoRules?: boolean
   childDir?: string
   aliasRoots?: Record<string, string[]>
+  fileCase?: RelCommentsOptions['fileCase']
   comments?: CommentConfig
   naming?: NamingOptions
   external?: ExternalConfig
@@ -633,6 +634,9 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
   if (relConfig.cache === undefined) {
     assignIfDefined(relConfig, 'cache', baseCache)
+  }
+  if (relConfig.fileCase === undefined && classConfig.rootCase !== undefined) {
+    relConfig.fileCase = classConfig.rootCase
   }
   if (relConfig.childDir === undefined) {
     assignIfDefined(relConfig, 'childDir', basePaths?.childDir)

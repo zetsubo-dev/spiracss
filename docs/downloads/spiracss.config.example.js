@@ -188,7 +188,9 @@ const config = {
       // Skip files without selector rules (default: true)
       skipNoRules: true,
       // Directory name for child Block SCSS (default: 'scss')
-      childDir: 'scss'
+      childDir: 'scss',
+      // Expected file name case for child @rel comments (preserve / kebab / snake / camel / pascal / default: 'preserve')
+      fileCase: 'preserve'
     }
   },
   // Output attribute for HTML placeholders (default: 'class')

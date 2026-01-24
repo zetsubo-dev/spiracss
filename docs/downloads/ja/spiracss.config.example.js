@@ -187,7 +187,9 @@ const config = {
       // ルールがないファイルはスキップするか（デフォルト: true）
       skipNoRules: true,
       // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）
-      childDir: 'scss'
+      childDir: 'scss',
+      // 子 @rel コメントで期待するファイル名ケース（preserve / kebab / snake / camel / pascal / デフォルト: 'preserve'）
+      fileCase: 'preserve'
     }
   },
 

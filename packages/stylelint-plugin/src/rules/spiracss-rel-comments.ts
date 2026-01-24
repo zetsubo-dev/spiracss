@@ -6,6 +6,7 @@ import stylelint from 'stylelint'
 
 import { createLruCache } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
+import { formatFileBase } from '../utils/formatting'
 import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
 import {
@@ -30,6 +31,7 @@ import {
 } from '../utils/stylelint'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
+import type { FileNameCase } from '../types'
 import {
   extractLinkTargets,
   normalizeRelPath,
@@ -75,6 +77,38 @@ const meta = {
 
 const ALIAS_KEY_PATTERN = /^[a-z][a-z0-9-]*$/
 
+const stripAliasPrefix = (target: string): string => {
+  if (!target.startsWith('@')) return target
+  const withoutAt = target.slice(1)
+  const slashIndex = withoutAt.indexOf('/')
+  if (slashIndex === -1) return ''
+  return withoutAt.slice(slashIndex + 1)
+}
+
+const targetUsesChildDir = (
+  target: string,
+  childDir: string,
+  baseDir: string,
+  projectRoot: string,
+  aliasRoots: AliasRoots
+): boolean => {
+  if (!childDir) return false
+  const candidates = resolvePathCandidates(target, baseDir, projectRoot, aliasRoots)
+  if (candidates.some((candidate) => candidate.split(path.sep).includes(childDir))) {
+    return true
+  }
+  if (candidates.length > 0) return false
+  const normalized = target.replace(/\\/g, '/')
+  const stripped = stripAliasPrefix(normalized)
+  const segments = stripped.split('/').filter(Boolean)
+  return segments.includes(childDir)
+}
+
+const buildExpectedFiles = (child: string, fileCase: FileNameCase): string[] => {
+  const expectedBase = formatFileBase(child, fileCase)
+  return [`${expectedBase}.scss`, `${expectedBase}.module.scss`]
+}
+
 const optionSchema = {
   requireScss: [isBoolean],
   requireMeta: [isBoolean],
@@ -86,6 +120,8 @@ const optionSchema = {
   skipNoRules: [isBoolean],
   childDir: [isString],
   aliasRoots: [isPlainObject],
+  fileCase: [isString],
+  childFileCase: [isString],
   ...COMMENTS_SCHEMA,
   ...NAMING_SCHEMA,
   ...EXTERNAL_SCHEMA,
@@ -210,6 +246,7 @@ const rule = createRule(
         return exists
       }
       const filePath: string = (result?.opts?.from as string) || ''
+      const baseDir = filePath ? path.dirname(filePath) : process.cwd()
       const inScssDir = filePath.split(path.sep).includes(childScssDir)
       const containsRules = hasRuleNodes(root)
       const needsRulesCheck = !options.skip.noRules || containsRules
@@ -390,19 +427,43 @@ const rule = createRule(
             return
           }
 
-          const targetNames = new Set(
-            targets
-              .map((target) => path.basename(normalizeRelPath(target)))
-              .filter((name) => Boolean(name))
-          )
+          const targetInfos = targets
+            .map((target) => normalizeRelPath(target))
+            .filter((target) => Boolean(target))
+            .map((target) => ({
+              baseName: path.basename(target),
+              usesChildDir: targetUsesChildDir(
+                target,
+                childScssDir,
+                baseDir,
+                projectRoot,
+                aliasRoots
+              )
+            }))
+            .filter((info) => Boolean(info.baseName))
+
+          const hasDefaultTargets = targetInfos.some((info) => !info.usesChildDir)
+          const hasChildDirTargets = targetInfos.some((info) => info.usesChildDir)
 
           childBlocks.forEach((child) => {
-            if (!targetNames.has(`${child}.scss`)) {
+            const expectedDefault = buildExpectedFiles(child, options.fileCase)
+            const childFileCase = options.childFileCase ?? options.fileCase
+            const expectedChildDir = buildExpectedFiles(child, childFileCase)
+            const hasExpected = targetInfos.some((info) => {
+              const expected = info.usesChildDir ? expectedChildDir : expectedDefault
+              return expected.includes(info.baseName)
+            })
+            if (!hasExpected) {
+              const expectedFiles = [
+                ...(hasDefaultTargets ? expectedDefault : []),
+                ...(hasChildDirTargets ? expectedChildDir : [])
+              ]
+              const uniqueExpected = Array.from(new Set(expectedFiles))
               stylelint.utils.report({
                 ruleName,
                 result,
                 node: rule,
-                message: messages.childMismatch(child)
+                message: messages.childMismatch(child, uniqueExpected)
               })
             }
           })
@@ -410,7 +471,6 @@ const rule = createRule(
       }
 
       if (options.validate.path) {
-        const baseDir = filePath ? path.dirname(filePath) : process.cwd()
         const pathExists = (candidate: string): boolean => {
           if (pathExistsCache.has(candidate)) {
             return pathExistsCache.get(candidate) as boolean

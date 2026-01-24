@@ -6,6 +6,9 @@ export default {
     class: {},
     interactionScope: {},
     pseudo: {},
-    rel: {}
+    rel: {
+      fileCase: 'preserve',
+      childFileCase: 'preserve'
+    }
   }
 }

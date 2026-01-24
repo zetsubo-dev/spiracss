@@ -95,6 +95,81 @@ describe('helpers/createRules', () => {
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
 
+  it('does not propagate class.rootCase to rel.fileCase by default', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/components']
+      },
+      stylelint: {
+        class: {
+          rootCase: 'pascal'
+        },
+        rel: {}
+      }
+    })
+
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { fileCase?: unknown }
+    ]
+    assert.strictEqual(relComments[0], true)
+    assert.strictEqual(relComments[1].fileCase, undefined)
+  })
+
+  it('propagates generator file cases to rel when missing', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/components']
+      },
+      generator: {
+        rootFileCase: 'pascal',
+        childFileCase: 'kebab'
+      },
+      stylelint: {
+        rel: {}
+      }
+    })
+
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { fileCase?: unknown; childFileCase?: unknown }
+    ]
+    assert.strictEqual(relComments[0], true)
+    assert.strictEqual(relComments[1].fileCase, 'pascal')
+    assert.strictEqual(relComments[1].childFileCase, 'kebab')
+  })
+
+  it('propagates top-level fileCase to class and rel when missing', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/components']
+      },
+      fileCase: {
+        root: 'pascal',
+        child: 'kebab'
+      },
+      stylelint: {
+        class: {},
+        rel: {}
+      }
+    })
+
+    const classStructure = rules['spiracss/class-structure'] as [
+      boolean,
+      { rootCase?: unknown }
+    ]
+    assert.strictEqual(classStructure[0], true)
+    assert.strictEqual(classStructure[1].rootCase, 'pascal')
+
+    const relComments = rules['spiracss/rel-comments'] as [
+      boolean,
+      { fileCase?: unknown; childFileCase?: unknown }
+    ]
+    assert.strictEqual(relComments[0], true)
+    assert.strictEqual(relComments[1].fileCase, 'pascal')
+    assert.strictEqual(relComments[1].childFileCase, 'kebab')
+  })
+
   it('disables keyframes-naming when enabled is false', () => {
     const rules = createRules({
       aliasRoots: {

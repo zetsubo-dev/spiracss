@@ -17,7 +17,28 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     "    pageEntrySubdir: 'css',",
     "    childScssDir: 'scss-test',",
     "    layoutMixins: ['@include breakpoint-up(md)'],",
-    "    rootFileCase: 'pascal'",
+    "    rootFileCase: 'pascal',",
+    "    childFileCase: 'pascal'",
+    '  },',
+    '  selectorPolicy: {',
+    "    variant: { mode: 'class' },",
+    "    state: { mode: 'class' }",
+    '  },',
+    '  htmlFormat: {',
+    "    classAttribute: 'className'",
+    '  }',
+    '}',
+    ''
+  ].join('\n')
+  const cjsFileCaseConfigContent = [
+    'module.exports = {',
+    "  fileCase: { root: 'pascal', child: 'kebab' },",
+    '  generator: {',
+    "    globalScssModule: '@styles/fixtures-global',",
+    "    pageEntryAlias: 'assets',",
+    "    pageEntrySubdir: 'css',",
+    "    childScssDir: 'scss-test',",
+    "    layoutMixins: ['@include breakpoint-up(md)']",
     '  },',
     '  selectorPolicy: {',
     "    variant: { mode: 'class' },",
@@ -37,7 +58,8 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     "    pageEntrySubdir: 'css',",
     "    childScssDir: 'scss-test',",
     "    layoutMixins: ['@include breakpoint-up(md)'],",
-    "    rootFileCase: 'pascal'",
+    "    rootFileCase: 'pascal',",
+    "    childFileCase: 'pascal'",
     '  },',
     '  selectorPolicy: {',
     "    variant: { mode: 'data', dataKeys: ['data-variant'] },",
@@ -57,7 +79,8 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     "    pageEntrySubdir: 'css',",
     "    childScssDir: 'scss-esm',",
     "    layoutMixins: ['@include breakpoint-up(md)'],",
-    "    rootFileCase: 'camel'",
+    "    rootFileCase: 'camel',",
+    "    childFileCase: 'camel'",
     '  },',
     '  selectorPolicy: {',
     "    variant: { mode: 'class' },",
@@ -171,6 +194,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     const childScssDir = 'scss-test'
     const rootFile = path.join(docDir, 'SampleBox.scss')
     const childDir = path.join(docDir, childScssDir)
+    const childFile = path.join(childDir, 'HeroHeader.scss')
     const indexFile = path.join(childDir, 'index.scss')
 
     removePath(rootFile)
@@ -189,6 +213,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
 
       assert.ok(fs.existsSync(rootFile), 'Root SCSS should be generated with config rootFileCase')
       assert.ok(fs.existsSync(childDir), 'Child SCSS directory should be generated with config')
+      assert.ok(fs.existsSync(childFile), 'Child SCSS should use childFileCase')
       assert.ok(fs.existsSync(indexFile), 'Child index.scss should be generated')
 
       const rootScss = fs.readFileSync(rootFile, 'utf8')
@@ -200,6 +225,38 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       // Cleanup
       removePath(rootFile)
       removePath(childDir)
+    }
+  })
+
+  test('Generate SCSS uses top-level fileCase when generator cases are missing', async function () {
+    this.timeout(10000)
+
+    const htmlFile = path.join(fixturesDir, 'html/sample-box.html')
+    const docDir = path.dirname(htmlFile)
+    const childScssDir = 'scss-test'
+    const rootFile = path.join(docDir, 'SampleBox.scss')
+    const childDir = path.join(docDir, childScssDir)
+    const childFile = path.join(childDir, 'hero-header.scss')
+
+    removePath(rootFile)
+    removePath(childDir)
+    writeConfig(cjsFileCaseConfigContent)
+
+    try {
+      await openAndSelectAll(htmlFile)
+
+      const ext = vscode.extensions.getExtension('spiracss.spiracss-html-to-scss')
+      assert.ok(ext)
+      await ext.activate()
+
+      await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
+
+      assert.ok(fs.existsSync(rootFile), 'Root SCSS should use fileCase.root')
+      assert.ok(fs.existsSync(childFile), 'Child SCSS should use fileCase.child')
+    } finally {
+      removePath(rootFile)
+      removePath(childDir)
+      writeConfig(cjsConfigContent)
     }
   })
 
@@ -287,7 +344,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     removePath(childDir)
 
     fs.mkdirSync(childDir, { recursive: true })
-    fs.writeFileSync(indexFile, '@use "child-box";\n', 'utf8')
+    fs.writeFileSync(indexFile, '@use "ChildBox";\n', 'utf8')
 
     try {
       await openAndSelectAll(htmlFile)
@@ -299,9 +356,9 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
 
       const merged = fs.readFileSync(indexFile, 'utf8')
-      const childUses = merged.match(/@use "child-box";/g) ?? []
+      const childUses = merged.match(/@use "ChildBox";/g) ?? []
       assert.strictEqual(childUses.length, 1, 'Existing @use entries should not be duplicated')
-      assert.ok(merged.includes('@use "extra-box";'), 'Missing @use entries should be added')
+      assert.ok(merged.includes('@use "ExtraBox";'), 'Missing @use entries should be added')
     } finally {
       removePath(rootFile)
       removePath(childDir)

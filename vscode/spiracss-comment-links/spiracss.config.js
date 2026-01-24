@@ -10,6 +10,13 @@ module.exports = {
     assets: ['fixtures/src/assets']
   },
 
+  // Default file name casing for root/child SCSS (generator + stylelint)
+  // Example: { root: 'pascal', child: 'kebab' }
+  fileCase: {
+    root: 'preserve',
+    child: 'preserve'
+  },
+
   // stylelint plugin rules (generally unused during extension development)
   stylelint: {
     base: {
@@ -42,6 +49,8 @@ module.exports = {
       requireChildInteraction: true,
       validatePath: true,
       skipNoRules: true,
+      fileCase: 'preserve',
+      childFileCase: 'preserve',
       childDir: 'scss'
     }
   },
@@ -51,6 +60,7 @@ module.exports = {
     globalScssModule: '@styles/partials/global',
     pageEntryAlias: 'assets',
     pageEntrySubdir: 'css',
+    childFileCase: 'preserve',
     childScssDir: 'scss',
     layoutMixins: ['@include breakpoint-up(md)']
   }

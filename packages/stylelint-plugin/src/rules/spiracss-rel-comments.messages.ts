@@ -48,9 +48,9 @@ export const messages = createRuleMessages(ruleName, {
     `Link target not found: ${formatCode(
       target
     )}. Fix the path or ${formatCode('aliasRoots')}.`,
-  childMismatch: (child: string) =>
-    `Link comment must include ${formatCode(
-      `${child}.scss`
+  childMismatch: (child: string, expectedFiles: string[]) =>
+    `Link comment must include ${formatConfigList(
+      expectedFiles
     )} for direct child ${formatCode(
       `.${child}`
     )}. Update the ${formatCode('@rel')} path to match.`,

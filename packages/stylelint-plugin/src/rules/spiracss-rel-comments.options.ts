@@ -9,6 +9,44 @@ import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { isAliasRoots } from '../utils/validate'
 import type { Options } from './spiracss-rel-comments.types'
 
+const isWordCase = (value: unknown): value is Exclude<Options['fileCase'], 'preserve'> =>
+  value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
+
+const isFileCase = (value: unknown): value is Options['fileCase'] =>
+  value === 'preserve' || isWordCase(value)
+
+const normalizeFileCase = (
+  value: unknown,
+  fallback: Options['fileCase'],
+  reportInvalid?: InvalidOptionReporter,
+  optionName = 'fileCase'
+): Options['fileCase'] => {
+  if (isFileCase(value)) return value
+  if (value !== undefined) {
+    reportInvalid?.(
+      optionName,
+      value,
+      `[spiracss] ${optionName} must be "preserve" | "kebab" | "snake" | "camel" | "pascal".`
+    )
+  }
+  return fallback
+}
+
+const normalizeOptionalFileCase = (
+  value: unknown,
+  reportInvalid?: InvalidOptionReporter,
+  optionName = 'childFileCase'
+): Options['childFileCase'] => {
+  if (value === undefined) return undefined
+  if (isFileCase(value)) return value
+  reportInvalid?.(
+    optionName,
+    value,
+    `[spiracss] ${optionName} must be "preserve" | "kebab" | "snake" | "camel" | "pascal".`
+  )
+  return undefined
+}
+
 const defaultOptions: Options = {
   require: {
     scss: true,
@@ -20,6 +58,8 @@ const defaultOptions: Options = {
       interaction: false
     }
   },
+  fileCase: 'preserve',
+  childFileCase: undefined,
   validate: {
     path: true
   },
@@ -58,6 +98,8 @@ export const normalizeOptions = (
     skipNoRules?: boolean
     childDir?: string
     aliasRoots?: Options['paths']['aliases']
+    fileCase?: Options['fileCase']
+    childFileCase?: Options['childFileCase']
     comments?: { shared?: RegExp | string; interaction?: RegExp | string }
     cache?: CacheSizes
     naming?: Options['naming']
@@ -114,6 +156,13 @@ export const normalizeOptions = (
         )
       }
     },
+    fileCase: normalizeFileCase(
+      raw.fileCase,
+      defaultOptions.fileCase,
+      reportInvalid,
+      'fileCase'
+    ),
+    childFileCase: normalizeOptionalFileCase(raw.childFileCase, reportInvalid),
     validate: {
       path: normalizeBoolean(
         raw.validatePath,

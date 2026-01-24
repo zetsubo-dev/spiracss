@@ -166,6 +166,20 @@ describe('generator-core', () => {
     })
   })
 
+  it('applies childFileCase to child SCSS file names and @rel comments', () => {
+    const html = '<div class="site-header"><div class="site-logo"></div></div>'
+    const generated = generateFromHtml(html, fixturesDir, true, {
+      ...baseOptions,
+      rootFileCase: 'pascal',
+      childFileCase: 'pascal'
+    })
+    const root = generated.find((f) => f.path === 'SiteHeader.scss')?.content
+    const child = generated.find((f) => f.path === 'scss/SiteLogo.scss')
+    assert.ok(root, 'root SCSS not generated')
+    assert.ok(child, 'child SCSS not generated')
+    assert.ok(root.includes('// @rel/scss/SiteLogo.scss'), 'root @rel should use childFileCase')
+  })
+
   it('HTML lint passes for valid structure', async () => {
     const html = await fsp.readFile(path.join(fixturesDir, 'html/sample-box.html'), 'utf8')
     // Use class mode because fixtures include modifier classes

@@ -37,6 +37,24 @@ function isFileNameCase(value: string): value is FileNameCase {
   )
 }
 
+type FileCaseConfig = {
+  root?: FileNameCase
+  child?: FileNameCase
+}
+
+const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
+  if (typeof value === 'string' && isFileNameCase(value)) {
+    return { root: value, child: value }
+  }
+  if (!isRecord(value)) return {}
+  const root = value.root
+  const child = value.child
+  return {
+    root: typeof root === 'string' && isFileNameCase(root) ? root : undefined,
+    child: typeof child === 'string' && isFileNameCase(child) ? child : undefined
+  }
+}
+
 function parseArgs(argv: string[]): ParsedArgs {
   const mode: Mode = argv.includes('--selection') ? 'selection' : 'root'
   const useStdin = argv.includes('--stdin')
@@ -83,6 +101,7 @@ async function loadGeneratorOptions(
   const defaultChildDir = 'scss'
   const defaultLayoutMixins = ['@include breakpoint-up(md)']
   const defaultRootFileCase: FileNameCase = 'preserve'
+  const defaultChildFileCase: FileNameCase = 'preserve'
 
   let globalScssModule = defaultGlobalScssModule
   let pageEntryPrefix = `@${defaultPageAlias}/${defaultPageSubdir}`
@@ -90,6 +109,7 @@ async function loadGeneratorOptions(
   let layoutMixins = defaultLayoutMixins
   let naming: NamingOptions = {}
   let rootFileCase: FileNameCase = defaultRootFileCase
+  let childFileCase: FileNameCase = defaultChildFileCase
   let namingSource = 'stylelint.base.naming.customPatterns'
   let selectorPolicy: SelectorPolicy | undefined
   let externalClasses: string[] = []
@@ -98,6 +118,7 @@ async function loadGeneratorOptions(
   const configPath = path.join(rootDir, 'spiracss.config.js')
   const config = await loadSpiracssConfig(configPath)
   if (config && typeof config === 'object') {
+    const fileCaseConfig = resolveFileCaseConfig((config as Record<string, unknown>).fileCase)
     const generator = config.generator as Record<string, unknown> | undefined
     const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
     const base = stylelintCfg?.base as Record<string, unknown> | undefined
@@ -127,6 +148,15 @@ async function loadGeneratorOptions(
     const fileCase = generator?.rootFileCase as string | undefined
     if (typeof fileCase === 'string' && isFileNameCase(fileCase)) {
       rootFileCase = fileCase
+    } else if (fileCaseConfig.root) {
+      rootFileCase = fileCaseConfig.root
+    }
+
+    const childCase = generator?.childFileCase as string | undefined
+    if (typeof childCase === 'string' && isFileNameCase(childCase)) {
+      childFileCase = childCase
+    } else if (fileCaseConfig.child) {
+      childFileCase = fileCaseConfig.child
     }
 
     const baseNaming = base?.naming
@@ -172,6 +202,7 @@ async function loadGeneratorOptions(
     layoutMixins,
     naming,
     rootFileCase,
+    childFileCase,
     selectorPolicy,
     external: {
       classes: externalClasses,

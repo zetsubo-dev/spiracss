@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.3.1-beta
+
+### Added
+
+- Support `childFileCase` when generating child SCSS filenames and `@rel` comments.
+
 ## 0.3.0
 
 ### Breaking Changes

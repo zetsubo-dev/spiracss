@@ -2,6 +2,12 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.3.1-beta
+
+### Changed
+
+- Align extension version with the monorepo release.
+
 ## 0.3.0
 
 ### Documentation

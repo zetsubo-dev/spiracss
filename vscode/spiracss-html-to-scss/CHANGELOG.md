@@ -2,6 +2,13 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.3.1-beta
+
+### Changed
+
+- Support `childFileCase` when generating child SCSS files and `@rel` comments.
+- Update `@spiracss/html-cli` dependency to `^0.3.1`.
+
 ## 0.3.0
 
 ### Breaking Changes

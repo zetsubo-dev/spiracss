@@ -38,6 +38,24 @@ function isFileNameCase(value: string): value is FileNameCase {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
+type FileCaseConfig = {
+  root?: FileNameCase
+  child?: FileNameCase
+}
+
+const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
+  if (typeof value === 'string' && isFileNameCase(value)) {
+    return { root: value, child: value }
+  }
+  if (!isRecord(value)) return {}
+  const root = value.root
+  const child = value.child
+  return {
+    root: typeof root === 'string' && isFileNameCase(root) ? root : undefined,
+    child: typeof child === 'string' && isFileNameCase(child) ? child : undefined
+  }
+}
+
 /* ---------- workspace / config loading ---------- */
 const isModuleWorkspace = (root: string): boolean => {
   const pkgPath = path.join(root, 'package.json')
@@ -176,10 +194,29 @@ function loadChildScssDirFromConfig(config?: SpiracssConfig): string {
 function loadRootFileCaseFromConfig(config?: SpiracssConfig): FileNameCase {
   const fallback: FileNameCase = 'preserve'
   if (!config) return fallback
+  const globalFileCase = resolveFileCaseConfig(config.fileCase)
   const generator = config.generator as Record<string, unknown> | undefined
   const fileCase = generator?.rootFileCase as string | undefined
   if (typeof fileCase === 'string' && isFileNameCase(fileCase)) {
     return fileCase
+  }
+  if (globalFileCase.root) {
+    return globalFileCase.root
+  }
+  return fallback
+}
+
+function loadChildFileCaseFromConfig(config?: SpiracssConfig): FileNameCase {
+  const fallback: FileNameCase = 'preserve'
+  if (!config) return fallback
+  const globalFileCase = resolveFileCaseConfig(config.fileCase)
+  const generator = config.generator as Record<string, unknown> | undefined
+  const fileCase = generator?.childFileCase as string | undefined
+  if (typeof fileCase === 'string' && isFileNameCase(fileCase)) {
+    return fileCase
+  }
+  if (globalFileCase.child) {
+    return globalFileCase.child
   }
   return fallback
 }
@@ -502,6 +539,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
     const external = loadExternalOptionsFromConfig(config)
     const childScssDir = loadChildScssDirFromConfig(config)
     const rootFileCase = loadRootFileCaseFromConfig(config)
+    const childFileCase = loadChildFileCaseFromConfig(config)
 
     const options: GeneratorOptions = {
       globalScssModule,
@@ -510,6 +548,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
       layoutMixins,
       naming,
       rootFileCase,
+      childFileCase,
       selectorPolicy,
       external
     }

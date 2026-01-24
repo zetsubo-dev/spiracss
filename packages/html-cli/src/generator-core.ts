@@ -339,6 +339,7 @@ export type GeneratorOptions = {
   layoutMixins: string[]
   naming: NamingOptions
   rootFileCase?: FileNameCase
+  childFileCase?: FileNameCase
   selectorPolicy?: SelectorPolicy
   external?: ExternalOptions
 }
@@ -1455,6 +1456,7 @@ function block(
   lv: number,
   layoutMixins: string[],
   childScssDir: string,
+  childFileCase: FileNameCase,
   policy: NormalizedSelectorPolicy,
   naming: NamingOptions,
   external: NormalizedExternalOptions,
@@ -1540,12 +1542,12 @@ function block(
     if (ch.isIndependent) {
       // In SpiraCSS, Block > Block is always a direct child, so always use >.
       const sel = `> .${ch.baseClass}`
+      const childFileBase = formatFileBase(ch.baseClass, childFileCase)
+      const childRelBase = c.isRoot ? `${childScssDir}/${childFileBase}` : childFileBase
       if (layoutMixins.length === 0) {
         buf.push(
           `${ind}${sel} {`,
-          `${indent(lv + 1)}// @rel/${
-            c.isRoot ? `${childScssDir}/${ch.baseClass}` : ch.baseClass
-          }.scss`,
+          `${indent(lv + 1)}// @rel/${childRelBase}.scss`,
           `${indent(lv + 1)}// child component layout`,
           `${ind}}`,
           ''
@@ -1554,9 +1556,7 @@ function block(
         layoutMixins.forEach((mixin) => {
           buf.push(
             `${ind}${sel} {`,
-            `${indent(lv + 1)}// @rel/${
-              c.isRoot ? `${childScssDir}/${ch.baseClass}` : ch.baseClass
-            }.scss`,
+            `${indent(lv + 1)}// @rel/${childRelBase}.scss`,
             `${indent(lv + 1)}${mixin} {`,
             `${indent(lv + 2)}// child component layout`,
             `${indent(lv + 1)}}`,
@@ -1568,7 +1568,7 @@ function block(
     } else {
       buf.push(
         `${ind}> .${ch.baseClass} {`,
-        block(ch, lv + 1, layoutMixins, childScssDir, policy, naming, external),
+        block(ch, lv + 1, layoutMixins, childScssDir, childFileCase, policy, naming, external),
         `${ind}}`,
         ''
       )
@@ -1623,6 +1623,7 @@ function scssContent(
   opts: GeneratorOptions,
   policy: NormalizedSelectorPolicy,
   external: NormalizedExternalOptions,
+  childFileCase: FileNameCase,
   parentRootFileBase?: string
 ): string {
   const { globalScssModule, pageEntryPrefix, layoutMixins, childScssDir } = opts
@@ -1636,7 +1637,7 @@ function scssContent(
                 ? `../${parentRootFileBase}`
                 : parent.isRoot
                   ? `../${camelize(parent.baseClass)}`
-                  : parent.baseClass
+                  : formatFileBase(parent.baseClass, childFileCase)
             }.scss\n\n`
           : '// @rel/(parent-block).scss\n\n'
       }`
@@ -1646,6 +1647,7 @@ function scssContent(
     1,
     layoutMixins,
     childScssDir,
+    childFileCase,
     policy,
     opts.naming,
     external,
@@ -1698,13 +1700,14 @@ export function generateFromHtml(
   const uses = new Set<string>()
   const childDir = opts.childScssDir
   const rootFileCase = normalizeFileNameCase(opts.rootFileCase)
+  const childFileCase = normalizeFileNameCase(opts.childFileCase)
 
   const gatherIndependent = (root: ComponentStructure): string[] => {
     const out: string[] = []
     const stack = [...root.independentChildren]
     while (stack.length) {
       const n = stack.pop()!
-      out.push(`${n.baseClass}.scss`)
+      out.push(`${formatFileBase(n.baseClass, childFileCase)}.scss`)
       stack.push(...n.independentChildren)
     }
     return out
@@ -1716,12 +1719,22 @@ export function generateFromHtml(
     rootFileBase?: string
   ): void => {
     if (parent && comp.isIndependent && parent !== comp) {
-      const relPath = `${childDir}/${comp.baseClass}.scss`
+      const childFileBase = formatFileBase(comp.baseClass, childFileCase)
+      const relPath = `${childDir}/${childFileBase}.scss`
       const parentRootFileBase = parent.isRoot ? rootFileBase : undefined
       // parent always exists, so hint is unused (pass empty string just in case)
       results.push({
         path: relPath,
-        content: scssContent(comp, parent, '', opts, policy, external, parentRootFileBase)
+        content: scssContent(
+          comp,
+          parent,
+          '',
+          opts,
+          policy,
+          external,
+          childFileCase,
+          parentRootFileBase
+        )
       })
     }
     for (const ch of comp.independentChildren) {
@@ -1748,7 +1761,7 @@ export function generateFromHtml(
     const pageEntryHint = isRootMode ? 'index.scss' : 'page-entry.scss'
     results.push({
       path: rootFile,
-      content: scssContent(tree, undefined, pageEntryHint, opts, policy, external)
+      content: scssContent(tree, undefined, pageEntryHint, opts, policy, external, childFileCase)
     })
 
     if (!isRootMode) {

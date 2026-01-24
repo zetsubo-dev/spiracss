@@ -2,6 +2,20 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.3.1-beta
+
+### Added
+
+- `stylelint.rel.fileCase` option to control expected file name casing for child `@rel` comments.
+- Accepts `*.module.scss` for child link comments (CSS Modules).
+- `stylelint.class.rootCase` now defaults `stylelint.rel.fileCase` when using `createRules()`.
+- `stylelint.rel.childFileCase` option to control expected file name casing when the `@rel` path includes `childDir`.
+
+### Changed
+
+- Child link checks now use `childFileCase` for targets under `childDir` and `fileCase` for other targets.
+- `stylelint.rel.fileCase` no longer inherits `stylelint.class.rootCase` automatically.
+
 ## 0.3.0
 
 ### Breaking Changes

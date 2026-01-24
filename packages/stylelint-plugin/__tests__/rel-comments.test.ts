@@ -416,6 +416,268 @@ describe('spiracss/rel-comments - fileCase variants', () => {
   })
 })
 
+describe('spiracss/rel-comments - childFileCase option', () => {
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'pascal',
+        childFileCase: 'kebab',
+        childDir: 'scss',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-header {
+    // @common/SiteHeader/SiteHeader.scss
+    @include meta.load-css('scss');
+  }
+
+  > .site-logo {
+    // @rel/scss/site-logo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'use pascal for component root, kebab for childDir'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-header {
+    // @common/SiteHeader/SiteHeader.scss
+    @include meta.load-css('scss');
+  }
+
+  > .site-logo {
+    // @rel/scss/SiteLogo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'reject PascalCase file name inside childDir when childFileCase=kebab',
+        message: 'Link comment must include `site-logo.scss`, `site-logo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'pascal',
+        childFileCase: 'kebab',
+        childDir: 'scss',
+        aliasRoots: {
+          common: ['src/components/scss']
+        },
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-logo {
+    // @common/site-logo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'childFileCase applies when alias root includes childDir'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-logo {
+    // @common/SiteLogo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'reject PascalCase when alias root includes childDir',
+        message: 'Link comment must include `site-logo.scss`, `site-logo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+
+  // childFileCase fallback to fileCase when not set
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'pascal',
+        // childFileCase not set - should fallback to fileCase
+        childDir: 'scss',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-logo {
+    // @rel/scss/SiteLogo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'childFileCase fallback: use fileCase (pascal) for childDir'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-logo {
+    // @rel/scss/site-logo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'childFileCase fallback: reject kebab when fileCase=pascal',
+        message: 'Link comment must include `SiteLogo.scss`, `SiteLogo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+
+  // childFileCase with .module.scss
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'pascal',
+        childFileCase: 'kebab',
+        childDir: 'scss',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-logo {
+    // @rel/scss/site-logo.module.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'childFileCase accepts .module.scss with correct case'
+      }
+    ]
+  })
+
+  // reverse pattern: fileCase=kebab, childFileCase=pascal
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        fileCase: 'kebab',
+        childFileCase: 'pascal',
+        childDir: 'scss',
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false,
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-header {
+    // @common/site-header.scss
+    @include meta.load-css('scss');
+  }
+
+  > .site-logo {
+    // @rel/scss/SiteLogo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'reverse: kebab for component root, pascal for childDir'
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > .site-logo {
+    // @rel/scss/site-logo.scss
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'reverse: reject kebab inside childDir when childFileCase=pascal',
+        message: 'Link comment must include `SiteLogo.scss`, `SiteLogo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+      }
+    ]
+  })
+})
+
 describe('spiracss/rel-comments - fileCase default preserve', () => {
   testRule({
     plugins: [relComments],

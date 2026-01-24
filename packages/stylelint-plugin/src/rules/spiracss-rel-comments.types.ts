@@ -16,6 +16,7 @@ export type Options = {
     }
   }
   fileCase: FileNameCase
+  childFileCase?: FileNameCase
   validate: {
     path: boolean
   }

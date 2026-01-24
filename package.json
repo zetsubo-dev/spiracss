@@ -1,6 +1,6 @@
 {
   "name": "spiracss-monorepo",
-  "version": "0.2.1",
+  "version": "0.3.1",
   "private": true,
   "packageManager": "yarn@4.10.3",
   "workspaces": [

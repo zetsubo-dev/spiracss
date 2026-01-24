@@ -18,7 +18,7 @@ import type { Options as KeyframesNamingOptions } from './rules/spiracss-keyfram
 import type { Options as PropertyPlacementOptions } from './rules/spiracss-property-placement.types'
 import type { Options as PseudoNestingOptions } from './rules/spiracss-pseudo-nesting.types'
 import type { Options as RelCommentsOptions } from './rules/spiracss-rel-comments.types'
-import type { CacheSizes, NamingOptions } from './types'
+import type { CacheSizes, FileNameCase, NamingOptions } from './types'
 import { isAliasRoots, isPlainObject } from './utils/validate'
 
 type CommentConfig = {
@@ -84,6 +84,7 @@ type RelCommentsConfig = {
   childDir?: string
   aliasRoots?: Record<string, string[]>
   fileCase?: RelCommentsOptions['fileCase']
+  childFileCase?: RelCommentsOptions['childFileCase']
   comments?: CommentConfig
   naming?: NamingOptions
   external?: ExternalConfig
@@ -136,6 +137,11 @@ type KeyframesNamingConfig = {
   cache?: CacheSizes
 }
 
+type FileCaseConfig = {
+  root?: FileNameCase
+  child?: FileNameCase
+}
+
 type PseudoNestingConfig = {
   enabled?: boolean
   cache?: CacheSizes
@@ -144,8 +150,10 @@ type PseudoNestingConfig = {
 type SpiracssConfig = {
   aliasRoots?: Record<string, string[]>
   selectorPolicy?: ClassStructureSelectorPolicy
+  fileCase?: FileNameCase | FileCaseConfig
   generator?: {
     rootFileCase?: ClassStructureOptions['root']['case']
+    childFileCase?: FileNameCase
     childScssDir?: string
     pageEntryAlias?: string
     pageEntrySubdir?: string
@@ -165,6 +173,26 @@ type SpiracssConfig = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
+
+const isFileNameCase = (value: unknown): value is FileNameCase =>
+  value === 'preserve' ||
+  value === 'kebab' ||
+  value === 'snake' ||
+  value === 'camel' ||
+  value === 'pascal'
+
+const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
+  if (typeof value === 'string' && isFileNameCase(value)) {
+    return { root: value, child: value }
+  }
+  if (!isRecord(value)) return {}
+  const root = value.root
+  const child = value.child
+  return {
+    root: typeof root === 'string' && isFileNameCase(root) ? root : undefined,
+    child: typeof child === 'string' && isFileNameCase(child) ? child : undefined
+  }
+}
 
 const hasDefaultExport = (value: Record<string, unknown>): value is { default: unknown } =>
   Object.prototype.hasOwnProperty.call(value, 'default')
@@ -446,6 +474,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     spiracss.generator && typeof spiracss.generator === 'object'
       ? spiracss.generator
       : undefined
+  const fileCaseConfig = resolveFileCaseConfig(spiracss.fileCase)
 
   const mergeObjects = <T extends object>(
     baseValue?: Partial<T>,
@@ -493,8 +522,12 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   if (classConfig.cache === undefined) {
     assignIfDefined(classConfig, 'cache', baseCache)
   }
-  if (classConfig.rootCase === undefined && generator?.rootFileCase !== undefined) {
-    classConfig.rootCase = generator.rootFileCase
+  if (classConfig.rootCase === undefined) {
+    if (generator?.rootFileCase !== undefined) {
+      classConfig.rootCase = generator.rootFileCase
+    } else if (fileCaseConfig.root !== undefined) {
+      classConfig.rootCase = fileCaseConfig.root
+    }
   }
   if (classConfig.childDir === undefined) {
     assignIfDefined(classConfig, 'childDir', basePaths?.childDir)
@@ -635,14 +668,25 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   if (relConfig.cache === undefined) {
     assignIfDefined(relConfig, 'cache', baseCache)
   }
-  if (relConfig.fileCase === undefined && classConfig.rootCase !== undefined) {
-    relConfig.fileCase = classConfig.rootCase
-  }
   if (relConfig.childDir === undefined) {
     assignIfDefined(relConfig, 'childDir', basePaths?.childDir)
   }
   if (!relConfig.childDir && generator?.childScssDir) {
     relConfig.childDir = generator.childScssDir
+  }
+  if (relConfig.fileCase === undefined) {
+    if (generator?.rootFileCase !== undefined) {
+      relConfig.fileCase = generator.rootFileCase
+    } else if (fileCaseConfig.root !== undefined) {
+      relConfig.fileCase = fileCaseConfig.root
+    }
+  }
+  if (relConfig.childFileCase === undefined) {
+    if (generator?.childFileCase !== undefined) {
+      relConfig.childFileCase = generator.childFileCase
+    } else if (fileCaseConfig.child !== undefined) {
+      relConfig.childFileCase = fileCaseConfig.child
+    }
   }
   if (relConfig.aliasRoots === undefined) {
     relConfig.aliasRoots = spiracss.aliasRoots

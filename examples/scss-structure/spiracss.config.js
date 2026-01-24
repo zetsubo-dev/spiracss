@@ -1,7 +1,7 @@
 // SpiraCSS Configuration for Examples
 // This is a minimal example configuration for SpiraCSS SCSS structure
 
-/** @type {{ aliasRoots: Record<string, string[]>; stylelint: any; selectorPolicy: any; generator: any }} */
+/** @type {{ aliasRoots: Record<string, string[]>; fileCase: any; stylelint: any; selectorPolicy: any; generator: any }} */
 const config = {
   // Path aliases for @rel comment validation and imports
   aliasRoots: {
@@ -12,6 +12,13 @@ const config = {
     pages: ['src/components/pages'],
     parts: ['src/components/parts'],
     assets: ['src/assets']
+  },
+
+  // Default file name casing for root/child SCSS (generator + stylelint)
+  // Example: { root: 'pascal', child: 'kebab' }
+  fileCase: {
+    root: 'preserve',
+    child: 'preserve'
   },
 
   // Stylelint rules configuration (aligned with current config schema)
@@ -71,6 +78,10 @@ const config = {
       requireChildInteraction: false,
       // Require parent @rel comment
       requireParent: true,
+      // File name case for @rel targets (fallback: fileCase.root)
+      fileCase: 'preserve',
+      // File name case for @rel targets inside childDir (fallback: fileCase.child)
+      childFileCase: 'preserve',
       // Child SCSS directory name
       childDir: 'scss'
     }
@@ -95,6 +106,7 @@ const config = {
     pageEntryAlias: 'assets',
     pageEntrySubdir: 'css',
     rootFileCase: 'preserve',
+    childFileCase: 'preserve',
     childScssDir: 'scss',
     layoutMixins: ['@include breakpoint-up(md)']
   }

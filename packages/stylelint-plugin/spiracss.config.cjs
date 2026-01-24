@@ -16,6 +16,13 @@ module.exports = {
     assets: [path.join(__dirname, 'test/fixtures/src/assets')]
   },
 
+  // Default file name casing for root/child SCSS (generator + stylelint)
+  // Example: { root: 'pascal', child: 'kebab' }
+  fileCase: {
+    root: 'preserve',
+    child: 'preserve'
+  },
+
   // stylelint plugin rules
   stylelint: {
     // Shared defaults across rules.
@@ -76,6 +83,10 @@ module.exports = {
       validatePath: true,
       // Skip files without rules.
       skipNoRules: true,
+      // File name case for @rel targets (default 'preserve'; fallback: fileCase.root).
+      fileCase: 'preserve',
+      // File name case for @rel targets inside childDir (default 'preserve'; fallback: fileCase.child).
+      childFileCase: 'preserve',
       // Directory name for child Block SCSS (default 'scss').
       childDir: 'scss'
     }
@@ -89,6 +100,8 @@ module.exports = {
     pageEntryAlias: 'assets',
     // Subdirectory for page entry files
     pageEntrySubdir: 'css',
+    // File name case for child component SCSS (fallback: fileCase.child)
+    childFileCase: 'preserve',
     // Directory name for child component SCSS
     childScssDir: 'scss',
     // List of layout mixins

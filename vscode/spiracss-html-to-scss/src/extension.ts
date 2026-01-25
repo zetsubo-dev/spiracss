@@ -8,6 +8,7 @@ import {
   generateFromHtml,
   type GeneratorOptions,
   type HtmlLintIssue,
+  type JsxClassBindingsConfig,
   insertPlaceholdersWithInfo,
   lintHtmlStructure,
   type NamingOptions,
@@ -248,6 +249,22 @@ function loadHtmlFormatClassAttributeFromConfig(config?: SpiracssConfig): ClassA
     }
   }
   return fallback
+}
+
+const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined
+  return value
+    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
+    .map((entry) => entry.trim())
+}
+
+function loadJsxClassBindingsFromConfig(config?: SpiracssConfig): JsxClassBindingsConfig | undefined {
+  if (!config) return undefined
+  const jsxBindings = config.jsxClassBindings as Record<string, unknown> | undefined
+  if (!jsxBindings || typeof jsxBindings !== 'object') return undefined
+  const allowlist = normalizeMemberAccessAllowlist(jsxBindings.memberAccessAllowlist)
+  if (allowlist === undefined) return undefined
+  return { memberAccessAllowlist: allowlist }
 }
 
 function loadExternalOptionsFromConfig(config?: SpiracssConfig): ExternalOptions {
@@ -537,6 +554,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
     const naming = loadNamingFromConfig(config)
     const selectorPolicy = loadSelectorPolicyFromConfig(config)
     const external = loadExternalOptionsFromConfig(config)
+    const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
     const childScssDir = loadChildScssDirFromConfig(config)
     const rootFileCase = loadRootFileCaseFromConfig(config)
     const childFileCase = loadChildFileCaseFromConfig(config)
@@ -550,7 +568,8 @@ export function activate(ctx: vscode.ExtensionContext): void {
       rootFileCase,
       childFileCase,
       selectorPolicy,
-      external
+      external,
+      jsxClassBindings
     }
 
     globalWriteChoice = null
@@ -560,7 +579,8 @@ export function activate(ctx: vscode.ExtensionContext): void {
         isRoot,
         options.naming,
         options.selectorPolicy,
-        options.external
+        options.external,
+        options.jsxClassBindings
       )
       if (lintIssues.length > 0) {
         await reportLintIssues(lintIssues)
@@ -640,7 +660,10 @@ export function activate(ctx: vscode.ExtensionContext): void {
         const config = await loadSpiracssConfig(ed.document.uri)
         const naming = loadNamingFromConfig(config)
         const classAttribute = loadHtmlFormatClassAttributeFromConfig(config)
-        const result = insertPlaceholdersWithInfo(html, naming, classAttribute)
+        const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
+        const result = insertPlaceholdersWithInfo(html, naming, classAttribute, {
+          jsxClassBindings
+        })
 
         // If template syntax is detected, warn and skip
         if (result.hasTemplateSyntax) {

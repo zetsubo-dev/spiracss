@@ -92,6 +92,194 @@ describe('generator-core', () => {
     assert.ok(!sanitized.includes('${'))
   })
 
+  it('sanitizes JSX className member expressions', () => {
+    const jsx =
+      '<div className={s.heroSection}><p className={styles["title"]}></p></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="heroSection"'))
+    assert.ok(sanitized.includes('class="title"'))
+    assert.ok(!sanitized.includes('className='))
+  })
+
+  it('ignores props bracket access in JSX className bindings', () => {
+    const jsx = '<div className={props["className"]}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="className"'))
+    assert.ok(!sanitized.includes('className='))
+  })
+
+  it('removes nested JSX className bindings that cannot be sanitized', () => {
+    const jsx = '<div className={{ [foo]: bar }}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('className='))
+  })
+
+  it('sanitizes JSX class member expressions', () => {
+    const jsx = '<div class={s.container}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="container"'))
+    assert.ok(!sanitized.includes('class={'))
+  })
+
+  it('ignores comparison literals in JSX className bindings', () => {
+    const jsx = '<div className={size === "lg" ? "hero -lg" : "hero"}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="hero -lg"'))
+    assert.ok(!sanitized.includes('class="lg"'))
+  })
+
+  it('skips chained member access in JSX className bindings', () => {
+    const jsx = '<div className={styles.container.toUpperCase()}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="container"'))
+    assert.ok(!sanitized.includes('toUpperCase'))
+    assert.ok(!sanitized.includes('className='))
+  })
+
+  it('preserves class order from JSX expressions', () => {
+    const jsx = '<div className={clsx(styles.hero, "-wide")}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="hero -wide"'))
+  })
+
+  it('ignores member access after arithmetic operators', () => {
+    const jsx = '<div className={foo - bar.baz}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="baz"'))
+  })
+
+  it('ignores member access after plus operator', () => {
+    const jsx = '<div className={a + b.c}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="c"'))
+  })
+
+  it('ignores string literals inside JSX comments', () => {
+    const jsx = '<div className={/* "fake" */ styles.hero}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('fake'))
+  })
+
+  it('preserves whitespace between tag name and attributes', () => {
+    const jsx = `
+      <article
+        key="a"
+        className="hero-section"
+      ></article>
+    `
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('key="a"'))
+    assert.ok(!sanitized.includes('<articlekey='))
+    assert.ok(sanitized.includes('class="hero-section"'))
+  })
+
+  it('extracts from array literal with a single string', () => {
+    const jsx = '<div className={["array-class"]}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="array-class"'))
+  })
+
+  it('ignores bracket access after non-identifier base', () => {
+    const jsx = '<div className={(foo + bar)["baz"]}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="baz"'))
+  })
+
+  it('extracts from bracket notation with single quotes', () => {
+    const jsx = "<div className={styles['kebab-class']}></div>"
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="kebab-class"'))
+  })
+
+  it('extracts from optional chaining', () => {
+    const jsx = '<div className={styles?.container}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="container"'))
+  })
+
+  it('extracts from optional chaining with bracket notation', () => {
+    const jsx = '<div className={styles?.["hero-section"]}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(sanitized.includes('class="hero-section"'))
+  })
+
+  it('ignores state member access', () => {
+    const jsx = '<div className={state.active}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="active"'))
+  })
+
+  it('ignores context member access', () => {
+    const jsx = '<div className={context.theme}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="theme"'))
+  })
+
+  it('ignores this member access', () => {
+    const jsx = '<div className={this.state.className}></div>'
+    const sanitized = sanitizeHtml(jsx)
+    assert.ok(!sanitized.includes('class="className"'))
+  })
+
+  it('respects memberAccessAllowlist for dot notation', () => {
+    const jsx = '<div className={styles.container}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(sanitized.includes('class="container"'))
+  })
+
+  it('ignores member access when base not in allowlist', () => {
+    const jsx = '<div className={other.container}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(!sanitized.includes('class="container"'))
+  })
+
+  it('respects memberAccessAllowlist for bracket notation', () => {
+    const jsx = '<div className={styles["hero-section"]}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(sanitized.includes('class="hero-section"'))
+  })
+
+  it('ignores bracket notation when base not in allowlist', () => {
+    const jsx = '<div className={other["hero-section"]}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(!sanitized.includes('class="hero-section"'))
+  })
+
+  it('allows multiple bases in memberAccessAllowlist', () => {
+    const jsx = '<div className={styles.a}><p className={classes.b}></p></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles', 'classes'] })
+    assert.ok(sanitized.includes('class="a"'))
+    assert.ok(sanitized.includes('class="b"'))
+  })
+
+  it('ignores chained member access even when base is allowed', () => {
+    const jsx = '<div className={styles.layout.hero}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(!sanitized.includes('class="layout"'))
+    assert.ok(!sanitized.includes('class="hero"'))
+  })
+
+  it('ignores chained member access after bracket notation', () => {
+    const jsx = '<div className={styles["hero"].title}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(!sanitized.includes('class="hero"'))
+    assert.ok(!sanitized.includes('class="title"'))
+  })
+
+  it('ignores chained member access with nested brackets', () => {
+    const jsx = '<div className={styles["foo"]["bar"]}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(!sanitized.includes('class="foo"'))
+    assert.ok(!sanitized.includes('class="bar"'))
+  })
+
+  it('ignores chained member access with dot then bracket', () => {
+    const jsx = '<div className={styles.foo["bar"]}></div>'
+    const sanitized = sanitizeHtml(jsx, { memberAccessAllowlist: ['styles'] })
+    assert.ok(!sanitized.includes('class="foo"'))
+    assert.ok(!sanitized.includes('class="bar"'))
+  })
+
   it('strips Astro frontmatter', async () => {
     const astro = await fsp.readFile(path.join(fixturesDir, 'astro/sample-box.astro'), 'utf8')
     const sanitized = sanitizeHtml(astro)

@@ -369,7 +369,9 @@ Placement rules (when required by config):
 ## 12. Tooling Constraints
 
 HTML CLI:
-- Processes literal class/className only (string or template literal). Dynamic bindings are skipped.
+- HTML-to-SCSS extracts static class candidates from class/className strings, template literals (static parts plus string literals or member access inside `${}`), and member access like `styles.foo` or `styles['foo']`. When `jsxClassBindings.memberAccessAllowlist` is set, only the listed base identifiers are treated as class sources (empty array disables member access extraction), and chained access (e.g. `styles.layout.hero`) is treated as dynamic. Dynamic expressions are ignored (string literals inside them may still be extracted).
+- HTML format inserts placeholders only for static JSX bindings. Template literals are allowed when `${}` segments are static member access or string literals; if any dynamic expression is present (conditions, props, function calls, non-static `${}` segments), formatting is skipped.
+- When HTML format runs on JSX/TSX, it normalizes bindings to plain class strings for placeholder insertion; treat the output as scaffolding (do not overwrite CSS Modules sources).
 - Template syntax (EJS/Nunjucks/Astro/etc) is skipped for formatting to avoid breaking markup.
 
 Note: Dynamic class usage or template syntax may hide structural violations from HTML CLI. If detected in input, stop and report even if lint can run.

@@ -5,6 +5,11 @@
 import { type CheerioAPI, load } from 'cheerio'
 import type { AnyNode, Element } from 'domhandler'
 
+import {
+  type JsxClassBindingOptions,
+  replaceJsxClassBindings,
+  stripJsxClassBindings} from './jsx-class-bindings'
+
 /* ---------- type guards ---------- */
 const hasClassAttribute = (node: Element): boolean => {
   const value = node.attribs?.class
@@ -137,7 +142,7 @@ const RX = {
   DANGEROUS_HTML: /\s+dangerouslySetInnerHTML=(?:"[^"]*"|\{[\s\S]*?\})/g,
   PLACEHOLDER: /\$\{[\s\S]*?\}/g,
   MULTI_SPACE: /\s{2,}/g,
-  TRIM_ATTR: /=\s*"(\s*[^"]*?\s*)"\s*/g
+  TRIM_ATTR: /=\s*"([^"]*?)"/g
 } as const
 
 /** Patterns removed at the attribute level. */
@@ -152,8 +157,7 @@ const REMOVE_PATTERNS: RegExp[] = [
   RX.DIR_ATTR,
   RX.REACT_EVENT,
   RX.DANGEROUS_HTML,
-  RX.PLACEHOLDER,
-  RX.MULTI_SPACE
+  RX.PLACEHOLDER
 ]
 
 /* ---------- Utils ---------- */
@@ -342,6 +346,7 @@ export type GeneratorOptions = {
   childFileCase?: FileNameCase
   selectorPolicy?: SelectorPolicy
   external?: ExternalOptions
+  jsxClassBindings?: JsxClassBindingsConfig
 }
 
 export type ExternalOptions = {
@@ -353,6 +358,8 @@ type NormalizedExternalOptions = {
   classes: string[]
   prefixes: string[]
 }
+
+export type JsxClassBindingsConfig = Pick<JsxClassBindingOptions, 'memberAccessAllowlist'>
 
 export type GeneratedFile = {
   path: string
@@ -477,8 +484,11 @@ function normalizeSelectorPolicy(raw?: SelectorPolicy): NormalizedSelectorPolicy
 }
 
 /* ---------- sanitizeHtml ---------- */
-export function sanitizeHtml(raw: string): string {
-  let html = raw
+export function sanitizeHtml(raw: string, jsxOptions?: JsxClassBindingsConfig): string {
+  const jsxProcessed = replaceJsxClassBindings(raw, {
+    memberAccessAllowlist: jsxOptions?.memberAccessAllowlist
+  })
+  let html = stripJsxClassBindings(jsxProcessed.html)
     .replace(RX.CLASSNAME_TEMPLATE, (_m, inner) => `class="${inner}"`)
     .replace(RX.CLASS_TEMPLATE, (_m, inner) => `class="${inner}"`)
     .replace(RX.ASTRO_FRONTMATTER, '')
@@ -506,7 +516,7 @@ export function sanitizeHtml(raw: string): string {
       .trim()
     return cleaned ? `class="${cleaned}"` : ''
   })
-  html = html.replace(RX.TRIM_ATTR, '="$1"')
+  html = html.replace(RX.TRIM_ATTR, (_m, value) => `="${value.trim()}"`)
   return html
 }
 
@@ -1374,10 +1384,11 @@ export function lintHtmlStructure(
   isRootMode: boolean,
   naming: NamingOptions,
   selectorPolicy?: SelectorPolicy,
-  externalOptions?: ExternalOptions
+  externalOptions?: ExternalOptions,
+  jsxClassBindings?: JsxClassBindingsConfig
 ): HtmlLintIssue[] {
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
-  const sanitized = sanitizeHtml(raw)
+  const sanitized = sanitizeHtml(raw, jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)
   const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
   const policy = normalizeSelectorPolicy(selectorPolicy)
@@ -1664,7 +1675,7 @@ export function generateFromHtml(
   opts: GeneratorOptions
 ): GeneratedFile[] {
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
-  const sanitized = sanitizeHtml(raw)
+  const sanitized = sanitizeHtml(raw, opts.jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)
   const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
   const policy = normalizeSelectorPolicy(opts.selectorPolicy)
@@ -1789,7 +1800,7 @@ export function summarizeRootBlocks(
   opts: GeneratorOptions
 ): RootBlockSummary[] {
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
-  const sanitized = sanitizeHtml(raw)
+  const sanitized = sanitizeHtml(raw, opts.jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)
   const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
   const policy = normalizeSelectorPolicy(opts.selectorPolicy)

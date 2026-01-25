@@ -791,26 +791,166 @@ describe('html-format: insertPlaceholders', () => {
       assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
     })
 
-    it('HTML with JSX template literals is processed', () => {
+    it('HTML with JSX template literals is skipped', () => {
       const html = `
         <div className={\`hero-section \${dynamic}\`}>
           <span></span>
         </div>
       `
       const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
-      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow JSX template literal')
-      assert.ok(result.html.includes('className="hero-section"'), 'className should be preserved')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect dynamic template literal')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX template literals and member access is processed', () => {
+      const html = [
+        '<div className={`',
+        '${styles.hero} -wide',
+        '`}>',
+        '<span></span>',
+        '</div>'
+      ].join('')
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow static member access')
+      assert.ok(
+        result.html.includes('className="block-box hero -wide"'),
+        'className should be preserved with block placeholder'
+      )
       assert.ok(result.html.includes('className="element"'), 'Should add element placeholder')
     })
 
-    it('HTML with JSX variable bindings is skipped', () => {
+    it('HTML with JSX template literals and string literals is processed', () => {
+      const html = [
+        '<div className={`',
+        'hero-section ${"wide"}',
+        '`}>',
+        '<span></span>',
+        '</div>'
+      ].join('')
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow string literal interpolation')
+      assert.ok(
+        result.html.includes('className="hero-section wide"'),
+        'className should preserve static classes'
+      )
+      assert.ok(result.html.includes('className="element"'), 'Should add element placeholder')
+    })
+
+    it('HTML with JSX member bindings is processed', () => {
       const html = `
-        <div className={styles.container}>
+        <div className={s.container}>
           <span></span>
         </div>
       `
-      const result = insertPlaceholdersWithInfo(html, defaultNaming)
-      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect JSX variable binding')
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow JSX member binding')
+      assert.ok(
+        result.html.includes('className="block-box container"'),
+        'className should be preserved with block placeholder'
+      )
+      assert.ok(result.html.includes('className="element"'), 'Should add element placeholder')
+    })
+
+    it('HTML with JSX bracket member bindings is processed', () => {
+      const html = `
+        <div className={styles["kebab-case"]}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow JSX bracket member binding')
+      assert.ok(
+        result.html.includes('className="kebab-case"'),
+        'className should be preserved'
+      )
+      assert.ok(result.html.includes('className="element"'), 'Should add element placeholder')
+    })
+
+    it('HTML with JSX props className bindings is skipped', () => {
+      const html = `
+        <div className={props.className}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect dynamic props binding')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX conditional bindings is skipped', () => {
+      const html = `
+        <div className={foo && "bar"}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect dynamic expression')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX member-only logical expressions is skipped', () => {
+      const html = `
+        <div className={styles.container && styles.other}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect logical operator usage')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX member-only OR expressions is skipped', () => {
+      const html = `
+        <div className={styles.container || styles.other}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect OR operator usage')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX member-only nullish coalescing is skipped', () => {
+      const html = `
+        <div className={styles.container ?? styles.other}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect nullish operator usage')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX member-only ternary expressions is skipped', () => {
+      const html = `
+        <div className={styles.container ? styles.a : styles.b}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect ternary operator usage')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX member conditional bindings is skipped', () => {
+      const html = `
+        <div className={styles.foo && "-wide"}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect dynamic member expression')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX member ternary bindings is skipped', () => {
+      const html = `
+        <div className={styles.foo ? "a" : ""}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should detect dynamic member ternary')
       assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
     })
 
@@ -863,6 +1003,88 @@ const foo = 'bar'
       const html = `<div><% foo %><p></p></div>`
       const result = insertPlaceholders(html, defaultNaming)
       assert.strictEqual(result, html, 'Should return original HTML when template syntax detected')
+    })
+
+    it('HTML with JSX member bindings respects memberAccessAllowlist', () => {
+      const html = `
+        <div className={styles.container}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className', {
+        jsxClassBindings: { memberAccessAllowlist: ['styles'] }
+      })
+      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow listed member base')
+      assert.ok(
+        result.html.includes('className="block-box container"'),
+        'className should be preserved with block placeholder'
+      )
+    })
+
+    it('HTML with JSX member bindings skipped when base not in allowlist', () => {
+      const html = `
+        <div className={other.container}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className', {
+        jsxClassBindings: { memberAccessAllowlist: ['styles'] }
+      })
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should skip when base not in allowlist')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX chained member bindings is skipped', () => {
+      const html = `
+        <div className={styles.layout.hero}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className', {
+        jsxClassBindings: { memberAccessAllowlist: ['styles'] }
+      })
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should skip chained member access')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX chained bracket member bindings is skipped', () => {
+      const html = `
+        <div className={styles["foo"]["bar"]}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className', {
+        jsxClassBindings: { memberAccessAllowlist: ['styles'] }
+      })
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should skip chained bracket access')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX chained dot and bracket bindings is skipped', () => {
+      const html = `
+        <div className={styles.foo["bar"]}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className', {
+        jsxClassBindings: { memberAccessAllowlist: ['styles'] }
+      })
+      assert.strictEqual(result.hasTemplateSyntax, true, 'Should skip dot + bracket access')
+      assert.strictEqual(result.html, html, 'Should return original HTML unchanged')
+    })
+
+    it('HTML with JSX empty string className is processed', () => {
+      const html = `
+        <div className={""}>
+          <span></span>
+        </div>
+      `
+      const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
+      assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow empty string className')
+      assert.ok(
+        result.html.includes('className="block-box"'),
+        'className should have block placeholder'
+      )
     })
   })
 })

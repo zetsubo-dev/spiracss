@@ -7,9 +7,10 @@
 // - selectorPolicy: variant/state representation policy
 // - stylelint:   options passed to the Stylelint plugin rules
 // - htmlFormat: output attribute for HTML placeholders
+// - jsxClassBindings: JSX class binding parsing rules
 // - generator:  options for HTML-to-SCSS generators (VS Code extension, CLI)
 
-/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; generator: any }} */
+/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; jsxClassBindings: any; generator: any }} */
 const config = {
   // Alias definitions used by Comment Links and Stylelint @rel validation (relative paths from project root recommended / absolute paths allowed only within the project)
   aliasRoots: {
@@ -197,6 +198,12 @@ const config = {
   htmlFormat: {
     // 'class' | 'className'
     classAttribute: 'class'
+  },
+
+  // JSX class/className parsing rules (HTML CLI / VS Code)
+  jsxClassBindings: {
+    // When omitted, member access is allowed. Use [] to disable member access extraction.
+    memberAccessAllowlist: ['styles', 'classes']
   },
 
   // Settings for HTML-to-SCSS generators (VS Code extension / CLI)

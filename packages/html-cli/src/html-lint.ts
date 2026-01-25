@@ -1,15 +1,16 @@
 import { promises as fsp } from 'fs'
 import * as path from 'path'
 
+import { loadSpiracssConfig } from './config-loader'
+import { warnInvalidCustomPatterns } from './config-warnings'
 import {
   type ExternalOptions,
   type HtmlLintIssue,
+  type JsxClassBindingsConfig,
   lintHtmlStructure,
   type NamingOptions,
   type SelectorPolicy
 } from './generator-core'
-import { loadSpiracssConfig } from './config-loader'
-import { warnInvalidCustomPatterns } from './config-warnings'
 
 type Mode = 'root' | 'selection'
 
@@ -22,6 +23,13 @@ type ParsedArgs = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
+
+const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined
+  return value
+    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
+    .map((entry) => entry.trim())
+}
 
 function parseArgs(argv: string[]): ParsedArgs {
   const mode: Mode = argv.includes('--selection') ? 'selection' : 'root'
@@ -50,6 +58,7 @@ type LintConfig = {
   naming: NamingOptions
   selectorPolicy?: SelectorPolicy
   external?: ExternalOptions
+  jsxClassBindings?: JsxClassBindingsConfig
   namingSource: string
 }
 
@@ -88,6 +97,16 @@ async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
     const prefixes = Array.isArray(external.prefixes)
       ? external.prefixes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
       : undefined
+    const jsxBindingsConfig = (config as Record<string, unknown>).jsxClassBindings as
+      | Record<string, unknown>
+      | undefined
+    let jsxClassBindings: JsxClassBindingsConfig | undefined
+    if (jsxBindingsConfig && typeof jsxBindingsConfig === 'object') {
+      const allowlist = normalizeMemberAccessAllowlist(jsxBindingsConfig.memberAccessAllowlist)
+      if (allowlist !== undefined) {
+        jsxClassBindings = { memberAccessAllowlist: allowlist }
+      }
+    }
     return {
       naming: resolvedNaming,
       namingSource,
@@ -95,7 +114,8 @@ async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
       external: {
         classes,
         prefixes
-      }
+      },
+      jsxClassBindings
     }
   }
   return { naming: {}, namingSource: 'stylelint.base.naming.customPatterns', selectorPolicy: undefined }
@@ -113,7 +133,8 @@ async function run(): Promise<void> {
   }
 
   const rootDir = process.cwd()
-  const { naming, namingSource, selectorPolicy, external } = await loadConfigFromConfig(rootDir)
+  const { naming, namingSource, selectorPolicy, external, jsxClassBindings } =
+    await loadConfigFromConfig(rootDir)
   warnInvalidCustomPatterns(naming, (message) => {
     console.error(message)
   }, namingSource)
@@ -134,7 +155,8 @@ async function run(): Promise<void> {
     isRootMode,
     naming,
     selectorPolicy,
-    external
+    external,
+    jsxClassBindings
   )
 
   if (args.json) {

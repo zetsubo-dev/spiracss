@@ -2,21 +2,22 @@
  *  spiracss-html-format: add placeholder classes to HTML
  * ========================================================= */
 
-import type { Cheerio, CheerioAPI } from 'cheerio'
-import { load } from 'cheerio'
+import { type Cheerio, type CheerioAPI, load } from 'cheerio'
 import type { Element } from 'domhandler'
 import { existsSync, promises as fsp } from 'fs'
 import * as path from 'path'
 
-import { classifyBaseClass, type NamingOptions } from './generator-core'
 import { loadSpiracssConfig } from './config-loader'
 import { warnInvalidCustomPatterns } from './config-warnings'
+import { classifyBaseClass, type JsxClassBindingsConfig, type NamingOptions } from './generator-core'
+import { replaceJsxClassBindings } from './jsx-class-bindings'
 
 /**
- * Detect whether template syntax (EJS, Nunjucks, JSX, etc.) is present.
- * If present, applying sanitizeHtml would break templates.
+ * Detect whether template syntax (EJS, Nunjucks, Astro, etc.) is present.
+ * JSX class bindings are normalized separately; unsupported bindings still skip.
  */
-function containsTemplateSyntax(html: string): boolean {
+function containsTemplateSyntax(html: string, hasUnsupportedJsxBindings = false): boolean {
+  if (hasUnsupportedJsxBindings) return true
   // EJS: <% ... %>
   if (/<%[\s\S]*?%>/.test(html)) return true
   // Nunjucks: {{ ... }}, {% ... %}, {# ... #}
@@ -25,24 +26,6 @@ function containsTemplateSyntax(html: string): boolean {
   if (/\{#[\s\S]*?#\}/.test(html)) return true
   // Astro frontmatter: --- ... --- (allow BOM/leading whitespace, file-start only)
   if (/^\s*---[\s\S]*?---/.test(html)) return true
-  // JSX/React: only allow className/class bindings that are string or template literals
-  const hasInvalidBinding = (attrName: 'class' | 'className'): boolean => {
-    // Match template literals (backticks) first
-    const templateRe = new RegExp(`${attrName}\\s*=\\s*\\{\\s*\`[^\`]*\`\\s*\\}`, 'g')
-    // Match strings (double/single quotes)
-    const stringDqRe = new RegExp(`${attrName}\\s*=\\s*\\{\\s*"[^"]*"\\s*\\}`, 'g')
-    const stringSqRe = new RegExp(`${attrName}\\s*=\\s*\\{\\s*'[^']*'\\s*\\}`, 'g')
-    // Any other { ... } binding is invalid
-    const braceRe = new RegExp(`${attrName}\\s*=\\s*\\{`, 'g')
-
-    // Invalid if "{" remains after removing all valid literals
-    let cleaned = html
-    cleaned = cleaned.replace(templateRe, '')
-    cleaned = cleaned.replace(stringDqRe, '')
-    cleaned = cleaned.replace(stringSqRe, '')
-    return braceRe.test(cleaned)
-  }
-  if (hasInvalidBinding('className') || hasInvalidBinding('class')) return true
   return false
 }
 
@@ -120,12 +103,20 @@ function normalizeClassAttributes(html: string, classAttribute: ClassAttribute):
   return { html: out, attributeChanged }
 }
 
+const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined
+  return value
+    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
+    .map((entry) => entry.trim())
+}
+
 /* ---------- config loading ---------- */
 
 type HtmlFormatOptions = {
   naming: NamingOptions
   classAttribute: ClassAttribute
   namingSource: string
+  jsxClassBindings?: JsxClassBindingsConfig
 }
 
 function resolveClassAttribute(value: unknown): ClassAttribute {
@@ -138,6 +129,7 @@ async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFor
   const naming: NamingOptions = {}
   let namingSource = 'stylelint.base.naming.customPatterns'
   let classAttribute: ClassAttribute = 'class'
+  let jsxClassBindings: JsxClassBindingsConfig | undefined
   if (config && typeof config === 'object') {
     const stylelintCfg = (config as Record<string, unknown>).stylelint as
       | Record<string, unknown>
@@ -160,8 +152,18 @@ async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFor
     if (htmlFormat && typeof htmlFormat === 'object') {
       classAttribute = resolveClassAttribute(htmlFormat.classAttribute)
     }
+
+    const jsxBindingsConfig = (config as Record<string, unknown>).jsxClassBindings as
+      | Record<string, unknown>
+      | undefined
+    if (jsxBindingsConfig && typeof jsxBindingsConfig === 'object') {
+      const allowlist = normalizeMemberAccessAllowlist(jsxBindingsConfig.memberAccessAllowlist)
+      if (allowlist !== undefined) {
+        jsxClassBindings = { memberAccessAllowlist: allowlist }
+      }
+    }
   }
-  return { naming, classAttribute, namingSource }
+  return { naming, classAttribute, namingSource, jsxClassBindings }
 }
 
 /* ---------- placeholder insertion ---------- */
@@ -361,12 +363,17 @@ export type InsertPlaceholdersResult = {
   changeCount: number
 }
 
+export type InsertPlaceholdersOptions = {
+  jsxClassBindings?: JsxClassBindingsConfig
+}
+
 export function insertPlaceholders(
   html: string,
   naming: NamingOptions,
-  classAttribute: ClassAttribute = 'class'
+  classAttribute: ClassAttribute = 'class',
+  options: InsertPlaceholdersOptions = {}
 ): string {
-  return insertPlaceholdersWithInfo(html, naming, classAttribute).html
+  return insertPlaceholdersWithInfo(html, naming, classAttribute, options).html
 }
 
 /**
@@ -376,14 +383,20 @@ export function insertPlaceholders(
 export function insertPlaceholdersWithInfo(
   html: string,
   naming: NamingOptions,
-  classAttribute: ClassAttribute = 'class'
+  classAttribute: ClassAttribute = 'class',
+  options: InsertPlaceholdersOptions = {}
 ): InsertPlaceholdersResult {
+  const jsxProcessed = replaceJsxClassBindings(html, {
+    markUnsupportedOnEmpty: true,
+    strict: true,
+    memberAccessAllowlist: options.jsxClassBindings?.memberAccessAllowlist
+  })
   // Skip processing when template syntax is present (avoid destructive changes)
-  if (containsTemplateSyntax(html)) {
+  if (containsTemplateSyntax(jsxProcessed.html, jsxProcessed.hadUnsupportedBindings)) {
     return { html, hasTemplateSyntax: true, changeCount: 0 }
   }
 
-  const normalized = normalizeClassAttributes(html, classAttribute)
+  const normalized = normalizeClassAttributes(jsxProcessed.html, classAttribute)
 
   // Use a unique wrapper tag name to avoid collisions
   const WRAPPER_TAG = 'spiracss-internal-wrapper'
@@ -505,11 +518,12 @@ Examples:
     process.exit(1)
   }
 
-  const { naming, classAttribute, namingSource } = await loadHtmlFormatOptionsFromConfig(rootDir)
+  const { naming, classAttribute, namingSource, jsxClassBindings } =
+    await loadHtmlFormatOptionsFromConfig(rootDir)
   warnInvalidCustomPatterns(naming, (message) => {
     console.error(message)
   }, namingSource)
-  const result = insertPlaceholdersWithInfo(html, naming, classAttribute)
+  const result = insertPlaceholdersWithInfo(html, naming, classAttribute, { jsxClassBindings })
 
   // If template syntax is detected, warn and skip writing files
   if (result.hasTemplateSyntax) {

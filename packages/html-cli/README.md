@@ -67,6 +67,7 @@ Minimal example:
 ```js
 export default {
   htmlFormat: { classAttribute: 'class' },
+  jsxClassBindings: { memberAccessAllowlist: ['styles', 'classes'] },
   generator: {
     globalScssModule: '@styles/partials/global',
     childScssDir: 'scss',
@@ -80,7 +81,8 @@ Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use
 ## Notes
 
 - Template syntax (EJS/Nunjucks/Astro) is skipped for formatting to avoid breaking markup.
-- JSX class/className is processed only when it is a string or template literal.
+- JSX class/className supports best-effort extraction when static class names are present (strings, template literals with static parts plus string literals or member access inside `${}`; string literals inside dynamic expressions may still be extracted, and member access like `styles.foo` or `styles["foo"]`). If `jsxClassBindings.memberAccessAllowlist` is set, only the listed base identifiers are treated as class sources (empty array disables member access extraction entirely). Chained member access (e.g. `styles.layout.hero`) is treated as dynamic and skipped.
+- Placeholder formatting skips JSX bindings that include dynamic expressions (e.g. conditions, props, function calls, non-static `${}` segments). When formatting JSX/TSX, bindings are normalized to plain class strings for placeholders; treat the output as scaffolding (not CSS Modules-safe).
 - The conversion spec is shared with the VS Code HTML to SCSS extension.
 
 ## Docs

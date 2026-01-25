@@ -7,9 +7,10 @@
 // - selectorPolicy: バリアント/状態の表現方針
 // - stylelint:   @spiracss/stylelint-plugin の各ルールに渡すオプション
 // - htmlFormat: HTML プレースホルダ付与の出力属性
+// - jsxClassBindings: JSX class バインディングの解析ルール
 // - generator:   VS Code 拡張など HTML → SCSS 生成ツール用のオプション
 
-/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; generator: any }} */
+/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; jsxClassBindings: any; generator: any }} */
 const config = {
   // コメントリンクや stylelint の @rel 検証で使うエイリアス定義（プロジェクトルートからの相対パス推奨 / 絶対パスはプロジェクト内のみ）
   aliasRoots: {
@@ -197,6 +198,12 @@ const config = {
   htmlFormat: {
     // 'class' | 'className'
     classAttribute: 'class'
+  },
+
+  // JSX class/className の解析ルール（HTML CLI / VS Code）
+  jsxClassBindings: {
+    // 未指定なら member access を許可します。[] を指定すると member access の抽出を無効化します。
+    memberAccessAllowlist: ['styles', 'classes']
   },
 
   // HTML → SCSS 生成ツール（VS Code 拡張 / CLI）用の設定

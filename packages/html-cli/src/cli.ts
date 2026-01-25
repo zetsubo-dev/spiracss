@@ -1,16 +1,17 @@
 import { promises as fsp } from 'fs'
 import * as path from 'path'
 
+import { loadSpiracssConfig } from './config-loader'
+import { warnInvalidCustomPatterns } from './config-warnings'
 import {
   type FileNameCase,
   generateFromHtml,
   type GeneratorOptions,
+  type JsxClassBindingsConfig,
   lintHtmlStructure,
   type NamingOptions,
   type SelectorPolicy
 } from './generator-core'
-import { loadSpiracssConfig } from './config-loader'
-import { warnInvalidCustomPatterns } from './config-warnings'
 
 type Mode = 'root' | 'selection'
 
@@ -53,6 +54,13 @@ const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
     root: typeof root === 'string' && isFileNameCase(root) ? root : undefined,
     child: typeof child === 'string' && isFileNameCase(child) ? child : undefined
   }
+}
+
+const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined
+  return value
+    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
+    .map((entry) => entry.trim())
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -114,6 +122,7 @@ async function loadGeneratorOptions(
   let selectorPolicy: SelectorPolicy | undefined
   let externalClasses: string[] = []
   let externalPrefixes: string[] = []
+  let jsxClassBindings: JsxClassBindingsConfig | undefined
 
   const configPath = path.join(rootDir, 'spiracss.config.js')
   const config = await loadSpiracssConfig(configPath)
@@ -189,6 +198,16 @@ async function loadGeneratorOptions(
     if (selectorPolicyConfig && typeof selectorPolicyConfig === 'object') {
       selectorPolicy = selectorPolicyConfig as SelectorPolicy
     }
+
+    const jsxBindingsConfig = (config as Record<string, unknown>).jsxClassBindings as
+      | Record<string, unknown>
+      | undefined
+    if (jsxBindingsConfig && typeof jsxBindingsConfig === 'object') {
+      const allowlist = normalizeMemberAccessAllowlist(jsxBindingsConfig.memberAccessAllowlist)
+      if (allowlist !== undefined) {
+        jsxClassBindings = { memberAccessAllowlist: allowlist }
+      }
+    }
   }
 
   warnInvalidCustomPatterns(naming, (message) => {
@@ -208,6 +227,7 @@ async function loadGeneratorOptions(
       classes: externalClasses,
       prefixes: externalPrefixes
     },
+    jsxClassBindings,
     namingSource
   }
 }
@@ -258,7 +278,8 @@ async function run(): Promise<void> {
     isRootMode,
     options.naming,
     options.selectorPolicy,
-    options.external
+    options.external,
+    options.jsxClassBindings
   )
 
   if (structureIssues.length > 0) {

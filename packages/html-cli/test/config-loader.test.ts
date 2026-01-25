@@ -1,8 +1,8 @@
 import * as assert from 'assert'
+import { spawnSync } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { spawnSync } from 'child_process'
 
 import { loadSpiracssConfig } from '../src/config-loader'
 
@@ -16,15 +16,23 @@ describe('config-loader', () => {
   it('loads a CJS config', async () => {
     const config = await loadSpiracssConfig(cjsConfigPath)
     assert.ok(config)
+    const jsxBindings = (config as Record<string, unknown>)
+      .jsxClassBindings as Record<string, unknown>
+    const allowlist = (jsxBindings?.memberAccessAllowlist as string[]) ?? []
     const generator = (config as Record<string, unknown>).generator as Record<string, unknown>
     assert.strictEqual(generator.childScssDir, 'scss')
+    assert.deepStrictEqual(allowlist, ['styles', 'classes'])
   })
 
   it('loads an ESM config via import fallback', async () => {
     const config = await loadSpiracssConfig(esmConfigPath)
     assert.ok(config)
+    const jsxBindings = (config as Record<string, unknown>)
+      .jsxClassBindings as Record<string, unknown>
+    const allowlist = (jsxBindings?.memberAccessAllowlist as string[]) ?? []
     const htmlFormat = (config as Record<string, unknown>).htmlFormat as Record<string, unknown>
     assert.strictEqual(htmlFormat.classAttribute, 'className')
+    assert.deepStrictEqual(allowlist, ['styles'])
   })
 
   it('returns undefined when config does not exist', async () => {

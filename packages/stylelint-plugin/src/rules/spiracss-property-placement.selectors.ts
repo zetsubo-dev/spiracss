@@ -495,9 +495,6 @@ const analyzeGlobalSelector = (
     // Ensure :local does not block stripping or parse checks.
     const sel = stripLocalPseudos(originalSel)
     const scan = scanSelectorGlobalState(sel, flagsCache)
-    const selectorGlobalOnly =
-      scan.rightmostGlobal ||
-      (scan.hasGlobalOutsideNegation && !scan.hasLocal)
     const isPureGlobalSelector =
       (scan.hasGlobalOutsideNegation && !scan.hasLocal) ||
       (scan.hasBareGlobal && scan.bareIndex === 0)
@@ -517,8 +514,10 @@ const analyzeGlobalSelector = (
     }
 
     if (scan.rightmostGlobal) {
-      // Treat selectors whose rightmost target is global as out-of-scope.
-      allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+      // CSS Modules: keep rightmost :global(...) targets in-scope by unwrapping.
+      const normalized = normalizeStrippedSelector(stripModulePseudos(sel).toString())
+      if (normalized) stripped.push(normalized)
+      allGlobalOnly = false
       return
     }
 

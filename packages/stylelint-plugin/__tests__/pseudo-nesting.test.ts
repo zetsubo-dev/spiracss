@@ -61,6 +61,12 @@ describe('spiracss/pseudo-nesting - basic checks', () => {
 :global(.block) {}
 `,
         description: ':global pseudo is ignored'
+      },
+      {
+        code: `
+:local(.block) {}
+`,
+        description: ':local pseudo is ignored'
       }
     ],
 

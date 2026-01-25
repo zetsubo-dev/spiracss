@@ -229,18 +229,6 @@ const isInsidePseudo = (node: SelectorNode): boolean => {
   return false
 }
 
-const isInsideGlobalPseudo = (node: SelectorNode): boolean => {
-  let current = node as SelectorNode | undefined
-  while (current) {
-    if (current.type === 'pseudo') {
-      const value = typeof current.value === 'string' ? current.value.toLowerCase() : ''
-      if (value === ':global') return true
-    }
-    current = current.parent as SelectorNode | undefined
-  }
-  return false
-}
-
 const formatTargetLabel = (key: string): string => {
   const [basePart, pseudo] = key.split('::')
   const [block, element] = basePart.split('>')

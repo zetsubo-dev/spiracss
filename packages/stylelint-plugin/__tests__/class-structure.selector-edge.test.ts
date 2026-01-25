@@ -186,6 +186,41 @@ describe('spiracss/class-structure - :global is transparent', () => {
   })
 })
 
+describe('spiracss/class-structure - :local is transparent', () => {
+  testRule({
+    plugins: [classStructure],
+    ruleName: classStructure.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
+        childCombinator: false,
+        naming: { blockCase: 'kebab' }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: ':local(.block-name) {}',
+        description: ':local(...) is treated as a normal selector'
+      },
+      {
+        code: '.block-name { :local(.title) {} }',
+        description: ':local(...) is transparent inside nested rules'
+      }
+    ],
+
+    reject: [
+      {
+        code: ':local(.123-invalid) {}',
+        description: 'invalid class names inside :local(...) are linted',
+        message: invalidNameMessage('123-invalid')
+      }
+    ]
+  })
+})
+
 describe('spiracss/class-structure - pseudo element/class combinations', () => {
   testRule({
     plugins: [classStructure],

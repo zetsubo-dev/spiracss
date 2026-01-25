@@ -232,7 +232,15 @@ const rule = createRule(
         const hasNestedRules = (rule.nodes ?? []).some((node) => node.type === 'rule')
         if (!hasNestedRules) return false
 
-        const selectors = parseStrippedSelectors(rule.selector)
+        // Wrapper detection should look for root Blocks without being affected by
+        // leading combinators introduced by stripping `:global(...)`.
+        const selectorTexts = splitSelectors(rule.selector, selectorCache)
+        const strippedSelectors = selectorTexts
+          .map((selector) =>
+            stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector)
+          )
+          .filter((selector): selector is string => Boolean(selector))
+        const selectors = strippedSelectors.flatMap((selector) => selectorCache.parse(selector))
         if (selectors.length === 0) return true
         const rootBlocks = collectRootBlockNames(selectors, options, patterns)
         return rootBlocks.length === 0

@@ -2276,6 +2276,45 @@ describe('spiracss/property-placement - :global is transparent', () => {
               '`@extend` is not allowed in SpiraCSS. Context: `.block-name:is(:global(.foo))` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
           }
         ]
+      },
+      {
+        code: `
+.block-name :global(.child-block) {
+  @extend %placeholder;
+}`,
+        description: 'rightmost :global(...) is still linted',
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `.block-name :global(.child-block)` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+:global(.foo, .bar) {
+  @extend %placeholder;
+}`,
+        description: ':global selector lists are parseable and linted',
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `:global(.foo, .bar)` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+:local(.foo, .bar) {
+  @extend %placeholder;
+}`,
+        description: ':local selector lists are parseable and linted',
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `:local(.foo, .bar)` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
       }
     ]
   })

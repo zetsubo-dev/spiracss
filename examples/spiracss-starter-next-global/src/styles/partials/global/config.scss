@@ -1,0 +1,24 @@
+/* ------------------------
+  Config
+------------------------ */
+// This file contains project-wide configuration values.
+// Customize these values according to your project needs.
+// The examples below are for demonstration purposes only.
+
+// Base
+$base-font-family: sans-serif;
+$base-font-size: 1rem;
+$base-line-height: 1.5;
+
+// Breakpoints
+$breakpoints: (
+  sm: 320px,
+  md: 768px,
+  lg: 1280px
+) !default;
+
+// Easing
+$ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+$ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+
+// Add other project-specific variables here (colors, spacing, etc.)

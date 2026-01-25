@@ -1,0 +1,19 @@
+<footer class="site-footer">
+  <div class="footer-brand">
+    <span class="title">SpiraCSS</span>
+    <p class="copy">CSS architecture for scalable teams.</p>
+  </div>
+  <div class="footer-links">
+    <ul class="list">
+      <li class="item"><a href="/">Home</a></li>
+      <li class="item"><a href="/about/">About</a></li>
+      <li class="item">
+        <a href="https://spiracss.jp" target="_blank" rel="noreferrer">Docs</a>
+      </li>
+    </ul>
+  </div>
+  <div class="footer-meta">
+    <p class="note">Structure over guesswork.</p>
+    <p class="copy">Copyright 2026 SpiraCSS</p>
+  </div>
+</footer>

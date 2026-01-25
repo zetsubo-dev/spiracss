@@ -1,0 +1,8 @@
+---
+layout: layouts/base.webc
+title: Eleventy Simple - SpiraCSS Example
+pageCss: /assets/css/home.css
+---
+
+<hero-section></hero-section>
+<card-list></card-list>

@@ -1,0 +1,18 @@
+@use "styles/partials/global" as *;
+
+// @rel/../card-list.scss
+
+.list-items {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 1000px;
+
+  @include breakpoint-up(md) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  > .card-item {
+    // @rel/card-item.scss
+  }
+}

@@ -1,0 +1,37 @@
+@use "@styles/partials/global" as *;
+@use "sass:meta";
+
+// @assets/css/common.scss
+.site-header {
+  @include meta.load-css("scss");
+
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background-color: var(--color-bg);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+
+  @include breakpoint-up(md) {
+    padding: 1.25rem 2.5rem;
+  }
+
+  > .site-logo {
+    // @rel/scss/site-logo.scss
+    flex-shrink: 0;
+  }
+
+  > .site-nav {
+    // @rel/scss/site-nav.scss
+    flex-grow: 1;
+    margin-left: 2rem;
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

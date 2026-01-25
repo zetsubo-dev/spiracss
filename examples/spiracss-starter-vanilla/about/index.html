@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About - SpiraCSS Example</title>
+    <link rel="stylesheet" href="/src/assets/css/global.scss" />
+    <link rel="stylesheet" href="/src/assets/css/common.scss" />
+    <link rel="stylesheet" href="/src/assets/css/about.scss" />
+  </head>
+  <body>
+    <div class="main-container">
+      <header class="site-header">
+        <div class="site-logo">
+          <a href="/">SpiraCSS</a>
+        </div>
+        <nav class="site-nav">
+          <ul class="list">
+            <li class="item"><a href="/">Home</a></li>
+            <li class="item"><a href="/about/">About</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <main class="about-flow">
+        <header class="flow-header">
+          <p class="label">Workflow</p>
+          <h1 class="title">From HTML to SCSS</h1>
+          <p class="lead">
+            This page is intentionally HTML-only so SCSS can be generated from
+            it.
+          </p>
+        </header>
+        <ol class="flow-steps">
+          <li class="flow-step">
+            <span class="number">01</span>
+            <h2 class="title">Draft structure</h2>
+            <p class="body">
+              Write Block and Element class names before styling anything.
+            </p>
+          </li>
+          <li class="flow-step">
+            <span class="number">02</span>
+            <h2 class="title">Generate SCSS</h2>
+            <p class="body">
+              Use the VS Code extension or HTML CLI to scaffold files.
+            </p>
+          </li>
+          <li class="flow-step">
+            <span class="number">03</span>
+            <h2 class="title">Refine with lint</h2>
+            <p class="body">
+              Move placement rules and states based on Stylelint guidance.
+            </p>
+          </li>
+        </ol>
+        <div class="flow-actions">
+          <div class="action-card">
+            <h2 class="title">VS Code</h2>
+            <p class="body">
+              Run the SpiraCSS HTML to SCSS command on this file.
+            </p>
+            <p class="meta">Command: SpiraCSS: HTML to SCSS</p>
+          </div>
+          <div class="action-card">
+            <h2 class="title">HTML CLI</h2>
+            <p class="body">
+              Generate SCSS from the CLI using the root file path.
+            </p>
+            <p class="meta">npx spiracss-html-to-scss --root about/index.html</p>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-brand">
+          <span class="title">SpiraCSS</span>
+          <p class="copy">CSS architecture for scalable teams.</p>
+        </div>
+        <div class="footer-links">
+          <ul class="list">
+            <li class="item"><a href="/">Home</a></li>
+            <li class="item"><a href="/about/">About</a></li>
+            <li class="item">
+              <a href="https://spiracss.jp" target="_blank" rel="noreferrer"
+                >Docs</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="footer-meta">
+          <p class="note">Structure over guesswork.</p>
+          <p class="copy">Copyright 2026 SpiraCSS</p>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+

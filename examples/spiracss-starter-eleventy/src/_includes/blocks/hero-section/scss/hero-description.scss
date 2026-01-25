@@ -1,0 +1,21 @@
+@use "styles/partials/global" as *;
+
+// @rel/../hero-section.scss
+
+.hero-description {
+  max-width: 600px;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 90%);
+  text-align: center;
+
+  @include breakpoint-up(md) {
+    font-size: 1.25rem;
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

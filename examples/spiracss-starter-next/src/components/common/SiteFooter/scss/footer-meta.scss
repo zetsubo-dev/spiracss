@@ -1,0 +1,18 @@
+@use "styles/partials/global" as *;
+
+// @rel/../SiteFooter.module.scss
+.footerMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: rgb(226 232 240 / 70%);
+
+  > .note {
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  > .copy {
+    font-size: 0.95rem;
+  }
+}

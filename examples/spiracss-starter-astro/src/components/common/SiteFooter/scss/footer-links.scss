@@ -1,0 +1,38 @@
+@use "@styles/partials/global" as *;
+
+// @rel/../SiteFooter.scss
+
+.footer-links {
+  > .list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+  }
+
+  > .list {
+    > .item {
+      > a {
+        color: #e2e8f0;
+        font-weight: 600;
+        text-decoration: none;
+      }
+    }
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  @at-root & {
+    > .list {
+      > .item {
+        > a {
+          transition: color 0.2s $ease;
+
+          &:hover {
+            color: #60a5fa;
+          }
+        }
+      }
+    }
+  }
+}

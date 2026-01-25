@@ -1,0 +1,11 @@
+/* ------------------------
+  Shared Keyframes
+------------------------ */
+// This file should contain reusable animations shared across components.
+// Shared animations MUST be prefixed with 'kf-' to indicate reusability.
+//
+// Rules:
+// - @keyframes MUST be placed at root level (not inside @media/@layer)
+// - Place @keyframes at the END of the file (only comments/empty lines after)
+// - Component-specific animations should stay in their own SCSS files
+//   and use the naming pattern: {block}-{action} (e.g., hero-section-fade-in)

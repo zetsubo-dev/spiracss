@@ -1,0 +1,30 @@
+{
+  "name": "spiracss-starter-eleventy",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "npm-run-all -p dev:eleventy dev:scss",
+    "dev:eleventy": "eleventy --config=./.eleventy.cjs --serve",
+    "dev:scss": "sass --watch --load-path=src --load-path=src/_includes src/assets/css:dist/assets/css",
+    "build": "eleventy --config=./.eleventy.cjs && npm run build:scss",
+    "build:scss": "sass --load-path=src --load-path=src/_includes src/assets/css:dist/assets/css",
+    "lint:scss": "stylelint \"src/**/*.scss\" --fix"
+  },
+  "dependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "@11ty/eleventy-plugin-webc": "^0.11.2"
+  },
+  "devDependencies": {
+    "@spiracss/html-cli": "^0.3.1",
+    "@spiracss/stylelint-plugin": "^0.3.1",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.49",
+    "postcss-scss": "^4.0.9",
+    "sass": "^1.83.0",
+    "stylelint": "^16.11.0",
+    "stylelint-config-recess-order": "^5.1.1",
+    "stylelint-config-standard-scss": "^14.0.0",
+    "stylelint-scss": "^7.0.0"
+  }
+}

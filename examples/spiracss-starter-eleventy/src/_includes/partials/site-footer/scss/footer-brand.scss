@@ -1,0 +1,23 @@
+@use "styles/partials/global" as *;
+
+// @rel/../site-footer.scss
+
+.footer-brand {
+  > .title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  > .copy {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    color: #cbd5f5;
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

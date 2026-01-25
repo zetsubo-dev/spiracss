@@ -1,0 +1,18 @@
+@use "@styles/partials/global" as *;
+
+// About content SCSS is generated from about/index.html.
+
+.main-container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+
+  > .site-header {
+    // @common/SiteHeader/SiteHeader.scss
+    z-index: 100;
+  }
+
+  > .site-footer {
+    // @common/SiteFooter/SiteFooter.scss
+    margin-top: 3rem;
+  }
+}

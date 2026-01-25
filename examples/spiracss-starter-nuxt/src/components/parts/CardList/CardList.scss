@@ -1,0 +1,41 @@
+@use "@styles/partials/global" as *;
+@use "sass:meta";
+
+// @assets/css/home.scss
+
+.card-list {
+  @include meta.load-css("scss");
+
+  &[data-variant="highlight"] {
+    padding: 2.5rem 1.5rem;
+    background-color: #f8fafc;
+    border-radius: 24px;
+
+    @include breakpoint-up(md) {
+      padding: 3rem 2.5rem;
+    }
+  }
+
+  > .title {
+    font-size: 1.75rem;
+    font-weight: bold;
+    color: var(--color-text);
+    text-align: center;
+
+    @include breakpoint-up(md) {
+      font-size: 2rem;
+    }
+  }
+
+  > .list-items {
+    // @rel/scss/list-items.scss
+    margin-inline: auto;
+    margin-top: 2rem;
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  // @at-root & {
+  // }
+}

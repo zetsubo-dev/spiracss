@@ -1,0 +1,37 @@
+@use "styles/partials/global" as *;
+
+// @rel/../hero-section.scss
+
+.cta-button {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-primary);
+  background-color: #fff;
+  border-radius: 4px;
+
+  @include breakpoint-up(md) {
+    padding: 1rem 2.5rem;
+    font-size: 1.125rem;
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  @at-root & {
+    transition:
+      transform 0.2s $ease,
+      box-shadow 0.2s $ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+  }
+}

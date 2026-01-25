@@ -1,0 +1,46 @@
+@use "styles/partials/global" as *;
+
+// @rel/list-items.scss
+.card-item {
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  &[data-variant="primary"] {
+    background-color: #eff6ff;
+    border-color: rgb(59 130 246 / 35%);
+  }
+
+  > .title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--color-primary);
+  }
+
+  > .description {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  @at-root & {
+    transition: box-shadow 0.2s $ease;
+
+    &[data-state="active"] {
+      box-shadow: 0 12px 24px rgb(59 130 246 / 22%);
+    }
+
+    &[aria-selected="true"] {
+      box-shadow: 0 12px 24px rgb(15 23 42 / 16%);
+    }
+
+    &:hover {
+      box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+    }
+  }
+}

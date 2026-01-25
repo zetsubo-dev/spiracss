@@ -1,0 +1,18 @@
+// Global styles (reset/base/utilities/tokens)
+@use "styles/partials/variables";
+@use "styles/partials/reset";
+@use "styles/partials/base";
+@use "styles/partials/utilities";
+@use "styles/partials/keyframes";
+
+// Component styles (global build)
+// Note: In the Next.js App Router, global SCSS should be imported from app/layout.tsx only.
+@use "components/layouts/BaseLayout";
+@use "components/common/SiteHeader/SiteHeader";
+@use "components/common/SiteFooter/SiteFooter";
+@use "components/pages/home/HeroSection/HeroSection";
+@use "components/parts/CardList/CardList";
+
+// Page layer wiring (placement)
+@use "styles/pages/common";
+@use "styles/pages/home";

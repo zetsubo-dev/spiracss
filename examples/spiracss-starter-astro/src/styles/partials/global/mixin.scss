@@ -1,0 +1,33 @@
+@use "function" as *;
+
+/* ------------------------
+  Mixins
+------------------------ */
+// Breakpoint mixins for responsive design.
+// These work with the $breakpoints map defined in config.scss.
+
+@mixin breakpoint-up($name) {
+  $min: breakpoint-min($name);
+
+  @if $min {
+    @media (min-width: $min) {
+      @content;
+    }
+  } @else {
+    @content;
+  }
+}
+
+@mixin breakpoint-down($name) {
+  $max: breakpoint-max($name);
+
+  @if $max {
+    @media (max-width: $max) {
+      @content;
+    }
+  } @else {
+    @content;
+  }
+}
+
+// Add other project-specific mixins here

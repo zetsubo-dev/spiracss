@@ -1,0 +1,33 @@
+@use "styles/partials/global" as *;
+
+// @rel/../site-header.scss
+
+.site-nav {
+  > .list {
+    display: flex;
+    gap: 1.5rem;
+
+    > .item {
+      > a {
+        color: var(--color-text);
+      }
+    }
+  }
+
+  // --shared ----------------------------------------
+
+  // --interaction -----------------------------------
+  @at-root & {
+    > .list {
+      > .item {
+        > a {
+          transition: color 0.2s $ease;
+
+          &:hover {
+            color: var(--color-primary);
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+<header class="site-header">
+  <div class="site-logo">
+    <a href="/">SpiraCSS</a>
+  </div>
+  <nav class="site-nav">
+    <ul class="list">
+      <li class="item"><a href="/">Home</a></li>
+      <li class="item"><a href="/about/">About</a></li>
+    </ul>
+  </nav>
+</header>

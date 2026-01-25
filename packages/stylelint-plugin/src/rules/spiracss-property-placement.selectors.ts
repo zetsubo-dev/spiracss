@@ -48,6 +48,7 @@ const SIMPLE_SCOPE_SELECTOR_PATTERN = /^[^,\s>+~&()\[\]:]+$/
 const SCOPE_HEAD_PATTERN = /^([^\s(]+)/
 const ALLOWED_COMBINATORS = new Set(['>', '+', '~'])
 const GLOBAL_PSEUDO = ':global'
+const LOCAL_PSEUDO = ':local'
 const FUNCTIONAL_PSEUDOS = new Set([':is', ':where', ':not'])
 const LEADING_COMBINATOR_PATTERN = /^[>+~]/
 const TRAILING_COMBINATOR_PATTERN = /[>+~]$/
@@ -131,6 +132,81 @@ type GlobalSelectorAnalysis = {
 type GlobalSelectorCacheEntry = { value: GlobalSelectorAnalysis }
 const getGlobalSelectorCache =
   createSharedCacheAccessor<string, GlobalSelectorCacheEntry>()
+
+const stripModulePseudos = (selector: ParsedSelector): ParsedSelector => {
+  const cloned = selector.clone()
+  cloned.walkPseudos((pseudo) => {
+    const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+    if (value !== GLOBAL_PSEUDO && value !== LOCAL_PSEUDO) return
+
+    const selectorNodes = Array.isArray(pseudo.nodes)
+      ? pseudo.nodes.filter(
+          (
+            child
+          ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+            child.type === 'selector'
+        )
+      : []
+
+    if (selectorNodes.length === 0) {
+      // :global / :local without (...) just toggles module scoping.
+      pseudo.remove()
+      return
+    }
+
+    if (selectorNodes.length === 1) {
+      const inner = selectorNodes[0]
+      const innerNodes = (inner.nodes ?? []).map((node) => node.clone())
+      if (innerNodes.length === 0) {
+        pseudo.remove()
+        return
+      }
+      // Unwrap :global(.foo) / :local(.foo) -> .foo
+      pseudo.replaceWith(...innerNodes)
+      return
+    }
+
+    // Keep selector lists parseable by converting to :is(...).
+    pseudo.value = ':is'
+  })
+  return cloned
+}
+
+const stripLocalPseudos = (selector: ParsedSelector): ParsedSelector => {
+  const cloned = selector.clone()
+  cloned.walkPseudos((pseudo) => {
+    const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+    if (value !== LOCAL_PSEUDO) return
+
+    const selectorNodes = Array.isArray(pseudo.nodes)
+      ? pseudo.nodes.filter(
+          (
+            child
+          ): child is ReturnType<SelectorParserCache['parse']>[number] =>
+            child.type === 'selector'
+        )
+      : []
+
+    if (selectorNodes.length === 0) {
+      pseudo.remove()
+      return
+    }
+
+    if (selectorNodes.length === 1) {
+      const inner = selectorNodes[0]
+      const innerNodes = (inner.nodes ?? []).map((node) => node.clone())
+      if (innerNodes.length === 0) {
+        pseudo.remove()
+        return
+      }
+      pseudo.replaceWith(...innerNodes)
+      return
+    }
+
+    pseudo.value = ':is'
+  })
+  return cloned
+}
 
 type GlobalSelectorScan = {
   hasLocal: boolean
@@ -340,8 +416,8 @@ const isGlobalOnlySegment = (
  * Tracks local/global nodes inside a selector.
  *
  * CSS Modules :global semantics:
- * - :global(.foo) → only .foo is global; nodes after it are local
- * - :global .foo  → .foo and all subsequent nodes are global (bare :global)
+ * - :global(.foo) -> only .foo is global; nodes after it are local
+ * - :global .foo  -> .foo and all subsequent nodes are global (bare :global)
  */
 const scanSelectorGlobalState = (
   selector: ReturnType<SelectorParserCache['parse']>[number],
@@ -415,32 +491,48 @@ const analyzeGlobalSelector = (
   >()
   let allGlobalOnly = selectors.length > 0
   const stripped: StrippedSelector[] = []
-  selectors.forEach((sel) => {
+  selectors.forEach((originalSel) => {
+    // Ensure :local does not block stripping or parse checks.
+    const sel = stripLocalPseudos(originalSel)
     const scan = scanSelectorGlobalState(sel, flagsCache)
-    let selectorGlobalOnly =
+    const selectorGlobalOnly =
       scan.rightmostGlobal ||
       (scan.hasGlobalOutsideNegation && !scan.hasLocal)
+    const isPureGlobalSelector =
+      (scan.hasGlobalOutsideNegation && !scan.hasLocal) ||
+      (scan.hasBareGlobal && scan.bareIndex === 0)
+
     if (!scan.hasGlobal) {
       const normalized = normalizeStrippedSelector(sel.toString())
       if (normalized) stripped.push(normalized)
       allGlobalOnly = false
       return
     }
+
+    if (isPureGlobalSelector) {
+      const normalized = normalizeStrippedSelector(stripModulePseudos(sel).toString())
+      if (normalized) stripped.push(normalized)
+      allGlobalOnly = false
+      return
+    }
+
     if (scan.rightmostGlobal) {
       // Treat selectors whose rightmost target is global as out-of-scope.
       allGlobalOnly = allGlobalOnly && selectorGlobalOnly
       return
     }
+
     if (scan.hasBareGlobal) {
       const cloned = sel.clone()
       const nodes = cloned.nodes ?? []
       nodes.splice(scan.bareIndex)
       const normalized = normalizeStrippedSelector(cloned.toString())
       if (normalized) stripped.push(normalized)
-      if (!normalized) selectorGlobalOnly = true
-      allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+      if (!normalized) allGlobalOnly = allGlobalOnly && true
+      else allGlobalOnly = false
       return
     }
+
     const cloned = sel.clone()
     const globalOnlySelectors = new WeakSet<ParsedSelector>()
     let hasEmptySelectorList = false
@@ -515,8 +607,7 @@ const analyzeGlobalSelector = (
       if (!hasContent) pseudo.remove()
     })
     if (hasGlobalOnlySelectorList) {
-      selectorGlobalOnly = true
-      allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+      allGlobalOnly = allGlobalOnly && true
       return
     }
     if (hasEmptySelectorList) {
@@ -527,10 +618,12 @@ const analyzeGlobalSelector = (
     }
     const normalized = normalizeStrippedSelector(cloned.toString())
     if (normalized) stripped.push(normalized)
-    if (!normalized) selectorGlobalOnly = true
-    allGlobalOnly = allGlobalOnly && selectorGlobalOnly
+    if (!normalized) allGlobalOnly = allGlobalOnly && true
+    else allGlobalOnly = false
   })
-  const strippedText = stripped.length > 0 ? stripped.map((item) => item.selector).join(', ') : null
+
+  const strippedText =
+    stripped.length > 0 ? stripped.map((item) => item.selector).join(', ') : null
   const value: GlobalSelectorAnalysis = {
     stripped: allGlobalOnly ? null : strippedText,
     strippedSelectors: allGlobalOnly ? [] : stripped,
@@ -548,9 +641,6 @@ export const stripGlobalSelector = (
   options?: { preserveCombinator?: boolean }
 ): string | null => {
   const analysis = analyzeGlobalSelector(selectorText, cache, cacheSize)
-  // `null` means the selector is either global-only or unverified after stripping :global.
-  // Use stripGlobalSelectorForRoot() to keep unverified selectors in-scope for root anchoring.
-  // Use isGlobalOnlySelector() to distinguish global-only (skip @at-root/@extend).
   if (!options?.preserveCombinator) return analysis.stripped
   if (analysis.strippedSelectors.length === 0) return null
   return analysis.strippedSelectors
@@ -582,14 +672,6 @@ export const stripGlobalSelectorForRoot = (
       item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector
     )
     .join(', ')
-}
-
-export const isGlobalOnlySelector = (
-  selectorText: string,
-  cache: SelectorParserCache,
-  cacheSize: number
-): boolean => {
-  return analyzeGlobalSelector(selectorText, cache, cacheSize).globalOnly
 }
 
 export const splitSelectors = (

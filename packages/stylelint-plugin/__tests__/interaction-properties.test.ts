@@ -184,18 +184,15 @@ describe('spiracss/interaction-properties - basics', () => {
       },
       {
         code: `
-.block-name {
-  opacity: 0;
-}
-
 :global .block-name {
   // --interaction
   @at-root & {
+    opacity: 0;
     transition: opacity 0.2s ease;
   }
 }
         `,
-        description: 'ignore global-only transition targets'
+        description: 'treat :global transition targets as in-scope'
       }
     ],
 

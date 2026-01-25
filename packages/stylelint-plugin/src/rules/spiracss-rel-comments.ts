@@ -43,6 +43,7 @@ import { messages } from './spiracss-rel-comments.messages'
 import { normalizeOptions } from './spiracss-rel-comments.options'
 import {
   splitSelectors,
+  stripGlobalSelector,
   stripGlobalSelectorForRoot
 } from './spiracss-property-placement.selectors'
 import {
@@ -396,8 +397,12 @@ const rule = createRule(
           const isInteraction = interactionRules.has(rule)
           if (isShared && !options.require.child.shared) return
           if (isInteraction && !options.require.child.interaction) return
+          const strippedSelector =
+            stripGlobalSelector(rule.selector || '', selectorCache, cacheSizes.selector, {
+              preserveCombinator: true
+            }) ?? ''
           const childBlocks = collectDirectChildBlocks(
-            rule.selector || '',
+            strippedSelector,
             options,
             selectorCache
           )

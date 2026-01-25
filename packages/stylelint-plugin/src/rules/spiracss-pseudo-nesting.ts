@@ -45,6 +45,8 @@ const collectViolations = (
     compounds.forEach((compound) => {
       if (compound.hasNesting) return
       compound.pseudos.forEach((pseudo) => {
+        const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
+        if (value === ':global' || value === ':local') return
         const index = pseudo.sourceIndex ?? 0
         const endIndex = index + pseudo.toString().length
         violations.push({ index, endIndex })

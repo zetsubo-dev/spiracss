@@ -433,7 +433,6 @@ const rule = createRule(
             let hasNonSameElementClass = false
             let pseudoElement: string | null = null
             sel.walk((node) => {
-              if (isInsideGlobalPseudo(node)) return
               if (
                 node.type === 'class' &&
                 !isInsideNonSameElementPseudo(node, keySameElementPseudos)

@@ -167,6 +167,43 @@ describe('spiracss/rel-comments - basic checks', () => {
   })
 })
 
+describe('spiracss/rel-comments - :global is transparent', () => {
+  testRule({
+    plugins: [relComments],
+    ruleName: relComments.ruleName,
+    config: [
+      true,
+      {
+        requireScss: true,
+        requireMeta: true,
+        validatePath: false, // File existence checks are disabled for tests.
+        skipNoRules: true,
+        requireChild: true,
+        requireParent: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [],
+
+    reject: [
+      {
+        code: `
+// @assets/css/home.scss
+@use 'sass:meta';
+.home-section {
+  > :global(.child-block) {
+    @include meta.load-css('scss');
+  }
+}`,
+        description: 'detect direct child Blocks inside :global',
+        message:
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+      }
+    ]
+  })
+})
+
 describe('spiracss/rel-comments - fileCase option', () => {
   testRule({
     plugins: [relComments],

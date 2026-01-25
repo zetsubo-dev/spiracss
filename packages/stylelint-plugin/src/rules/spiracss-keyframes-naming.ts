@@ -36,6 +36,7 @@ import type { Options as ClassStructureOptions } from './spiracss-class-structur
 import { ruleName } from './spiracss-keyframes-naming.constants'
 import { messages } from './spiracss-keyframes-naming.messages'
 import { normalizeOptions } from './spiracss-keyframes-naming.options'
+import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
 import type { Options } from './spiracss-keyframes-naming.types'
 
 export { ruleName }
@@ -141,8 +142,21 @@ const resolveRootBlockName = (
     if (rootBlock) return
     if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
     if (typeof rule.selector !== 'string') return
-    if (rule.selector.includes(':global')) return
-    const selectors = selectorCache.parse(rule.selector)
+    const selectorTexts = splitSelectors(rule.selector, selectorCache)
+    const localSelectors = selectorTexts
+      .map((selectorText) =>
+        stripGlobalSelectorForRoot(
+          selectorText,
+          selectorCache,
+          options.cache.selector,
+          { preserveCombinator: true }
+        )
+      )
+      .filter((selectorText): selectorText is string => Boolean(selectorText))
+    if (localSelectors.length === 0) return
+    const selectors = localSelectors.flatMap((selectorText) =>
+      selectorCache.parse(selectorText)
+    )
     const rootBlocks = collectRootBlockNames(
       selectors,
       options as unknown as ClassStructureOptions,
@@ -183,8 +197,22 @@ const collectElementNames = (
   root.walkRules((rule: Rule) => {
     if (isInsideKeyframes(rule)) return
     const selector = typeof rule.selector === 'string' ? rule.selector : ''
-    if (!selector || selector.includes(':global')) return
-    const selectors = selectorCache.parse(selector)
+    if (!selector) return
+    const selectorTexts = splitSelectors(selector, selectorCache)
+    const localSelectors = selectorTexts
+      .map((selectorText) =>
+        stripGlobalSelectorForRoot(
+          selectorText,
+          selectorCache,
+          options.cache.selector,
+          { preserveCombinator: true }
+        )
+      )
+      .filter((selectorText): selectorText is string => Boolean(selectorText))
+    if (localSelectors.length === 0) return
+    const selectors = localSelectors.flatMap((selectorText) =>
+      selectorCache.parse(selectorText)
+    )
     selectors.forEach((sel) => {
       sel.walkClasses((node) => {
         const name = node.value

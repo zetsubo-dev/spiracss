@@ -206,6 +206,37 @@ describe('spiracss/keyframes-naming - basics', () => {
   })
 })
 
+describe('spiracss/keyframes-naming - :global is transparent', () => {
+  testRule({
+    plugins: [keyframesNaming],
+    ruleName: keyframesNaming.ruleName,
+    config: [
+      true,
+      {
+        blockWarnMissing: true
+      }
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+:global(.card-list) {}
+
+@keyframes card-list-fade-in {
+  to {
+    opacity: 1;
+  }
+}
+        `,
+        description: 'resolve the root Block from :global selector'
+      }
+    ],
+
+    reject: []
+  })
+})
+
 describe('spiracss/keyframes-naming - ignorePatterns', () => {
   testRule({
     plugins: [keyframesNaming],

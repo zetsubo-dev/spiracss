@@ -55,6 +55,12 @@ describe('spiracss/pseudo-nesting - basic checks', () => {
   }
 }`,
         description: 'nested pseudos on & stay on the same compound'
+      },
+      {
+        code: `
+:global(.block) {}
+`,
+        description: ':global pseudo is ignored'
       }
     ],
 

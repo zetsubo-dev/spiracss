@@ -33,7 +33,6 @@ import { messages } from './spiracss-property-placement.messages'
 import { normalizeOptions } from './spiracss-property-placement.options'
 import {
   analyzeSelectorList,
-  isGlobalOnlySelector,
   buildPolicySets,
   normalizeScopePrelude,
   normalizeUnverifiedScopePrelude,
@@ -297,7 +296,6 @@ const rule = createRule(
           resolvedSelectorText: string
         }
       >()
-      const globalOnlyRuleCache = new WeakMap<Rule, boolean>()
       const ruleFamilyKeysCache = new WeakMap<Rule, string[] | null>()
       const wrapperKeyCache = new WeakMap<Node, string>()
       const atRuleIds = new WeakMap<AtRule, number>()
@@ -400,24 +398,6 @@ const rule = createRule(
         const resolved = getResolvedSelectors(rule)
         if (resolved.length > 0) return resolved.join(', ')
         return rule.selector
-      }
-      const isGlobalOnlyRule = (rule: Rule): boolean => {
-        const cached = globalOnlyRuleCache.get(rule)
-        if (cached !== undefined) return cached
-        // If a rule has no non-:global selectors, treat it as out-of-scope for enforcement.
-        const resolved = getResolvedSelectors(rule)
-        const value =
-          resolved.length > 0 &&
-          resolved.every(
-            (selector) =>
-              isGlobalOnlySelector(
-                selector,
-                selectorCache,
-                options.cache.selector
-              )
-          )
-        globalOnlyRuleCache.set(rule, value)
-        return value
       }
 
       const getRuleAnalysis = (
@@ -539,7 +519,6 @@ const rule = createRule(
       root.walkAtRules((atRule: AtRule) => {
         const name = atRule.name ? atRule.name.toLowerCase() : ''
         const parentRule = findParentRule(atRule)
-        if (parentRule && isGlobalOnlyRule(parentRule)) return
         if (name === 'extend') {
           const placeholder = atRule.params?.trim() || '%unknown'
           const parentSelector = resolveContextSelector(parentRule)

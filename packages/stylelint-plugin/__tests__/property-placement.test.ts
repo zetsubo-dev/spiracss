@@ -135,34 +135,6 @@ describe('spiracss/property-placement', () => {
       },
       {
         code: `
-:global(.foo) {
-  @at-root & {
-    color: inherit;
-  }
-}`
-      },
-      {
-        code: `
-:global .foo {
-  @at-root & {
-    color: inherit;
-  }
-}`
-      },
-      {
-        code: `
-:global .block-name {
-  margin-top: 8px;
-}`
-      },
-      {
-        code: `
-:global(.foo) {
-  @extend %placeholder;
-}`
-      },
-      {
-        code: `
 :global(.foo) > .block-name {
   margin-top: 8px;
 }`
@@ -195,20 +167,6 @@ describe('spiracss/property-placement', () => {
         code: `
 .block-name:is(.block-name :global(.foo)) {
   margin-top: 8px;
-}`
-      },
-      {
-        code: `
-.block-name:is(:global(.foo)) {
-  @at-root & {
-    color: inherit;
-  }
-}`
-      },
-      {
-        code: `
-.block-name:is(:global(.foo)) {
-  @extend %placeholder;
 }`
       },
       {
@@ -2216,6 +2174,108 @@ body {
     }
   }
 }`
+      }
+    ]
+  })
+})
+
+describe('spiracss/property-placement - :global is transparent', () => {
+  testRule({
+    plugins: [propertyPlacement],
+    ruleName: propertyPlacement.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    reject: [
+      {
+        code: `
+:global(.foo) {
+  @at-root & {
+    color: inherit;
+  }
+}`,
+        description: '@at-root is still linted in :global(...)',
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `:global(.foo)`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+:global .foo {
+  @at-root & {
+    color: inherit;
+  }
+}`,
+        description: '@at-root is still linted in bare :global',
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `:global .foo`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+:global .block-name {
+  margin-top: 8px;
+}`,
+        description: ':global is linted',
+        warnings: [
+          {
+            message:
+              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `:global .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+:global(.foo) {
+  @extend %placeholder;
+}`,
+        description: '@extend is still linted in :global(...)',
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `:global(.foo)` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:is(:global(.foo)) {
+  @at-root & {
+    color: inherit;
+  }
+}`,
+        description: '@at-root is still linted with functional pseudos containing :global',
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `.block-name:is(:global(.foo))`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+.block-name:is(:global(.foo)) {
+  @extend %placeholder;
+}`,
+        description: '@extend is still linted with functional pseudos containing :global',
+        warnings: [
+          {
+            message:
+              '`@extend` is not allowed in SpiraCSS. Context: `.block-name:is(:global(.foo))` extends `%placeholder`. `@extend` creates implicit dependencies and can cause unexpected selector merging. Use a mixin, CSS custom properties, or apply the styles directly. (spiracss/property-placement)'
+          }
+        ]
       }
     ]
   })

@@ -56,7 +56,6 @@ import {
 } from './spiracss-class-structure.selectors'
 import {
   splitSelectors,
-  isGlobalOnlySelector,
   stripGlobalSelectorForRoot
 } from './spiracss-property-placement.selectors'
 import type { Kind } from './spiracss-class-structure.types'
@@ -228,11 +227,15 @@ const rule = createRule(
 
       const isGlobalWrapperRule = (rule: Rule): boolean => {
         if (typeof rule.selector !== 'string') return false
-        return isGlobalOnlySelector(
-          rule.selector,
-          selectorCache,
-          cacheSizes.selector
-        )
+        const lowered = rule.selector.toLowerCase()
+        if (!lowered.includes(':global') && !lowered.includes(':local')) return false
+        const hasNestedRules = (rule.nodes ?? []).some((node) => node.type === 'rule')
+        if (!hasNestedRules) return false
+
+        const selectors = parseStrippedSelectors(rule.selector)
+        if (selectors.length === 0) return true
+        const rootBlocks = collectRootBlockNames(selectors, options, patterns)
+        return rootBlocks.length === 0
       }
 
       const findParentRuleSkippingGlobal = (rule: Rule): Rule | null => {
@@ -271,6 +274,7 @@ const rule = createRule(
         allRules.push(rule)
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (!firstRule) firstRule = rule
+        if (isGlobalWrapperRule(rule)) return
         if (findParentRuleSkippingGlobal(rule)) return
         topLevelRules.push(rule)
         if (typeof rule.selector !== 'string') return
@@ -300,6 +304,7 @@ const rule = createRule(
 
       allRules.forEach((rule: Rule) => {
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
+        if (isGlobalWrapperRule(rule)) return
         const parentRule = findParentRuleSkippingGlobal(rule)
         const parentKind = parentRule ? ruleKinds.get(parentRule) : undefined
         const hasBlockAncestor = (() => {

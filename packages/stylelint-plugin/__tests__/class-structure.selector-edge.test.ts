@@ -151,7 +151,7 @@ describe('spiracss/class-structure - special patterns', () => {
   })
 })
 
-describe('spiracss/class-structure - :global skip', () => {
+describe('spiracss/class-structure - :global is transparent', () => {
   testRule({
     plugins: [classStructure],
     ruleName: classStructure.ruleName,
@@ -167,12 +167,20 @@ describe('spiracss/class-structure - :global skip', () => {
 
     accept: [
       {
-        code: ':global(.u-hidden) {}',
-        description: ':global skips naming checks'
+        code: ':global(.block-name) {}',
+        description: ':global(...) is treated as a normal selector'
       },
       {
-        code: '.block { :global(.utility) {} }',
-        description: ':global inside Block is also skipped'
+        code: '.block-name { :global(.title) {} }',
+        description: ':global(...) is transparent inside nested rules'
+      }
+    ],
+
+    reject: [
+      {
+        code: ':global(.123-invalid) {}',
+        description: 'invalid class names inside :global(...) are linted',
+        message: invalidNameMessage('123-invalid')
       }
     ]
   })

@@ -1,7 +1,0 @@
-<section class="hero-section">
-  <h1 class="hero-title">Welcome to SpiraCSS</h1>
-  <p class="hero-description">
-    A modern CSS architecture for scalable web projects.
-  </p>
-  <a href="#features" class="cta-button">Learn More</a>
-</section>

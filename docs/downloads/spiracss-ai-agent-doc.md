@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Guide v0.3.0
+# SpiraCSS AI Agent Guide v0.3.2
 
 This document is self-contained (rules + fix guidance live here). For decision-making, assume only this file and spiracss.config.js are authoritative; sample configs below are reference examples.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -11,7 +11,7 @@ Lint messages are actionable fix guidance derived from the current implementatio
 
 Defaults are only a fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.3.0, @spiracss/html-cli v0.3.0.
+Version compatibility: @spiracss/stylelint-plugin v0.3.2, @spiracss/html-cli v0.3.2.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
 ## 1. Design Overview (minimum)
@@ -70,9 +70,12 @@ If config is missing, Stylelint-based fixes are blocked (createRules errors). On
 - keyframes inherits naming + external from stylelint.base/stylelint.class unless explicitly set in keyframes.
 - rel inherits naming + external from stylelint.base/stylelint.class unless explicitly set in rel.
 - pageLayer inherits naming + external from stylelint.base/stylelint.class; cache from stylelint.base.cache; componentsDirs from stylelint.base.paths.components; pageEntryAlias/pageEntrySubdir from generator; aliasRoots from spiracss.aliasRoots.
-- stylelint.base.paths.childDir / components fill class.childDir / componentsDirs when missing.
-- generator.rootFileCase / childScssDir fill class.rootCase / childDir if missing.
-- generator.childScssDir fills rel.childDir if missing.
+- stylelint.base.paths.childDir / components fill class.childDir / rel.childDir / componentsDirs when missing.
+- generator.childScssDir fills class.childDir / rel.childDir when missing.
+- generator.rootFileCase fills class.rootCase / rel.fileCase when missing.
+- generator.childFileCase fills class.childFileCase / rel.childFileCase when missing.
+- spiracss.fileCase.root fills class.rootCase / rel.fileCase when missing.
+- spiracss.fileCase.child fills class.childFileCase / rel.childFileCase when missing.
 - stylelint.base.cache fills per-rule cache when missing.
 - placement.elementDepth defaults to class.elementDepth when missing.
 
@@ -187,7 +190,8 @@ Rules:
 
 - Applies only inside componentsDirs (supports nested paths).
 - Skips assets/css, index.scss, and files starting with "_" (partials).
-- If the path includes childDir, expected filename is the root Block name as-is.
+- Both *.scss and *.module.scss are accepted (CSS Modules; ".module" is ignored).
+- If the path includes childDir, expected filename is the root Block name formatted by childFileCase.
 - Otherwise, expected filename is the root Block name formatted by rootCase.
 - If rootFile=false, no filename checks are applied.
 
@@ -366,18 +370,23 @@ Placement rules (when required by config):
 - Parent -> Child: // @rel/scss/child-block.scss as the first node inside "> .child" rule.
 - Root Block must be the first rule in the file when requireParent applies (after any @use/@forward/@import).
 
+Filename case checks (childMismatch):
+- fileCase: expected filename case for child targets.
+- childFileCase: optional filename case used only when the @rel target path includes childDir (defaults to fileCase).
+- Both *.scss and *.module.scss are accepted when matching child target filenames.
+
 ## 12. Tooling Constraints
 
 HTML CLI:
-- HTML-to-SCSS extracts static class candidates from class/className strings, template literals (static parts plus string literals or member access inside `${}`), and member access like `styles.foo` or `styles['foo']`. When `jsxClassBindings.memberAccessAllowlist` is set, only the listed base identifiers are treated as class sources (empty array disables member access extraction), and chained access (e.g. `styles.layout.hero`) is treated as dynamic. Dynamic expressions are ignored (string literals inside them may still be extracted).
-- HTML format inserts placeholders only for static JSX bindings. Template literals are allowed when `${}` segments are static member access or string literals; if any dynamic expression is present (conditions, props, function calls, non-static `${}` segments), formatting is skipped.
-- When HTML format runs on JSX/TSX, it normalizes bindings to plain class strings for placeholder insertion; treat the output as scaffolding (do not overwrite CSS Modules sources).
+- SCSS generation extracts static class names from JSX class/className (string literals, template literal static parts, member access like styles.foo). When `jsxClassBindings.memberAccessAllowlist` is set, only the listed base identifiers are treated as class sources (empty array disables member access extraction), and chained access (e.g. `styles.layout.hero`) is treated as dynamic. Dynamic expressions are dropped.
+- Placeholder insertion skips JSX bindings that include dynamic expressions (conditions, props, interpolations).
 - Template syntax (EJS/Nunjucks/Astro/etc) is skipped for formatting to avoid breaking markup.
 
 Note: Dynamic class usage or template syntax may hide structural violations from HTML CLI. If detected in input, stop and report even if lint can run.
 
 Stylelint:
 - createRules/createRulesAsync require a config (path or object) with aliasRoots; no defaults are applied.
+- CSS Modules `:global` / `:local` are treated as transparent (the inner selector is linted; they do not bypass SpiraCSS checks).
 - Path-based loading requires a readable spiracss.config.js. In ESM, use createRulesAsync(path) or createRules(config).
 - Path resolution uses the current working directory as the project root. Run Stylelint from the directory that contains spiracss.config.js to avoid false `@rel` path errors.
 
@@ -494,7 +503,7 @@ Definition of done:
 - If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If dynamic class bindings or template syntax are present, stop and report (lint results are not sufficient).
 - Stylelint passes AND @rel path validation passes (when validatePath=true).
 
-### 13.1 Stylelint message keys (v0.3.0)
+### 13.1 Stylelint message keys (v0.3.2)
 
 Stylelint messages include a stable message key and a docs URL with an anchor like `#invalidName`.
 This document lists keys + meanings only; exact message text may change, so rely on tool output.
@@ -582,7 +591,7 @@ spiracss/rel-comments:
 - childMismatch: child name does not match the `@rel` target
 - selectorParseFailed: selector parse failed; some checks were skipped (warning)
 
-### 13.2 Autonomy coverage (v0.3.0)
+### 13.2 Autonomy coverage (v0.3.2)
 
 Scope: static HTML classes and selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
 
@@ -748,6 +757,7 @@ Note: Stylelint does not fall back to these defaults; use them only for HTML too
   - rootSingle=true
   - rootFile=true
   - rootCase="preserve"
+  - childFileCase="preserve"
   - childDir="scss"
   - componentsDirs=["components"]
   - elementDepth=4
@@ -770,6 +780,8 @@ Note: Stylelint does not fall back to these defaults; use them only for HTML too
   - requireChildInteraction=false
   - validatePath=true
   - skipNoRules=true
+  - fileCase="preserve"
+  - childFileCase=(unset; falls back to fileCase)
 - keyframes:
   - sharedPrefixes=["kf-"], sharedFiles=["keyframes.scss"], actionMaxWords=3
   - blockSource="selector", blockWarnMissing=true, ignoreSkipPlacement=false

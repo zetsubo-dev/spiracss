@@ -103,6 +103,8 @@ const config = {
       rootFile: true,
       // Root Block SCSS filename case (default: 'preserve')
       rootCase: 'preserve', // align with generator.rootFileCase
+      // Filename case for rootFile checks under childDir (default: 'preserve')
+      childFileCase: 'preserve', // align with generator.childFileCase
       // Directory name for child Block SCSS (default: 'scss')
       childDir: 'scss',
       // Directory names treated as the component layer (default: ['components'])
@@ -216,10 +218,12 @@ const config = {
     pageEntrySubdir: 'css',
     // Root SCSS filename case (preserve / kebab / snake / camel / pascal / default: 'preserve')
     rootFileCase: 'preserve',
+    // Child SCSS filename case (preserve / kebab / snake / camel / pascal / default: 'preserve')
+    childFileCase: 'preserve',
     // Directory name for child Block SCSS output (default: 'scss')
     childScssDir: 'scss',
-    // Layout mixin list (default: ['@include breakpoint-up(md)'])
-    layoutMixins: ['@include breakpoint-up(md)']
+    // Layout mixin list (default: [])
+    layoutMixins: []
   }
 }
 

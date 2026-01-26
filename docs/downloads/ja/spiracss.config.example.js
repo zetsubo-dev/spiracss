@@ -103,6 +103,8 @@ const config = {
       rootFile: true,
       // ルート Block の SCSS ファイル名ケース（デフォルト: 'preserve'）
       rootCase: 'preserve', // generator.rootFileCase と合わせる
+      // childDir 配下での rootFile 判定に使うファイル名ケース（デフォルト: 'preserve'）
+      childFileCase: 'preserve', // generator.childFileCase と合わせる
       // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）
       // コンポーネント層のディレクトリ名（デフォルト: ['components']）
       childDir: 'scss',
@@ -216,10 +218,12 @@ const config = {
     pageEntrySubdir: 'css',
     // ルート SCSS のファイル名ケース（preserve / kebab / snake / camel / pascal / デフォルト: 'preserve'）
     rootFileCase: 'preserve',
+    // 子 SCSS のファイル名ケース（preserve / kebab / snake / camel / pascal / デフォルト: 'preserve'）
+    childFileCase: 'preserve',
     // 子 Block SCSS を出力するディレクトリ名（デフォルト: 'scss'）
     childScssDir: 'scss',
-    // レイアウト用 Mixin の配列（デフォルト: ['@include breakpoint-up(md)']）
-    layoutMixins: ['@include breakpoint-up(md)']
+    // レイアウト用 Mixin の配列（デフォルト: []）
+    layoutMixins: []
   }
 }
 

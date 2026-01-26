@@ -1,8 +1,8 @@
 import assert from 'assert'
-import { lint } from './stylelint-helpers.js'
 
 import pageLayer from '../dist/esm/rules/spiracss-page-layer.js'
 import { testRule } from './rule-test-utils.js'
+import { lint } from './stylelint-helpers.js'
 
 const baseOptions = {
   aliasRoots: {

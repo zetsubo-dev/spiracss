@@ -1,4 +1,3 @@
-import { ruleName } from './spiracss-interaction-properties.constants'
 import {
   createRuleMessages,
   formatCode,
@@ -6,6 +5,7 @@ import {
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
+import { ruleName } from './spiracss-interaction-properties.constants'
 
 export const messages = createRuleMessages(ruleName, {
   needInteraction: (prop: string, pattern: RegExp) =>

@@ -52,6 +52,7 @@ type ClassStructureConfig = {
   rootSingle?: boolean
   rootFile?: boolean
   rootCase?: ClassStructureOptions['root']['case']
+  childFileCase?: ClassStructureOptions['paths']['childFileCase']
   childDir?: string
   componentsDirs?: string[]
   comments?: CommentConfig
@@ -527,6 +528,13 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
       classConfig.rootCase = generator.rootFileCase
     } else if (fileCaseConfig.root !== undefined) {
       classConfig.rootCase = fileCaseConfig.root
+    }
+  }
+  if (classConfig.childFileCase === undefined) {
+    if (generator?.childFileCase !== undefined) {
+      classConfig.childFileCase = generator.childFileCase
+    } else if (fileCaseConfig.child !== undefined) {
+      classConfig.childFileCase = fileCaseConfig.child
     }
   }
   if (classConfig.childDir === undefined) {

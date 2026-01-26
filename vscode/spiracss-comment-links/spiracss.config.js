@@ -61,7 +61,6 @@ module.exports = {
     pageEntryAlias: 'assets',
     pageEntrySubdir: 'css',
     childFileCase: 'preserve',
-    childScssDir: 'scss',
-    layoutMixins: ['@include breakpoint-up(md)']
+    childScssDir: 'scss'
   }
 }

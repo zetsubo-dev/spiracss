@@ -6,7 +6,7 @@ import selectorParser, {
   type Selector
 } from 'postcss-selector-parser'
 
-import { DEFAULT_CACHE_SIZE, createSharedCacheAccessor } from './cache'
+import { createSharedCacheAccessor,DEFAULT_CACHE_SIZE } from './cache'
 
 export type SelectorSummary = {
   classes: ClassName[]

@@ -1,8 +1,8 @@
 import assert from 'assert'
-import { lint } from './stylelint-helpers.js'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { invalidNameMessage, testRule, withClassMode } from './rule-test-utils.js'
+import { lint } from './stylelint-helpers.js'
 
 describe('spiracss/class-structure - naming.blockCase variations', () => {
   testRule({

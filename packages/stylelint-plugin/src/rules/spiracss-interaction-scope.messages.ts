@@ -1,4 +1,3 @@
-import { ruleName } from './spiracss-interaction-scope.constants'
 import {
   createRuleMessages,
   formatCode,
@@ -7,6 +6,7 @@ import {
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
+import { ruleName } from './spiracss-interaction-scope.constants'
 
 export const messages = createRuleMessages(ruleName, {
   needAtRoot: () =>

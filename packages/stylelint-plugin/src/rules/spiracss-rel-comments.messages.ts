@@ -1,4 +1,3 @@
-import { ruleName } from './spiracss-rel-comments.constants'
 import {
   createRuleMessages,
   formatCode,
@@ -6,6 +5,7 @@ import {
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
+import { ruleName } from './spiracss-rel-comments.constants'
 
 const formatAliasList = (aliases: string[]): string =>
   formatConfigList(aliases.map((alias) => `@${alias}/`))

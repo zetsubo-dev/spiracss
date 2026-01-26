@@ -1,5 +1,5 @@
 import type { NamingOptions, WordCase } from '../types'
-import { DEFAULT_CACHE_SIZE, createSharedCacheAccessor } from './cache'
+import { createSharedCacheAccessor,DEFAULT_CACHE_SIZE } from './cache'
 import type { InvalidOptionReporter } from './normalize'
 
 export const normalizeBlockMaxWords = (value: unknown): number => {

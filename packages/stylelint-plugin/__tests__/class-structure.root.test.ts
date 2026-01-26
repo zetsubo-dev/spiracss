@@ -134,6 +134,11 @@ describe('spiracss/class-structure - file name matches root Block name', () => {
         description: 'root Block name matches file name'
       },
       {
+        code: '.card-list {}',
+        codeFilename: 'components/card-list/card-list.module.scss',
+        description: 'root Block name matches CSS Modules file name'
+      },
+      {
         code: '.card-header {}',
         codeFilename: 'components/card-list/scss/card-header.scss',
         description: 'child Blocks match class names without applying rootCase'
@@ -145,7 +150,7 @@ describe('spiracss/class-structure - file name matches root Block name', () => {
         code: '.card-list {}',
         codeFilename: 'components/card-list/list.scss',
         description: 'root Block name does not match file name',
-        message: 'Root Block `.card-list` must be defined in `card-list.scss` (found `list.scss`). Rename the file or the Block. (spiracss/class-structure)'
+        message: 'Root Block `.card-list` must be defined in `card-list.scss`, `card-list.module.scss` (found `list.scss`). Rename the file or the Block. (spiracss/class-structure)'
       }
     ]
   })
@@ -174,6 +179,54 @@ describe('spiracss/class-structure - rootCase application', () => {
         code: '.hero-card {}',
         codeFilename: 'components/hero-card/HeroCard.scss',
         description: 'file name matching rootCase is allowed'
+      },
+      {
+        code: '.hero-card {}',
+        codeFilename: 'components/hero-card/HeroCard.module.scss',
+        description: 'CSS Modules file name matching rootCase is allowed'
+      }
+    ]
+  })
+})
+
+
+describe('spiracss/class-structure - childFileCase application', () => {
+  testRule({
+    plugins: [classStructure],
+    ruleName: classStructure.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
+        childCombinator: false,
+        rootFile: true,
+        rootCase: 'preserve',
+        childDir: 'scss',
+        childFileCase: 'kebab',
+        naming: { blockCase: 'camel' }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: '.cardHeader {}',
+        codeFilename: 'components/card-header/scss/card-header.scss',
+        description: 'files under childDir use childFileCase for file name checks'
+      },
+      {
+        code: '.cardHeader {}',
+        codeFilename: 'components/card-header/scss/card-header.module.scss',
+        description: 'CSS Modules files under childDir also use childFileCase'
+      }
+    ],
+
+    reject: [
+      {
+        code: '.cardHeader {}',
+        codeFilename: 'components/card-header/scss/CardHeader.scss',
+        description: 'childFileCase violation under childDir',
+        message: 'Root Block `.cardHeader` must be defined in `card-header.scss`, `card-header.module.scss` (found `CardHeader.scss`). Rename the file or the Block. (spiracss/class-structure)'
       }
     ]
   })
@@ -211,7 +264,7 @@ describe('spiracss/class-structure - componentsDirs setting', () => {
         code: '.feature-card {}',
         codeFilename: 'src/ui/feature-card/card.scss',
         description: 'file name mismatch under componentsDirs',
-        message: 'Root Block `.feature-card` must be defined in `feature-card.scss` (found `card.scss`). Rename the file or the Block. (spiracss/class-structure)'
+        message: 'Root Block `.feature-card` must be defined in `feature-card.scss`, `feature-card.module.scss` (found `card.scss`). Rename the file or the Block. (spiracss/class-structure)'
       }
     ]
   })

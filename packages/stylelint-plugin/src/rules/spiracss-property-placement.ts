@@ -3,9 +3,8 @@ import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
-import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
-import { getLowercasePolicyKeys } from '../utils/selector-policy'
+import { normalizeCustomPattern } from '../utils/naming'
 import {
   CACHE_SCHEMA,
   COMMENTS_SCHEMA,
@@ -14,19 +13,20 @@ import {
   POLICY_SCHEMA
 } from '../utils/option-schema'
 import { findParentRule, isAtRule, isRule } from '../utils/postcss-helpers'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isRuleInsideAtRule, markInteractionContainers } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import {
   createPlugin,
   createRule,
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns } from './spiracss-class-structure.patterns'
-import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import { isRootBlockRule } from './spiracss-class-structure.sections'
+import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
 import { ruleName } from './spiracss-property-placement.constants'
 import { messages } from './spiracss-property-placement.messages'
@@ -37,13 +37,12 @@ import {
   normalizeScopePrelude,
   normalizeUnverifiedScopePrelude,
   parseMixinName,
-  resolveSelectors,
-  stripGlobalSelectorForRoot,
-  splitSelectors,
   type PolicySets,
+  resolveSelectors,
   type SelectorAnalysis,
-  type SelectorInfo
-} from './spiracss-property-placement.selectors'
+  type SelectorInfo,
+  splitSelectors,
+  stripGlobalSelectorForRoot} from './spiracss-property-placement.selectors'
 import type { Options } from './spiracss-property-placement.types'
 import { createValueTokenHelpers } from './spiracss-property-placement.values'
 

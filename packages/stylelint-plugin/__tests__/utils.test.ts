@@ -11,17 +11,17 @@ import {
   resolvePathCandidates
 } from '../dist/esm/rules/spiracss-rel-comments.alias.js'
 import { createLruCache } from '../dist/esm/utils/cache.js'
+import {
+  formatCode,
+  formatList,
+  formatPattern
+} from '../dist/esm/utils/messages.js'
 import { buildBlockPattern, normalizeCustomPattern } from '../dist/esm/utils/naming.js'
 import {
   normalizeBoolean,
   normalizeCommentPattern,
   normalizeKeyList
 } from '../dist/esm/utils/normalize.js'
-import {
-  formatCode,
-  formatList,
-  formatPattern
-} from '../dist/esm/utils/messages.js'
 import { isRuleInRootScope, markSectionRules } from '../dist/esm/utils/section.js'
 import {
   collectCompoundNodes,

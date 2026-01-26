@@ -6,7 +6,6 @@ import stylelint from 'stylelint'
 import { PSEUDO_ELEMENTS } from '../utils/constants'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
-import { isInsideNonSameElementPseudo } from '../utils/selector'
 import {
   CACHE_SCHEMA,
   COMMENTS_SCHEMA,
@@ -19,12 +18,14 @@ import {
   isInsideKeyframes,
   isRule
 } from '../utils/postcss-helpers'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   getCommentText,
   isRuleInRootScope,
   markInteractionContainers,
   safeTestPattern
 } from '../utils/section'
+import { isInsideNonSameElementPseudo } from '../utils/selector'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
   createPlugin,
@@ -32,18 +33,17 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
+import { ruleName } from './spiracss-interaction-properties.constants'
+import { messages } from './spiracss-interaction-properties.messages'
+import { normalizeOptions } from './spiracss-interaction-properties.options'
 import {
   splitSelectors,
   stripGlobalSelectorForRoot
 } from './spiracss-property-placement.selectors'
-import { ruleName } from './spiracss-interaction-properties.constants'
-import { messages } from './spiracss-interaction-properties.messages'
-import { normalizeOptions } from './spiracss-interaction-properties.options'
 
 export { ruleName }
 

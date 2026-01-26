@@ -1,4 +1,3 @@
-import { ruleName } from './spiracss-property-placement.constants'
 import type { WordCase } from '../types'
 import {
   createRuleMessages,
@@ -9,6 +8,7 @@ import {
   type RuleMessageArg,
   type RuleMessageArgs
 } from '../utils/messages'
+import { ruleName } from './spiracss-property-placement.constants'
 
 const formatModifierHint = (
   modifierPrefix: string,

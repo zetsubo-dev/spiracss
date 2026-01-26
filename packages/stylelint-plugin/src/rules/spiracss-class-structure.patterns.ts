@@ -1,11 +1,11 @@
 import type { NormalizedCacheSizes, WordCase } from '../types'
 import { createSharedCacheAccessor } from '../utils/cache'
+import { formatCode, formatPattern } from '../utils/messages'
 import {
   buildBlockPattern,
   normalizeBlockMaxWords,
   normalizeCustomPattern
 } from '../utils/naming'
-import { formatCode, formatPattern } from '../utils/messages'
 import type { InvalidOptionReporter } from '../utils/normalize'
 import type {
   ClassifyOptions,

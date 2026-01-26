@@ -2,10 +2,10 @@ import assert from 'assert'
 import fs from 'fs'
 import scss from 'postcss-scss'
 import type { RuleContext } from 'stylelint'
-import { lint } from './stylelint-helpers.js'
 
 import relComments from '../dist/esm/rules/spiracss-rel-comments.js'
 import { testRule } from './rule-test-utils.js'
+import { lint } from './stylelint-helpers.js'
 
 describe('spiracss/rel-comments - basic checks', () => {
   testRule({

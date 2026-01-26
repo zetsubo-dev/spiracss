@@ -5,9 +5,8 @@ import {
   collectCompoundNodes,
   collectNestingSiblingClasses,
   collectSelectorSummary,
-  isInsideNonSameElementPseudo,
-  type CompoundNodes
-} from '../utils/selector'
+  type CompoundNodes,
+  isInsideNonSameElementPseudo} from '../utils/selector'
 import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import { messages } from './spiracss-class-structure.messages'
 import { classify } from './spiracss-class-structure.patterns'

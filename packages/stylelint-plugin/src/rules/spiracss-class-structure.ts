@@ -14,6 +14,7 @@ import {
   POLICY_SCHEMA
 } from '../utils/option-schema'
 import { findParentRule, isRule } from '../utils/postcss-helpers'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { getCommentText, isRuleInsideAtRule, safeTestPattern } from '../utils/section'
 import {
   createSelectorCacheWithErrorFlag,
@@ -25,7 +26,6 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   isBoolean,
   isNumber,
@@ -54,11 +54,11 @@ import {
   mergeRuleKinds,
   processSelector
 } from './spiracss-class-structure.selectors'
+import type { Kind } from './spiracss-class-structure.types'
 import {
   splitSelectors,
   stripGlobalSelectorForRoot
 } from './spiracss-property-placement.selectors'
-import type { Kind } from './spiracss-class-structure.types'
 
 export { ruleName }
 
@@ -79,6 +79,7 @@ const optionSchema = {
   rootSingle: [isBoolean],
   rootFile: [isBoolean],
   rootCase: [isString],
+  childFileCase: [isString],
   childDir: [isString],
   componentsDirs: [isString],
   ...NAMING_SCHEMA,
@@ -202,7 +203,11 @@ const rule = createRule(
       const normalizedPath = filePath ? path.normalize(filePath) : ''
       const pathSegments = normalizedPath ? normalizedPath.split(path.sep).filter(Boolean) : []
       const fileName = filePath ? path.basename(filePath) : ''
-      const fileBase = fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
+      const fileBaseRaw =
+        fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
+      const fileBase = fileBaseRaw.endsWith('.module')
+        ? fileBaseRaw.slice(0, -'.module'.length)
+        : fileBaseRaw
 
       const parseStrippedSelectors = (
         selectorText: string
@@ -455,15 +460,16 @@ const rule = createRule(
 
         if (isComponentsLayer && !isAssetsCss && !isExcludedFile) {
           const expectedBase = isChildScss
-            ? rootBlockName
+            ? formatFileBase(rootBlockName, options.paths.childFileCase)
             : formatFileBase(rootBlockName, options.root.case)
           if (expectedBase && expectedBase !== fileBase) {
             const targetNode = firstRule || root
+            const expectedFiles = [`${expectedBase}.scss`, `${expectedBase}.module.scss`]
             stylelint.utils.report({
               ruleName,
               result,
               node: targetNode,
-              message: messages.fileNameMismatch(rootBlockName, expectedBase, fileBase)
+              message: messages.fileNameMismatch(rootBlockName, expectedFiles, fileName)
             })
           }
         }

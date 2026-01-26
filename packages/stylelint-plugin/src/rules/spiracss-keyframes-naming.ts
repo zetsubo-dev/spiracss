@@ -13,6 +13,7 @@ import {
   isInsideKeyframes,
   isKeyframesAtRule
 } from '../utils/postcss-helpers'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isRuleInRootScope } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
@@ -21,7 +22,6 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   isBoolean,
   isNumber,
@@ -36,8 +36,8 @@ import type { Options as ClassStructureOptions } from './spiracss-class-structur
 import { ruleName } from './spiracss-keyframes-naming.constants'
 import { messages } from './spiracss-keyframes-naming.messages'
 import { normalizeOptions } from './spiracss-keyframes-naming.options'
-import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
 import type { Options } from './spiracss-keyframes-naming.types'
+import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
 
 export { ruleName }
 

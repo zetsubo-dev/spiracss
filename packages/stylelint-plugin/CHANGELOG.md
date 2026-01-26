@@ -2,6 +2,14 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.3.2-beta
+
+### Changed
+
+- Treat CSS Modules `:global` / `:local` as transparent across rules (the inner selector is linted).
+- Improve selector handling for `:global` wrappers (including rightmost `:global(...)` targets and selector lists).
+- `spiracss/class-structure` root filename checks accept `*.module.scss` and support `childFileCase` for files under `childDir`.
+
 ## 0.3.1-beta
 
 ### Added

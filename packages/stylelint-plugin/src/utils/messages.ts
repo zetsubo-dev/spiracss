@@ -34,7 +34,7 @@ const appendDocsLink = (message: string, ruleName: string, messageKey?: string):
   return `${message}${separator}${suffix}`
 }
 
-type RuleMessageValue = string | ((...args: any[]) => string)
+type RuleMessageValue = string | ((...args: unknown[]) => string)
 
 export const createRuleMessages = <T extends Record<string, unknown>>(
   ruleName: string,
@@ -43,9 +43,9 @@ export const createRuleMessages = <T extends Record<string, unknown>>(
   const wrapped: Record<string, RuleMessageValue> = {}
   for (const [key, value] of Object.entries(messages)) {
     if (typeof value === 'function') {
-      wrapped[key] = (...args: any[]) =>
+      wrapped[key] = (...args: unknown[]) =>
         appendDocsLink(
-          (value as (...args: any[]) => string)(...args),
+          (value as (...args: unknown[]) => string)(...args),
           ruleName,
           key
         )

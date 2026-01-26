@@ -11,6 +11,7 @@ import {
   EXTERNAL_SCHEMA,
   NAMING_SCHEMA
 } from '../utils/option-schema'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { getCommentText, isRuleInsideAtRule } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
@@ -19,23 +20,22 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
+import { ruleName } from './spiracss-page-layer.constants'
+import { messages } from './spiracss-page-layer.messages'
+import { normalizeOptions } from './spiracss-page-layer.options'
+import type { Options } from './spiracss-page-layer.types'
+import {
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 import {
   extractLinkTargets,
   normalizeRelPath,
   resolvePathCandidates
 } from './spiracss-rel-comments.alias'
 import { findFirstBodyNode } from './spiracss-rel-comments.root'
-import { ruleName } from './spiracss-page-layer.constants'
-import { messages } from './spiracss-page-layer.messages'
-import { normalizeOptions } from './spiracss-page-layer.options'
-import {
-  splitSelectors,
-  stripGlobalSelectorForRoot
-} from './spiracss-property-placement.selectors'
-import type { Options } from './spiracss-page-layer.types'
 
 export { ruleName }
 

@@ -1,4 +1,5 @@
-import { ruleName } from './spiracss-keyframes-naming.constants'
+import type { WordCase } from '../types'
+import { formatWordCase } from '../utils/formatting'
 import {
   createRuleMessages,
   formatCode,
@@ -6,8 +7,7 @@ import {
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
-import type { WordCase } from '../types'
-import { formatWordCase } from '../utils/formatting'
+import { ruleName } from './spiracss-keyframes-naming.constants'
 
 const exampleActionName = (actionCase: WordCase): string =>
   formatWordCase('fade in', actionCase)

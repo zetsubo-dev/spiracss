@@ -4,17 +4,19 @@ import type { Comment, Node, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
+import type { FileNameCase } from '../types'
 import { createLruCache } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { formatFileBase } from '../utils/formatting'
-import { normalizeCustomPattern } from '../utils/naming'
 import { selectorParseFailedArgs } from '../utils/messages'
+import { normalizeCustomPattern } from '../utils/naming'
 import {
   CACHE_SCHEMA,
   COMMENTS_SCHEMA,
   EXTERNAL_SCHEMA,
   NAMING_SCHEMA
 } from '../utils/option-schema'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   getCommentText,
   isRuleInRootScope,
@@ -29,9 +31,12 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
-import type { FileNameCase } from '../types'
+import {
+  splitSelectors,
+  stripGlobalSelector,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 import {
   extractLinkTargets,
   normalizeRelPath,
@@ -41,11 +46,6 @@ import {
 import { ruleName } from './spiracss-rel-comments.constants'
 import { messages } from './spiracss-rel-comments.messages'
 import { normalizeOptions } from './spiracss-rel-comments.options'
-import {
-  splitSelectors,
-  stripGlobalSelector,
-  stripGlobalSelectorForRoot
-} from './spiracss-property-placement.selectors'
 import {
   findFirstBodyNode,
   findTopRelComment,

@@ -4,9 +4,8 @@ import {
   type InvalidOptionReporter,
   normalizeBoolean,
   normalizeKeyList,
-  safeNormalizeSelectorPolicyBase,
-  normalizeString
-} from '../utils/normalize'
+  normalizeString,
+  safeNormalizeSelectorPolicyBase} from '../utils/normalize'
 import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type {
@@ -59,7 +58,8 @@ const defaultOptions: Options = {
   },
   paths: {
     childDir: 'scss',
-    components: ['components']
+    components: ['components'],
+    childFileCase: 'preserve'
   },
   naming: undefined,
   comments: {
@@ -184,6 +184,7 @@ export const normalizeOptions = (
     rootSingle?: boolean
     rootFile?: boolean
     rootCase?: FileNameCase
+    childFileCase?: FileNameCase
     childDir?: string
     componentsDirs?: string[]
     comments?: { shared?: RegExp | string; interaction?: RegExp | string }
@@ -241,6 +242,10 @@ export const normalizeOptions = (
         opt.componentsDirs,
         defaultOptions.paths.components,
         'componentsDirs'
+      ),
+      childFileCase: normalizeFileNameCase(
+        opt.childFileCase,
+        defaultOptions.paths.childFileCase
       )
     },
     selectorPolicy: normalizeSelectorPolicy(selectorPolicy, reportInvalid),

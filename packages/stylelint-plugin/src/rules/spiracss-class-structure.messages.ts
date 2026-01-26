@@ -1,13 +1,13 @@
-import { ruleName } from './spiracss-class-structure.constants'
 import {
   createRuleMessages,
+  formatCode,
   formatConfigList,
   formatList,
   formatPattern,
-  formatCode,
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
+import { ruleName } from './spiracss-class-structure.constants'
 
 export const messages = createRuleMessages(ruleName, {
   invalidName: (cls: string, namingHint: string) =>
@@ -177,10 +177,10 @@ export const messages = createRuleMessages(ruleName, {
   missingRootBlock: () =>
     'No root Block found. Define a top-level Block selector that matches the naming rules.',
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0]),
-  fileNameMismatch: (block: string, expected: string, actual: string) =>
+  fileNameMismatch: (block: string, expectedFiles: string[], actualFile: string) =>
     `Root Block ${formatCode(
       `.${block}`
-    )} must be defined in ${formatCode(
-      `${expected}.scss`
-    )} (found ${formatCode(`${actual}.scss`)}). Rename the file or the Block.`
+    )} must be defined in ${formatList(expectedFiles, {
+      maxItems: expectedFiles.length
+    })} (found ${formatCode(actualFile)}). Rename the file or the Block.`
 })

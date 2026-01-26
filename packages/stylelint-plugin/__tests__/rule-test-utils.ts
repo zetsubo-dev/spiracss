@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { formatNamingHint } from '../dist/esm/rules/spiracss-class-structure.patterns.js'
-import { appendDocsLink } from '../dist/esm/utils/messages.js'
 import type { NamingOptions } from '../dist/esm/types.js'
-import { lint } from './stylelint-helpers.js'
+import { appendDocsLink } from '../dist/esm/utils/messages.js'
 import type { LintOptions, LintResult } from './stylelint-helpers.js'
+import { lint } from './stylelint-helpers.js'
 
 const normalizeRootBlock = (code: string): string =>
   code.replace(/\.block(?![\w-])/g, '.block-name')

@@ -5,13 +5,13 @@ import stylelint from 'stylelint'
 import { normalizeCacheSizes } from '../utils/cache'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA } from '../utils/option-schema'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   collectCompoundSegments,
   createSelectorCacheWithErrorFlag,
   type SelectorParserCache
 } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isPlainObject } from '../utils/validate'
 import { ruleName } from './spiracss-pseudo-nesting.constants'
 import { messages } from './spiracss-pseudo-nesting.messages'

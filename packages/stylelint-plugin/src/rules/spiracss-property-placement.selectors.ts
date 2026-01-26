@@ -1,16 +1,15 @@
 import type { Rule } from 'postcss'
 
-import {
-  type SelectorPolicySetsBase,
-  buildSelectorPolicySetsBase
-} from '../utils/selector-policy'
 import { createSharedCacheAccessor } from '../utils/cache'
-import type { SelectorParserCache } from '../utils/selector'
 import { findParentRule } from '../utils/postcss-helpers'
+import type { SelectorParserCache } from '../utils/selector'
+import {
+  buildSelectorPolicySetsBase,
+  type SelectorPolicySetsBase} from '../utils/selector-policy'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
-import type { Options } from './spiracss-property-placement.types'
 import { messages } from './spiracss-property-placement.messages'
+import type { Options } from './spiracss-property-placement.types'
 
 type ParsedSelector = ReturnType<SelectorParserCache['parse']>[number]
 type SelectorNode = ParsedSelector['nodes'][number]

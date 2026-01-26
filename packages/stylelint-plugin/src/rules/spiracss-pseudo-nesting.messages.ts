@@ -1,10 +1,10 @@
-import { ruleName } from './spiracss-pseudo-nesting.constants'
 import {
   createRuleMessages,
   formatCode,
   formatSelectorParseFailed,
   type RuleMessageArgs
 } from '../utils/messages'
+import { ruleName } from './spiracss-pseudo-nesting.constants'
 
 export const messages = createRuleMessages(ruleName, {
   needNesting: () =>

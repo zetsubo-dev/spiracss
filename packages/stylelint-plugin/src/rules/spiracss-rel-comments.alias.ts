@@ -1,8 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 
-import type { AliasRoots } from './spiracss-rel-comments.types'
 import { createLruCache, DEFAULT_CACHE_SIZE } from '../utils/cache'
+import type { AliasRoots } from './spiracss-rel-comments.types'
 
 const ALIAS_NAME_PATTERN = '[a-z][a-z0-9-]*'
 const aliasTargetRe = new RegExp(

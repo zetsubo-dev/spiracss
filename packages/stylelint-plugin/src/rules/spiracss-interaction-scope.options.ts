@@ -3,9 +3,8 @@ import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
   normalizeBoolean,
-  safeNormalizeSelectorPolicyBase,
-  normalizeStringArray
-} from '../utils/normalize'
+  normalizeStringArray,
+  safeNormalizeSelectorPolicyBase} from '../utils/normalize'
 import { normalizeCommonOptions } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type {

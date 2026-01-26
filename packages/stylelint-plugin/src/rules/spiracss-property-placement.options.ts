@@ -2,9 +2,8 @@ import type { CacheSizes, NormalizedSelectorPolicyBase } from '../types'
 import { DEFAULT_CACHE_SIZES } from '../utils/cache'
 import {
   type InvalidOptionReporter,
-  safeNormalizeSelectorPolicyBase,
-  normalizeStringArray
-} from '../utils/normalize'
+  normalizeStringArray,
+  safeNormalizeSelectorPolicyBase} from '../utils/normalize'
 import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type { Options } from './spiracss-property-placement.types'

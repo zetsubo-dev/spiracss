@@ -2,6 +2,17 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.3.2-beta
+
+### Added
+
+- Improve JSX class/className extraction (string/template literals, member access).
+- `jsxClassBindings.memberAccessAllowlist` option to restrict member access extraction (empty array disables it).
+
+### Changed
+
+- Default `generator.layoutMixins` to an empty array (disabled) to avoid generating SCSS that won't compile unless mixins are defined.
+
 ## 0.3.1-beta
 
 ### Added

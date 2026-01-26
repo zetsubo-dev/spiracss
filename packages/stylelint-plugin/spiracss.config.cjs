@@ -103,8 +103,6 @@ module.exports = {
     // File name case for child component SCSS (fallback: fileCase.child)
     childFileCase: 'preserve',
     // Directory name for child component SCSS
-    childScssDir: 'scss',
-    // List of layout mixins
-    layoutMixins: ['@include breakpoint-up(md)']
+    childScssDir: 'scss'
   }
 }

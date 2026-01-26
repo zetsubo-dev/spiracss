@@ -2,6 +2,13 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.3.2-beta
+
+### Changed
+
+- Update `@spiracss/html-cli` dependency to `^0.3.2`.
+- Default `generator.layoutMixins` to an empty array (disabled) when not configured.
+
 ## 0.3.1-beta
 
 ### Changed

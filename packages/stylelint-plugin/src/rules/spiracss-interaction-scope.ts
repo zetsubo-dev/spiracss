@@ -2,9 +2,10 @@ import type { AtRule, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
+import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule } from '../utils/postcss-helpers'
-import { selectorParseFailedArgs } from '../utils/messages'
+import { getRuleDocsUrl } from '../utils/rule-docs'
 import { safeTestPattern } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import {
@@ -13,7 +14,6 @@ import {
   reportInvalidOption,
   validateOptionsArrayFields
 } from '../utils/stylelint'
-import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { ruleName } from './spiracss-interaction-scope.constants'
 import { messages } from './spiracss-interaction-scope.messages'

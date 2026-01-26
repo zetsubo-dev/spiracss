@@ -107,7 +107,9 @@ async function loadGeneratorOptions(
   const defaultPageAlias = 'assets'
   const defaultPageSubdir = 'css'
   const defaultChildDir = 'scss'
-  const defaultLayoutMixins = ['@include breakpoint-up(md)']
+  // Default to no layout mixins to avoid generating SCSS that won't compile
+  // unless the project defines the expected mixin(s).
+  const defaultLayoutMixins: string[] = []
   const defaultRootFileCase: FileNameCase = 'preserve'
   const defaultChildFileCase: FileNameCase = 'preserve'
 

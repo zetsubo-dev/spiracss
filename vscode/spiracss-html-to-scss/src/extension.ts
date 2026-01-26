@@ -8,8 +8,8 @@ import {
   generateFromHtml,
   type GeneratorOptions,
   type HtmlLintIssue,
-  type JsxClassBindingsConfig,
   insertPlaceholdersWithInfo,
+  type JsxClassBindingsConfig,
   lintHtmlStructure,
   type NamingOptions,
   type RootBlockSummary,
@@ -167,7 +167,9 @@ function loadPageEntryPrefixFromConfig(config?: SpiracssConfig): string {
 }
 
 function loadLayoutMixinsFromConfig(config?: SpiracssConfig): string[] {
-  const fallback = ['@include breakpoint-up(md)']
+  // Default to no layout mixins to avoid generating SCSS that won't compile
+  // unless the project defines the expected mixin(s).
+  const fallback: string[] = []
   if (!config) return fallback
   const generator = config.generator as Record<string, unknown> | undefined
   const raw = generator?.layoutMixins

@@ -54,6 +54,7 @@ export type RootOptions = {
 export type PathsOptions = {
   childDir: string
   components: string[]
+  childFileCase: FileNameCase
 }
 
 export type CommentOptions = {

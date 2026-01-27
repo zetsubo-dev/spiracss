@@ -501,6 +501,14 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   const baseCache = base?.cache
   const basePolicy = base?.selectorPolicy ?? spiracss.selectorPolicy
   const basePaths = base?.paths
+  const baseComponentsDirs = basePaths?.components
+  const aliasComponentsDirs = spiracss.aliasRoots?.components
+  const componentsDirsFallback =
+    Array.isArray(baseComponentsDirs) && baseComponentsDirs.length > 0
+      ? baseComponentsDirs
+      : Array.isArray(aliasComponentsDirs) && aliasComponentsDirs.length > 0
+        ? aliasComponentsDirs
+        : undefined
 
   const classConfig = { ...(stylelint?.class ?? {}) }
   assignIfDefined(
@@ -541,7 +549,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     assignIfDefined(classConfig, 'childDir', basePaths?.childDir)
   }
   if (classConfig.componentsDirs === undefined) {
-    assignIfDefined(classConfig, 'componentsDirs', basePaths?.components)
+    assignIfDefined(classConfig, 'componentsDirs', componentsDirsFallback)
   }
   if (classConfig.childDir === undefined && generator?.childScssDir) {
     classConfig.childDir = generator.childScssDir
@@ -568,7 +576,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     assignIfDefined(pageLayerConfig, 'cache', baseCache)
   }
   if (pageLayerConfig.componentsDirs === undefined) {
-    assignIfDefined(pageLayerConfig, 'componentsDirs', basePaths?.components)
+    assignIfDefined(pageLayerConfig, 'componentsDirs', componentsDirsFallback)
   }
   if (pageLayerConfig.pageEntryAlias === undefined && generator?.pageEntryAlias) {
     pageLayerConfig.pageEntryAlias = generator.pageEntryAlias

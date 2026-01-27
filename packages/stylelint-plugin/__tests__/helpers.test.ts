@@ -95,6 +95,50 @@ describe('helpers/createRules', () => {
     assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
 
+  it('uses aliasRoots.components as default componentsDirs', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/_includes/components']
+      }
+    })
+
+    const classStructure = rules['spiracss/class-structure'] as [
+      boolean,
+      { componentsDirs?: unknown }
+    ]
+    assert.strictEqual(classStructure[0], true)
+    assert.deepStrictEqual(classStructure[1].componentsDirs, ['src/_includes/components'])
+
+    const pageLayer = rules['spiracss/page-layer'] as [
+      boolean,
+      { componentsDirs?: unknown }
+    ]
+    assert.strictEqual(pageLayer[0], true)
+    assert.deepStrictEqual(pageLayer[1].componentsDirs, ['src/_includes/components'])
+  })
+
+  it('prefers stylelint.base.paths.components over aliasRoots.components', () => {
+    const rules = createRules({
+      aliasRoots: {
+        components: ['src/_includes/components']
+      },
+      stylelint: {
+        base: {
+          paths: {
+            components: ['components']
+          }
+        }
+      }
+    })
+
+    const classStructure = rules['spiracss/class-structure'] as [
+      boolean,
+      { componentsDirs?: unknown }
+    ]
+    assert.strictEqual(classStructure[0], true)
+    assert.deepStrictEqual(classStructure[1].componentsDirs, ['components'])
+  })
+
   it('does not propagate class.rootCase to rel.fileCase by default', () => {
     const rules = createRules({
       aliasRoots: {

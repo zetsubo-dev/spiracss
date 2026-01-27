@@ -1903,6 +1903,90 @@ body {
       true,
       withClassMode({
         elementDepth: 4,
+        external: {
+          classes: ['swiper'],
+          prefixes: ['swiper-']
+        },
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        description: 'external-only root with interaction comment allows @at-root',
+        code: `
+.swiper-pagination {
+  // --interaction
+  @at-root & {
+    &:focus-visible {
+      outline: 3px solid #000;
+    }
+  }
+}`
+      },
+      {
+        description: 'external selector list stays eligible for interaction',
+        code: `
+.swiper-pagination,
+.swiper-button {
+  // --interaction
+  @at-root & {
+    &:focus-visible {
+      outline: 3px solid #000;
+    }
+  }
+}`
+      }
+    ],
+
+    reject: [
+      {
+        description: 'missing interaction comment keeps @at-root forbidden',
+        code: `
+.swiper-pagination {
+  @at-root & {
+    &:focus-visible {
+      outline: 3px solid #000;
+    }
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `.swiper-pagination`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        description: 'selector list with non-class selector is not external-only',
+        code: `
+html,
+.swiper-pagination {
+  // --interaction
+  @at-root & {
+    &:focus-visible {
+      outline: 3px solid #000;
+    }
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`@at-root` is not allowed in basic/shared sections. Context: `html, .swiper-pagination`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      }
+    ]
+  })
+
+  testRule({
+    plugins: [propertyPlacement],
+    ruleName: propertyPlacement.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
         naming: {
           customPatterns: {
             modifier: /^is-[a-z]+$/

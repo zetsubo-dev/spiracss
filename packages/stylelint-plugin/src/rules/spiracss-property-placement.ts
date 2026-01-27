@@ -24,7 +24,7 @@ import {
   validateOptionsArrayFields
 } from '../utils/stylelint'
 import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
-import { buildPatterns } from './spiracss-class-structure.patterns'
+import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { isRootBlockRule } from './spiracss-class-structure.sections'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
@@ -324,7 +324,40 @@ const rule = createRule(
       }
 
       const rootBlockRules = new WeakSet<Rule>()
+      const externalRootRules = new WeakSet<Rule>()
       const declsByRule = new Map<Rule, Declaration[]>()
+
+      const isExternalRootSelectors = (
+        selectors: ReturnType<typeof selectorCache.parse>
+      ): boolean => {
+        if (selectors.length === 0) return false
+        return selectors.every((sel) => {
+          let hasClass = false
+          let hasExternal = false
+          let hasNonExternal = false
+          let invalid = false
+          sel.walk((node) => {
+            if (invalid) return
+            if (node.type === 'comment') return
+            if (node.type === 'combinator') return
+            if (node.type === 'class') {
+              hasClass = true
+              const kind = classify(node.value, classifyOptions, patterns)
+              if (kind === 'external') {
+                hasExternal = true
+                return
+              }
+              hasNonExternal = true
+              return
+            }
+            invalid = true
+          })
+          if (invalid) return false
+          if (!hasClass) return false
+          if (hasNonExternal) return false
+          return hasExternal
+        })
+      }
 
       root.walk((node) => {
         if (node.type === 'rule') {
@@ -353,8 +386,13 @@ const rule = createRule(
             selectorCache.parse(selector)
           )
           const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
-          if (rootBlocks.length === 0) return
-          rootBlockRules.add(rule)
+          if (rootBlocks.length > 0) {
+            rootBlockRules.add(rule)
+            return
+          }
+          if (isExternalRootSelectors(selectors)) {
+            externalRootRules.add(rule)
+          }
           return
         }
         if (node.type === 'decl') {
@@ -378,7 +416,8 @@ const rule = createRule(
       const interactionContainers = markInteractionContainers(
         root,
         commentPatterns,
-        (_comment, parent) => isRule(parent) && rootBlockRules.has(parent)
+        (_comment, parent) =>
+          isRule(parent) && (rootBlockRules.has(parent) || externalRootRules.has(parent))
       )
       const selectorExplosion = { example: null as string | null, limit: 0 }
       const reportSelectorExplosion = (selector: string, limit: number): void => {

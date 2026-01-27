@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.3.4-beta
+
+### Fixed
+
+- Allow `@at-root` inside interaction sections for external-only root selectors (external classes only).
+
 ## 0.3.3-beta
 
 ### Fixed

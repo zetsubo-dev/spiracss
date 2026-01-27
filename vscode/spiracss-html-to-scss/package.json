@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "publisher": "spiracss",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.99.0"
@@ -142,7 +142,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@spiracss/html-cli": "^0.3.3"
+    "@spiracss/html-cli": "^0.3.4"
   },
   "packageManager": "yarn@4.10.3"
 }

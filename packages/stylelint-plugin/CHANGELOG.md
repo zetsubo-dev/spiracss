@@ -2,6 +2,13 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.3.3-beta
+
+### Fixed
+
+- When using `createRules()`, default `componentsDirs` to `aliasRoots.components` if `stylelint.base.paths.components` is not configured.
+- Clarify `nonComponentLink` guidance for configuring `componentsDirs`.
+
 ## 0.3.2-beta
 
 ### Changed

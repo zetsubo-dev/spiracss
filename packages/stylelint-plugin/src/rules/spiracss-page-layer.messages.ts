@@ -17,7 +17,10 @@ export const messages = createRuleMessages(ruleName, {
   nonComponentLink: (selector: string, components: string[]) =>
     'Link comments for page-layer child Blocks must resolve to the component layer. ' +
     `Selector: ${formatCode(selector)}. ` +
-    `Components: ${formatList(components)}.`,
+    `Components: ${formatList(components)}. ` +
+    `Fix the path or configure ${formatCode('componentsDirs')} (via ${formatCode(
+      'stylelint.base.paths.components'
+    )} or ${formatCode('aliasRoots.components')}).`,
   selectorParseFailed: (...args: RuleMessageArgs) =>
     formatSelectorParseFailed(args[0] as string | undefined)
 })

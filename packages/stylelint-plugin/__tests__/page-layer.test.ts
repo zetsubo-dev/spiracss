@@ -26,7 +26,7 @@ const missingLinkMessage = (selector: string) =>
   `Direct child Blocks in page entry SCSS require a link comment to a component file. Selector: \`${selector}\`. Add a link comment as the first node in the rule (e.g., \`// @components/...\`). (spiracss/page-layer)`
 
 const nonComponentMessage = (selector: string) =>
-  `Link comments for page-layer child Blocks must resolve to the component layer. Selector: \`${selector}\`. Components: \`src/components\`. (spiracss/page-layer)`
+  `Link comments for page-layer child Blocks must resolve to the component layer. Selector: \`${selector}\`. Components: \`src/components\`. Fix the path or configure \`componentsDirs\` (via \`stylelint.base.paths.components\` or \`aliasRoots.components\`). (spiracss/page-layer)`
 
 const selectorParseMessage = (selector: string) =>
   `Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: \`${selector}\`. (spiracss/page-layer)`

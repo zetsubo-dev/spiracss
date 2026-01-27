@@ -107,7 +107,7 @@ const config = {
       childFileCase: 'preserve', // align with generator.childFileCase
       // Directory name for child Block SCSS (default: 'scss')
       childDir: 'scss',
-      // Directory names treated as the component layer (default: ['components'])
+      // Directory names treated as the component layer (default: ['components']; createRules falls back to aliasRoots.components if omitted)
       componentsDirs: ['components']
     },
 

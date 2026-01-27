@@ -106,8 +106,8 @@ const config = {
       // childDir 配下での rootFile 判定に使うファイル名ケース（デフォルト: 'preserve'）
       childFileCase: 'preserve', // generator.childFileCase と合わせる
       // 子 Block SCSS を配置するディレクトリ名（デフォルト: 'scss'）
-      // コンポーネント層のディレクトリ名（デフォルト: ['components']）
       childDir: 'scss',
+      // コンポーネント層のディレクトリ名（デフォルト: ['components']、未指定時は createRules が aliasRoots.components にフォールバック）
       componentsDirs: ['components']
     },
 

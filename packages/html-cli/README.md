@@ -4,7 +4,7 @@ A CLI tool designed primarily for AI agents and automation scripts—generates S
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Designed for AI agents and tool-based validation.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Validated by tools, with errors designed for both humans and AI agents.
 
 This CLI is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
 

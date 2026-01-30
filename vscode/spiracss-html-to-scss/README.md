@@ -8,7 +8,7 @@ VS Code extension that generates SpiraCSS SCSS files from HTML structure and can
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture based on one principle. The HTML structure determines how to write styles, eliminating the need for individual judgment. Validated by tools, with errors designed for both humans and AI agents.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture designed for correctness. HTML structure decides where styles belong, and Stylelint ensures it holds — no matter who writes, human or AI.
 
 This extension is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
 

@@ -4,19 +4,18 @@
 
 The parent decides the child's layout; the child only styles its internals.
 
-SpiraCSS is a CSS architecture based on this single principle. HTML structure decides where styles belong — Stylelint validates it automatically.
+SpiraCSS is a CSS architecture based on this single principle — designed so that correctness holds, no matter who writes.
 
 > [See How It Works](https://spiracss.jp/architecture/principles/)
 
-Many CSS methodologies rely on conventions, and consistency tends to erode as teams scale.
-SpiraCSS lets HTML structure decide placement. Stylelint reports actionable errors.
-They're clear to both humans and AI agents.
+CSS design tends to rely on conventions, and consistency erodes as teams scale.
+SpiraCSS designs an environment for correctness — structure and Stylelint keep it intact.
 No new CSS features like `@scope` or `@layer` required. Just familiar SCSS.
 
 ## Features
 
 - **Structure decides placement** — No judgment calls. The answer lies in HTML structure.
-- **Stylelint validates it** — Not a guideline to follow. A constraint the toolchain checks.
+- **Correctness by design** — Not conventions to memorize. An environment designed for correctness.
 - **AI-agent ready** — Error messages designed for AI agents. Supports AI-driven fixes.
 
 ## Status

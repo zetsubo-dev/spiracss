@@ -4,7 +4,7 @@ SpiraCSS Stylelint plugin. Validates class structure, property placement, intera
 
 ## About SpiraCSS
 
-[SpiraCSS](https://spiracss.jp) is a CSS architecture designed for correctness. HTML structure decides where styles belong, and Stylelint ensures it holds — no matter who writes, human or AI.
+[SpiraCSS](https://spiracss.jp) is a CSS architecture designed to stay intact. HTML structure decides where styles belong, and Stylelint enforces it — no matter who writes, human or AI.
 
 This plugin is designed to be used with the [SpiraCSS Design Principles](https://spiracss.jp/architecture/principles/).
 

@@ -879,7 +879,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -891,7 +891,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :global(.foo)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :global(.foo)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -903,7 +903,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :global .foo`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :global .foo`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -915,7 +915,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -927,7 +927,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo), .bar)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo), .bar)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -939,7 +939,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name:not(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name:not(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -951,7 +951,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `:global(.foo):global(.bar) .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `:global(.foo):global(.bar) .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -965,7 +965,7 @@ body {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -979,7 +979,7 @@ body {
         warnings: [
           {
             message:
-              '`overflow` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`overflow` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -993,7 +993,7 @@ body {
         warnings: [
           {
             message:
-              '`overflow-x` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-x` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-x`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`overflow-x` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-x` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-x`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1007,7 +1007,7 @@ body {
         warnings: [
           {
             message:
-              '`overflow-y` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-y` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-y`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`overflow-y` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-y` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-y`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1021,7 +1021,7 @@ body {
         warnings: [
           {
             message:
-              '`width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-width`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-width`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1035,7 +1035,7 @@ body {
         warnings: [
           {
             message:
-              '`height` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `height` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-height`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`height` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `height` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-height`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1049,7 +1049,7 @@ body {
         warnings: [
           {
             message:
-              '`max-width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-max-width`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`max-width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-max-width`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1063,7 +1063,7 @@ body {
         warnings: [
           {
             message:
-              '`max-height` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-height` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-max-height`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`max-height` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-height` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-max-height`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1077,7 +1077,7 @@ body {
         warnings: [
           {
             message:
-              '`min-width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `min-width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-min-width`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`min-width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `min-width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-min-width`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1417,7 +1417,7 @@ body {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .a > .b > .c > .d > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .a > .b > .c > .d > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1779,7 +1779,7 @@ body {
         warnings: [
           {
             message:
-              '`flex-grow` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `flex-grow` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`flex-grow` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `flex-grow` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1791,7 +1791,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-area` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `grid-area` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`grid-area` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `grid-area` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1833,7 +1833,7 @@ body {
         warnings: [
           {
             message:
-              '`padding-inline` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding-inline` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding-inline`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`padding-inline` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding-inline` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding-inline`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1847,7 +1847,7 @@ body {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block + .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block + .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1862,7 +1862,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name.-active`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name.-active`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1889,7 +1889,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-block` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-block` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-block` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-block` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       }
@@ -2008,7 +2008,7 @@ html,
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. Variant (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). State (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). (spiracss/property-placement)'
+              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). State (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). (spiracss/property-placement)'
           }
         ]
       }
@@ -2316,7 +2316,7 @@ describe('spiracss/property-placement - :global is transparent', () => {
         warnings: [
           {
             message:
-              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `:global .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `:global .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector (`> .child-block` or `> .element`) under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },

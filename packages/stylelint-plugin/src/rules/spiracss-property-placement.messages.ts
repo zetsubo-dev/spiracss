@@ -61,7 +61,10 @@ const internalInChildBlockBase = (prop: string, selector: string): string =>
   `Move ${formatCode(prop)} to the child Block's own file. ` +
   `To control it from parent, expose a CSS variable (e.g., ${formatCode(
     `--child-${prop}`
-  )}) and consume it in the child Block, or use the project's variant mechanism.`
+  )}) and consume it in the child Block, or use the project's variant mechanism. ` +
+  `For size properties (width/height/min-*/max-*), set ${formatCode(
+    'sizeInternal: false'
+  )} to skip this check.`
 
 const internalInChildBlockVariantHint = (
   variantMode: string,
@@ -123,7 +126,11 @@ export const messages = createRuleMessages(ruleName, {
     'Root Blocks should not define their own placement; the parent layout controls item spacing. ' +
     `Move ${formatCode(
       prop
-    )} to a direct child selector under the parent Block ` +
+    )} to a direct child selector (${formatCode(
+      '> .child-block'
+    )} or ${formatCode(
+      '> .element'
+    )}) under the parent Block ` +
     `(use the parent file that places this Block, typically linked via ${formatCode(
       '@rel'
     )}).`,

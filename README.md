@@ -18,6 +18,11 @@ No new CSS features like `@scope` or `@layer` required. Just familiar SCSS.
 - **Designed to hold** — Not conventions to memorize. An architecture that stays intact.
 - **AI-agent ready** — Error messages designed for AI agents. Supports AI-driven fixes.
 
+## Articles
+
+- [How Should CSS Architecture Evolve in the Age of AI Coding Agents?](https://dev.to/zetsubo/how-should-css-architecture-evolve-in-the-age-of-ai-coding-agents-317k)
+- [What Does "Resilient" Mean? Defining Drift and Invariants](https://dev.to/zetsubo/what-does-resilient-mean-defining-drift-and-invariants-16ne)
+
 ## Status
 
 Beta

@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Guide v0.3.4
+# SpiraCSS AI Agent Guide v0.4.0-beta
 
 This document is self-contained (rules + fix guidance live here). For decision-making, assume only this file and spiracss.config.js are authoritative; sample configs below are reference examples.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -11,7 +11,7 @@ Lint messages are actionable fix guidance derived from the current implementatio
 
 Defaults are only a fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.3.4, @spiracss/html-cli v0.3.4.
+Version compatibility: @spiracss/stylelint-plugin v0.4.0-beta, @spiracss/html-cli v0.4.0-beta.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
 ## 1. Design Overview (minimum)
@@ -51,7 +51,7 @@ If config is missing, Stylelint-based fixes are blocked (createRules errors). On
 
 ### 3.1 Stylelint createRules / createRulesAsync
 
-- createRules/createRulesAsync require aliasRoots. If you pass a path, spiracss.config.js must be readable; if you pass a config object, a file is not required.
+- createRules accepts only a config object (not a path). For path-based loading, use createRulesAsync. Both require aliasRoots.
 - stylelint.base.comments.shared / interaction are merged into per-rule comments when not explicitly set:
   - class.comments
   - placement.comments
@@ -125,8 +125,8 @@ If customPatterns.block is set, Block classification uses only that pattern (wor
 
 Element is 1 word by default only when customPatterns.element is not set.
 Internal capitals create additional words; camel/pascal multi-word names become Block only when blockCase is camel/pascal.
-- OK: title (elementCase=kebab/snake/camel), Title (elementCase=pascal)
-- NG: bodyText, BodyText (these are multi-word and become Block only when blockCase is camel/pascal; otherwise invalid unless overridden)
+- ✅ title (elementCase=kebab/snake/camel), Title (elementCase=pascal)
+- ❌ bodyText, BodyText (these are multi-word and become Block only when blockCase is camel/pascal; otherwise invalid unless overridden)
 
 ### 4.4 Custom patterns
 
@@ -200,7 +200,7 @@ Rules:
 
 - Applies only to page entry SCSS under pageEntryAlias/pageEntrySubdir (resolved via aliasRoots). Files outside are skipped.
 - Direct child Block rules in page entry SCSS must begin with a link comment to a component file (first node in the rule body).
-- Link targets must resolve inside componentsDirs (e.g., `// @components/...`).
+- Link targets must resolve inside componentsDirs (e.g., `// @components/...`). This rule resolves aliases and checks whether the path falls under componentsDirs, but it does not verify that the target file actually exists. For file existence checks, use `spiracss/rel-comments` with `validatePath=true`.
 - Element selectors are not validated by this rule; use class-structure if you need structure checks.
 - selectorParseFailed means some selectors could not be parsed; treat coverage as partial.
 
@@ -216,9 +216,9 @@ Property placement enforces the parent/child responsibility split:
   - Do not place layout/container/item/internal properties on them.
   - Do not use compound selectors like `body > .main` (page-root is treated as standalone).
   - Do not add attributes or pseudos (page-root must be bare).
-- Container-side properties are allowed on the root Block/Element but disallowed on child Block selectors.
-- Item-side properties are allowed only on direct child selectors (typically `> .child`), not on the root Block itself.
-- Internal properties are allowed on the root Block/Element but disallowed on child Block selectors.
+- Container properties are allowed on the root Block/Element but disallowed on child Block selectors. Child Element selectors (`> .element`) are treated as root — allowed.
+- Item properties are allowed on any direct child selector (`> .child-block` or `> .element`), not on the root Block itself. In practice, child Block is the most common placement context.
+- Internal properties are allowed on the root Block/Element but disallowed on child Block selectors. Child Element selectors (`> .element`) are treated as root — allowed.
 - Enforces one-sided vertical margin (`marginSide`).
 - Restricts `position` on child Block selectors (when `position=true`).
 - `@extend` is always forbidden; `@at-root` is allowed only in the interaction section
@@ -226,29 +226,70 @@ Property placement enforces the parent/child responsibility split:
 
 ### 6.2 Property categories (defaults)
 
-Container-side (examples):
+Container (examples):
 - `display: flex|inline-flex|grid|inline-grid`
 - `gap`, `row-gap`, `column-gap`
 - `justify-content`, `justify-items`, `align-content`, `align-items`
 - `grid`, `grid-template*`, `grid-auto-*`
 - `flex-direction`, `flex-wrap`
 
-Item-side (examples):
+Item (examples):
 - `margin*`, `margin-inline*`, `margin-block*`
 - `flex`, `flex-grow`, `flex-shrink`, `flex-basis`, `order`, `align-self`, `justify-self`
 - `grid-column`, `grid-row`, `grid-area`
 
 Internal (examples):
 - `padding*`, `overflow*`
-- When `sizeInternal=true`: `width/height`, `inline-size/block-size`, `min-*`, `max-*`
+- When `sizeInternal=true` (default): `width/height`, `inline-size/block-size`, `min-*`, `max-*`
+- When `sizeInternal=false`: size properties become **unchecked** (not reclassified as item; placement validation is skipped for them)
 
-### 6.3 Fix heuristics
+### 6.3 Fix heuristics (by error type)
 
-- If a container/internal property is reported under `> .child-block`, move it into the child Block file (the file where `.child-block { ... }` is defined).
-- If an item property is reported on a root Block selector, move it to the parent’s direct child selector (the file that places the child Block, typically linked via `@rel`).
-- If the parent needs to influence a child’s internal value, prefer:
-  - CSS custom properties exposed by the child (e.g., `--child-padding`), or
-  - Variant/State (data attributes or modifiers depending on `selectorPolicy`).
+containerInChildBlock / internalInChildBlock:
+- The property belongs to the child Block's own file, not the parent file.
+- Find the child file: look for the `@rel` comment inside the `> .child-block` rule, or search for the file where `.child-block { ... }` is defined as the root Block.
+- Move the property to the root selector of that child file.
+- If the parent genuinely needs to control the value, use a CSS custom property:
+  - Child file: `padding: var(--child-block-padding, 16px);`
+  - Parent file: `> .child-block { --child-block-padding: 8px; }`
+  - This pattern works for any internal property (padding, overflow, size, etc.).
+- Alternatively, use the project's Variant/State mechanism (data attributes or modifier classes per selectorPolicy) if the value change is semantic.
+- For size properties (width/height/min-*/max-*), set `sizeInternal: false` in the config to skip this check entirely.
+
+itemInRoot:
+- Item properties (margin, flex, grid-column, etc.) on a root Block are not allowed because a Block should not define its own placement.
+- Move the property to the parent file's direct child selector (`> .child-block` or `> .element`): e.g., `> .child-block { margin-top: 24px; }`.
+- The parent file is typically linked via the `@rel` comment at the top of the child file.
+
+marginSideViolation:
+- Config `stylelint.placement.marginSide` enforces a single vertical margin direction (default: `"top"`).
+- If `marginSide="top"`: only `margin-top` is allowed; `margin-bottom` (or a shorthand that sets a non-zero bottom) is forbidden.
+- Fix: replace the forbidden side with the allowed one, or set the forbidden side to `0`/`auto`/`initial`.
+- Shorthand example: `margin: 0 16px` is OK (top/bottom are 0); `margin: 0 0 16px` violates when `marginSide="top"`.
+
+positionInChildBlock:
+- `position` on a child Block selector is restricted (when `stylelint.placement.position=true`, the default).
+- Scenarios:
+  1. `fixed` / `sticky`: not allowed on child Block. Move to the child Block's own file.
+  2. `relative` / `absolute`: allowed ONLY if offset properties (`top`/`right`/`bottom`/`left`/`inset`/`inset-*`) exist in the same wrapper context. Wrapper at-rules (`@media`/`@supports`/`@container`/`@layer`) and `responsiveMixins` are transparent (same context); `@scope` creates a new boundary.
+  3. `static`: always allowed (no restriction).
+  4. CSS-wide keywords (`inherit`/`unset`/`revert`/`revert-layer`) and `initial`: skipped (no error).
+  5. Other values (e.g., dynamic / interpolated): not allowed. Use `static`, `relative`/`absolute` with offsets, or move to the child file.
+
+selectorKindMismatch:
+- A selector list mixes incompatible kinds (e.g., root Block + child Block in the same rule).
+- Fix: split into separate rules so each selector has a single kind.
+
+pageRoot* (pageRootContainer / pageRootItem / pageRootInternal / pageRootNoChildren):
+- Page-root selectors (standalone `body`, `#id`) are decoration-only. No layout, placement, or internal properties allowed.
+- Fix: create a page root Block class (e.g., `.page-home`) and apply layout there. Use `> .child-block` for item placement.
+- pageRootNoChildren: the page-root selector must be bare (no attributes, pseudos, or compound selectors).
+
+forbiddenAtRoot:
+- `@at-root` is only allowed in the interaction section. Move the rule inside the interaction section (marked by `comments.interaction` pattern), or remove `@at-root` and restructure the selector.
+
+forbiddenExtend:
+- `@extend` is always forbidden. Replace with a mixin, CSS custom properties, or apply the styles directly.
 
 Notes:
 - Placement checks treat `u-` classes as external and skip them (placement only; class-structure still validates unless configured).
@@ -295,10 +336,10 @@ interactionScope:
 
 pseudo:
 - Pseudo-classes/elements must be nested under "&".
-- OK: .block { &:hover {} }
-- OK: .block { > .child { &:hover {} } }
-- NG: .block:hover {}
-- NG: & > .child:hover {}
+- ✅ .block { &:hover {} }
+- ✅ .block { > .child { &:hover {} } }
+- ❌ .block:hover {}
+- ❌ & > .child:hover {}
 
 Default pseudos: :hover, :focus, :focus-visible, :active, :visited.
 
@@ -369,7 +410,7 @@ Requirement flags:
 Placement rules (when required by config):
 - Parent Block -> Page: // @assets/css/page.scss at root scope, before rules.
 - Child Block -> Parent: // @rel/../parent-block.scss at root scope, before rules.
-- Parent -> Child: // @rel/scss/child-block.scss as the first node inside "> .child" rule.
+- Parent -> Child: // @rel/scss/child-block.scss as the first node inside "> .child-block" rule.
 - Root Block must be the first rule in the file when requireParent applies (after any @use/@forward/@import).
 
 Filename case checks (childMismatch):
@@ -387,9 +428,8 @@ HTML CLI:
 Note: Dynamic class usage or template syntax may hide structural violations from HTML CLI. If detected in input, stop and report even if lint can run.
 
 Stylelint:
-- createRules/createRulesAsync require a config (path or object) with aliasRoots; no defaults are applied.
+- createRules accepts only a config object with aliasRoots (passing a path throws an error). For path-based loading, use createRulesAsync(path).
 - CSS Modules `:global` / `:local` are treated as transparent (the inner selector is linted; they do not bypass SpiraCSS checks).
-- Path-based loading requires a readable spiracss.config.js. In ESM, use createRulesAsync(path) or createRules(config).
 - Path resolution uses the current working directory as the project root. Run Stylelint from the directory that contains spiracss.config.js to avoid false `@rel` path errors.
 
 ### 12.1 Execution preconditions
@@ -401,32 +441,31 @@ Stylelint:
 
 ### 12.2 Minimal execution recipes (reference)
 
-Stylelint config (CommonJS):
+Stylelint config (config object):
 ```js
-// stylelint.config.cjs
-const spiracss = require('@spiracss/stylelint-plugin')
-const plugin = spiracss.default ?? spiracss
-const { createRules } = spiracss
+// stylelint.config.js
+import spiracssPlugin, { createRules } from '@spiracss/stylelint-plugin'
+import spiracssConfig from './spiracss.config.js'
 
-module.exports = {
-  plugins: [plugin, 'stylelint-scss'],
+export default {
+  plugins: [...spiracssPlugin, 'stylelint-scss'],
   customSyntax: 'postcss-scss',
   rules: {
-    ...createRules('./spiracss.config.js'),
+    ...createRules(spiracssConfig),
     'scss/at-rule-no-unknown': true
   }
 }
 ```
 
-Stylelint config (ESM + createRulesAsync):
+Stylelint config (path-based, createRulesAsync):
 ```js
-// stylelint.config.js (type: module)
+// stylelint.config.js
 import spiracssPlugin, { createRulesAsync } from '@spiracss/stylelint-plugin'
 
 const rules = await createRulesAsync('./spiracss.config.js')
 
 export default {
-  plugins: [spiracssPlugin, 'stylelint-scss'],
+  plugins: [...spiracssPlugin, 'stylelint-scss'],
   customSyntax: 'postcss-scss',
   rules: {
     ...rules,
@@ -439,7 +478,7 @@ Run Stylelint (from the directory containing spiracss.config.js):
 ```bash
 npx stylelint "**/*.scss"
 ```
-Note: examples use `npx`. Use `yarn stylelint` or `pnpm stylelint` if that matches the project setup.
+Note: examples use `npx`. `npx` may auto-install packages; do not run it without explicit approval (see §12.1). Use `yarn stylelint` or `pnpm stylelint` if that matches the project setup.
 
 HTML CLI examples (run from the directory containing spiracss.config.js):
 ```bash
@@ -455,7 +494,7 @@ npx spiracss-html-to-scss --root path/to/file.html
 # Format HTML
 npx spiracss-html-format path/to/file.html
 ```
-Note: examples use `npx`. Use `yarn spiracss-html-lint` / `yarn spiracss-html-to-scss` / `yarn spiracss-html-format` if that matches the project setup.
+Note: examples use `npx`. npx may auto-install packages; do not run it without explicit approval (see §12.1). Use `yarn spiracss-html-lint` / `yarn spiracss-html-to-scss` / `yarn spiracss-html-format` if that matches the project setup.
 
 ### 12.3 HTML CLI options for automation (reference)
 
@@ -505,7 +544,7 @@ Definition of done:
 - If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If dynamic class bindings or template syntax are present, stop and report (lint results are not sufficient).
 - Stylelint passes AND @rel path validation passes (when validatePath=true).
 
-### 13.1 Stylelint message keys (v0.3.4)
+### 13.1 Stylelint message keys (v0.4.0-beta)
 
 Stylelint messages include a stable message key and a docs URL with an anchor like `#invalidName`.
 This document lists keys + meanings only; exact message text may change, so rely on tool output.
@@ -538,22 +577,22 @@ spiracss/page-layer:
 - nonComponentLink: link comment does not resolve to componentsDirs
 - selectorParseFailed: selector parse failed; some checks were skipped (warning)
 
-spiracss/property-placement:
-- containerInChildBlock: container-side property is not allowed on child Block selectors
-- itemInRoot: item-side property is not allowed on a root Block selector
-- selectorKindMismatch: mixed selector kinds prevent placement analysis
-- marginSideViolation: forbidden vertical margin side per marginSide
-- internalInChildBlock: internal property is not allowed on child Block selectors
-- positionInChildBlock: position restrictions violated on a child Block selector
-- pageRootContainer: container-side property is not allowed on page-root selectors
-- pageRootItem: item-side property is not allowed on page-root selectors
-- pageRootInternal: internal property is not allowed on page-root selectors
-- pageRootNoChildren: page-root selector must be standalone (no extra selectors)
-- forbiddenAtRoot: `@at-root` is only allowed in interaction (external-only roots are allowed
-  only when all selectors are external classes; tags/ids/attributes/pseudos disqualify it)
-- forbiddenExtend: `@extend` is forbidden
-- selectorResolutionSkipped: selector resolution was skipped due to complexity (warning)
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+spiracss/property-placement (see §6.3 for fix details):
+- containerInChildBlock: container property on child Block selector → move to child Block file or use CSS variable
+- itemInRoot: item property on root Block selector → move to parent file's `> .child-block` or `> .element` selector
+- selectorKindMismatch: mixed selector kinds prevent analysis → split into separate rules
+- marginSideViolation: forbidden margin side per marginSide config → use allowed side or set forbidden side to 0/auto/initial
+- internalInChildBlock: internal property on child Block selector → move to child Block file or use CSS variable (size props: `sizeInternal: false` to opt out)
+- positionInChildBlock: position restriction on child Block → fixed/sticky: move to child file; relative/absolute: add offsets in same context
+- pageRootContainer: container property on page-root → create page root Block class for layout
+- pageRootItem: item property on page-root → use page root Block with child selector
+- pageRootInternal: internal property on page-root → define on page root Block class
+- pageRootNoChildren: page-root must be standalone → remove compound selectors/pseudos
+- forbiddenAtRoot: `@at-root` only in interaction → move to interaction section or remove
+  (external-only roots allowed when all selectors are external classes; tags/ids/attributes/pseudos disqualify)
+- forbiddenExtend: `@extend` forbidden → use mixin, CSS variables, or direct styles
+- selectorResolutionSkipped: selector resolution skipped due to complexity (warning)
+- selectorParseFailed: selector parse failed; some checks skipped (warning)
 
 spiracss/interaction-scope:
 - needAtRoot: interaction selectors must be inside `@at-root & { ... }` and start with `&` (when enabled)
@@ -594,7 +633,7 @@ spiracss/rel-comments:
 - childMismatch: child name does not match the `@rel` target
 - selectorParseFailed: selector parse failed; some checks were skipped (warning)
 
-### 13.2 Autonomy coverage (v0.3.4)
+### 13.2 Autonomy coverage (v0.4.0-beta)
 
 Scope: static HTML classes and selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
 
@@ -622,9 +661,9 @@ Overall estimate (static inputs, parseable selectors): high but not guaranteed; 
 
 ## 14. Examples
 
-### 14.1 HTML structure (OK / NG)
+### 14.1 HTML structure (✅ / ❌)
 
-OK:
+✅
 ```html
 <div class="hero-section">
   <div class="content"></div>
@@ -632,7 +671,7 @@ OK:
 </div>
 ```
 
-NG (Element > Block):
+❌ (Element > Block):
 ```html
 <div class="hero-section">
   <div class="title">
@@ -641,7 +680,7 @@ NG (Element > Block):
 </div>
 ```
 
-NG (modifier first):
+❌ (modifier first):
 ```html
 <div class="-primary title"></div>
 ```
@@ -728,9 +767,9 @@ Child Block file:
 }
 ```
 
-### 14.7 Page layer (OK / NG)
+### 14.7 Page layer (✅ / ❌)
 
-OK (page entry SCSS):
+✅ (page entry SCSS):
 ```scss
 .main-container {
   > .about-content {
@@ -740,7 +779,7 @@ OK (page entry SCSS):
 }
 ```
 
-NG (missing link comment):
+❌ (missing link comment):
 ```scss
 .main-container {
   > .about-content {

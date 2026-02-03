@@ -6,6 +6,7 @@ All notable changes to this extension will be documented in this file.
 
 ### Changed
 
+- Update `@spiracss/html-cli` dependency to `^0.4.0`.
 - Align extension version with the monorepo release.
 
 ## 0.3.4-beta

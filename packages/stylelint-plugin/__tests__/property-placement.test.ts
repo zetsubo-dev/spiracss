@@ -783,7 +783,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -797,7 +797,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -811,7 +811,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -825,7 +825,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -839,7 +839,7 @@ body {
         warnings: [
           {
             message:
-              '`gap` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `gap` on the parent Block selector. If the child should be the container, move `gap` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`gap` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `gap` on the parent Block selector. If the child should be the container, move `gap` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -853,7 +853,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-auto-flow` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-auto-flow` on the parent Block selector. If the child should be the container, move `grid-auto-flow` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`grid-auto-flow` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-auto-flow` on the parent Block selector. If the child should be the container, move `grid-auto-flow` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -867,7 +867,7 @@ body {
         warnings: [
           {
             message:
-              '`grid` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid` on the parent Block selector. If the child should be the container, move `grid` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`grid` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid` on the parent Block selector. If the child should be the container, move `grid` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -879,7 +879,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -891,7 +891,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :global(.foo)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :global(.foo)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -903,7 +903,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :global .foo`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :global .foo`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -915,7 +915,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -927,7 +927,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo), .bar)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name, :is(:global(.foo), .bar)`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -939,7 +939,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name:not(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name:not(:global(.foo))`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -951,7 +951,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `:global(.foo):global(.bar) .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `:global(.foo):global(.bar) .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1515,7 +1515,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property. Selector: `body`. Page roots are decoration-only and cannot define layout. Create a page root Block class and define `display` there. (spiracss/property-placement)'
+              '`display` is a container property. Selector: `body`. Page roots are decoration-only and cannot define layout. Create a page root Block class and define `display` there. (spiracss/property-placement)'
           }
         ]
       },
@@ -1539,7 +1539,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property. Selector: `body`. Page roots are decoration-only and cannot define layout. Use a page root Block class with a direct child selector instead. (spiracss/property-placement)'
+              '`margin-top` is an item property. Selector: `body`. Page roots are decoration-only and cannot define layout. Use a page root Block class with a direct child selector instead. (spiracss/property-placement)'
           }
         ]
       },
@@ -1725,7 +1725,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property. Selector: `#main`. Page roots are decoration-only and cannot define layout. Create a page root Block class and define `display` there. (spiracss/property-placement)'
+              '`display` is a container property. Selector: `#main`. Page roots are decoration-only and cannot define layout. Create a page root Block class and define `display` there. (spiracss/property-placement)'
           }
         ]
       },
@@ -1737,7 +1737,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property. Selector: `#main`. Page roots are decoration-only and cannot define layout. Use a page root Block class with a direct child selector instead. (spiracss/property-placement)'
+              '`margin-top` is an item property. Selector: `#main`. Page roots are decoration-only and cannot define layout. Use a page root Block class with a direct child selector instead. (spiracss/property-placement)'
           }
         ]
       },
@@ -1767,7 +1767,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .wrapper > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .wrapper > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -1779,7 +1779,7 @@ body {
         warnings: [
           {
             message:
-              '`flex-grow` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `flex-grow` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`flex-grow` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `flex-grow` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1791,7 +1791,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-area` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `grid-area` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`grid-area` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `grid-area` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1805,7 +1805,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-template-rows` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template-rows` on the parent Block selector. If the child should be the container, move `grid-template-rows` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`grid-template-rows` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template-rows` on the parent Block selector. If the child should be the container, move `grid-template-rows` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -1819,7 +1819,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-template` is a container-side property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template` on the parent Block selector. If the child should be the container, move `grid-template` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              '`grid-template` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template` on the parent Block selector. If the child should be the container, move `grid-template` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
           }
         ]
       },
@@ -1862,7 +1862,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name.-active`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `.block-name.-active`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },
@@ -1889,7 +1889,7 @@ body {
         warnings: [
           {
             message:
-              '`margin-block` is an item-side property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-block` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-block` is an item property and cannot be placed on a root Block selector. Selector: `.block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-block` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       }
@@ -2316,7 +2316,7 @@ describe('spiracss/property-placement - :global is transparent', () => {
         warnings: [
           {
             message:
-              '`margin-top` is an item-side property and cannot be placed on a root Block selector. Selector: `:global .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
+              '`margin-top` is an item property and cannot be placed on a root Block selector. Selector: `:global .block-name`. Root Blocks should not define their own placement; the parent layout controls item spacing. Move `margin-top` to a direct child selector under the parent Block (use the parent file that places this Block, typically linked via `@rel`). (spiracss/property-placement)'
           }
         ]
       },

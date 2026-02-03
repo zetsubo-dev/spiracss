@@ -106,7 +106,7 @@ export const messages = createRuleMessages(ruleName, {
   containerInChildBlock: (prop: string, selector: string) =>
     `${formatCode(
       prop
-    )} is a container-side property (defines internal layout) and cannot be used on a child Block selector. ` +
+    )} is a container property (defines internal layout) and cannot be used on a child Block selector. ` +
     `Selector: ${formatCode(selector)}. ` +
     `If the parent should be the container, apply ${formatCode(
       prop
@@ -118,7 +118,7 @@ export const messages = createRuleMessages(ruleName, {
   itemInRoot: (prop: string, selector: string) =>
     `${formatCode(
       prop
-    )} is an item-side property and cannot be placed on a root Block selector. ` +
+    )} is an item property and cannot be placed on a root Block selector. ` +
     `Selector: ${formatCode(selector)}. ` +
     'Root Blocks should not define their own placement; the parent layout controls item spacing. ' +
     `Move ${formatCode(
@@ -223,10 +223,10 @@ export const messages = createRuleMessages(ruleName, {
     )
   },
   pageRootContainer: (prop: string, selector: string) =>
-    pageRootBase(prop, selector, 'a container-side property') +
+    pageRootBase(prop, selector, 'a container property') +
     `Create a page root Block class and define ${formatCode(prop)} there.`,
   pageRootItem: (prop: string, selector: string) =>
-    pageRootBase(prop, selector, 'an item-side property') +
+    pageRootBase(prop, selector, 'an item property') +
     'Use a page root Block class with a direct child selector instead.',
   pageRootInternal: (prop: string, selector: string) =>
     pageRootBase(prop, selector, 'an internal property') +

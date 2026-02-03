@@ -156,12 +156,12 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
       key: 'pageRootContainer',
       test: (message) =>
         message.includes('Page roots are decoration-only') &&
-        message.includes('container-side property')
+        message.includes('container property')
     },
     {
       key: 'pageRootItem',
       test: (message) =>
-        message.includes('Page roots are decoration-only') && message.includes('item-side property')
+        message.includes('Page roots are decoration-only') && message.includes('item property')
     },
     {
       key: 'pageRootInternal',
@@ -175,7 +175,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     {
       key: 'containerInChildBlock',
       test: (message) =>
-        message.includes('container-side property') &&
+        message.includes('container property') &&
         message.includes('child Block selector')
     },
     {
@@ -187,7 +187,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     {
       key: 'itemInRoot',
       test: (message) =>
-        message.includes('item-side property and cannot be placed on a root Block selector')
+        message.includes('item property and cannot be placed on a root Block selector')
     },
     {
       key: 'positionInChildBlock',

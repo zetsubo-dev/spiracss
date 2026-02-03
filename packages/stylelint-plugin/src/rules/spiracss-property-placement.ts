@@ -672,7 +672,7 @@ const rule = createRule(
           }
 
           if (isInternalProp(prop, options.size.internal)) {
-            // Allow min-* = 0 everywhere (self/item-side exception) before internal checks.
+            // Allow min-* = 0 everywhere (self/item exception) before internal checks.
             if (options.size.internal && isZeroMinSize(prop, decl.value)) return
             const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
             if (hasPageRoot) {

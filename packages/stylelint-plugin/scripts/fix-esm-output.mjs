@@ -1,20 +1,13 @@
-const fs = require('fs')
-const path = require('path')
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const esmDir = path.resolve(__dirname, '..', 'dist', 'esm')
-const cjsDir = path.resolve(__dirname, '..', 'dist', 'cjs')
+const esmDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'esm')
 
 const ensureEsmPackageJson = () => {
   fs.mkdirSync(esmDir, { recursive: true })
   const packageJsonPath = path.join(esmDir, 'package.json')
   const content = `${JSON.stringify({ type: 'module' }, null, 2)}\n`
-  fs.writeFileSync(packageJsonPath, content)
-}
-
-const ensureCjsPackageJson = () => {
-  fs.mkdirSync(cjsDir, { recursive: true })
-  const packageJsonPath = path.join(cjsDir, 'package.json')
-  const content = `${JSON.stringify({ type: 'commonjs' }, null, 2)}\n`
   fs.writeFileSync(packageJsonPath, content)
 }
 
@@ -63,5 +56,4 @@ const walk = (dir) => {
 }
 
 ensureEsmPackageJson()
-ensureCjsPackageJson()
 walk(esmDir)

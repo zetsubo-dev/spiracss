@@ -2,6 +2,23 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.0-beta
+
+### Breaking Changes
+
+- **Stylelint v17 required**: Dropped Stylelint v16 support. Users on v16 should pin `@spiracss/stylelint-plugin@0.3.x`.
+- **ESM only**: Dropped CommonJS build. The package now ships ESM only.
+- **Node.js >= 20.19.0**: Minimum Node.js version raised to match Stylelint 17.
+- **`moduleResolution`**: TypeScript `moduleResolution` must be `Bundler`, `Node16`, or `NodeNext` (Stylelint 17 uses `exports` for type declarations).
+- **`createRules()` accepts config object only**: `createRules(path)` no longer accepts a file path string. Import `spiracss.config.js` and pass the config object directly, or use `createRulesAsync(path)` for path-based loading.
+
+### Changed
+
+- Simplified `helpers.ts`: removed CJS compatibility code (~80 lines), `loadConfigFromPathAsync` now uses native `import()` directly.
+- Removed `tsconfig.build.cjs.json` and CJS build scripts.
+- Converted dev config files from CJS to ESM (`spiracss.config.js`, `stylelint.config.js`).
+- Build scripts converted from `.cjs` to `.mjs`.
+
 ## 0.3.4-beta
 
 ### Fixed

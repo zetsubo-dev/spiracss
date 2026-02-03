@@ -1,14 +1,7 @@
 import assert from 'assert'
-import { spawnSync } from 'child_process'
-import fs from 'fs'
-import { createRequire } from 'module'
-import os from 'os'
 import path from 'path'
-import { pathToFileURL } from 'url'
 
 import { createRules, createRulesAsync } from '../dist/esm/helpers.js'
-
-const requireCjs = createRequire(import.meta.url)
 
 describe('helpers/createRules', () => {
   it('builds rules from a config object', () => {
@@ -257,8 +250,9 @@ describe('helpers/createRules', () => {
     )
   })
 
-  it('rejects path usage in ESM environments', () => {
-    assert.throws(() => createRules('./spiracss.config.js'), /createRules\(\) cannot accept a file path/)
+  it('rejects path usage in createRules (sync)', () => {
+    // @ts-expect-error -- createRules no longer accepts string; verify runtime guard
+    assert.throws(() => createRules('./spiracss.config.js'), /createRules\(\) requires a config object/)
   })
 
   it('loads an ESM config file via createRulesAsync', async () => {
@@ -285,20 +279,6 @@ describe('helpers/createRules', () => {
     })
 
     assert.strictEqual(rules['spiracss/keyframes-naming'], false)
-  })
-
-  it('loads an ESM config file via createRulesAsync in CJS build', async () => {
-    const configPath = path.resolve('__tests__/fixtures/spiracss.config.js')
-    const { createRulesAsync: createRulesAsyncCjs } = requireCjs('../dist/cjs/helpers.js') as {
-      createRulesAsync: (configPathOrConfig?: string | Record<string, unknown>) => Promise<Record<string, unknown>>
-    }
-    const rules = await createRulesAsyncCjs(configPath)
-    const relComments = rules['spiracss/rel-comments'] as [
-      boolean,
-      { aliasRoots?: unknown }
-    ]
-    assert.strictEqual(relComments[0], true)
-    assert.deepStrictEqual(relComments[1].aliasRoots, { components: ['src/components'] })
   })
 
   it('rejects missing config files in createRulesAsync', async () => {
@@ -330,69 +310,4 @@ describe('helpers/createRules', () => {
     )
   })
 
-  it('handles --disallow-code-generation-from-strings in ESM and CJS', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spiracss-test-'))
-    const configPath = path.resolve('__tests__/fixtures/spiracss.config.js')
-    const esmHelpersUrl = pathToFileURL(path.resolve('dist/esm/helpers.js')).href
-    const cjsHelpersPath = path.resolve('dist/cjs/helpers.js')
-    const esmScriptPath = path.join(tempDir, 'disallow-esm.mjs')
-    const cjsScriptPath = path.join(tempDir, 'disallow-cjs.cjs')
-
-    const runNodeWithNoCodeGen = (scriptPath: string) => {
-      const result = spawnSync(process.execPath, ['--disallow-code-generation-from-strings', scriptPath], {
-        cwd: process.cwd(),
-        encoding: 'utf8'
-      })
-      if (result.error) {
-        throw result.error
-      }
-      return result
-    }
-
-    try {
-      fs.writeFileSync(
-        esmScriptPath,
-        [
-          `import { createRulesAsync } from ${JSON.stringify(esmHelpersUrl)};`,
-          `const configPath = ${JSON.stringify(configPath)};`,
-          `const rules = await createRulesAsync(configPath);`,
-          `if (!rules || !rules['spiracss/rel-comments']) {`,
-          `  throw new Error('Missing rel-comments rules');`,
-          `}`,
-          `console.log('esm-ok');`
-        ].join('\n')
-      )
-
-      fs.writeFileSync(
-        cjsScriptPath,
-        [
-          `const { createRulesAsync } = require(${JSON.stringify(cjsHelpersPath)});`,
-          `const configPath = ${JSON.stringify(configPath)};`,
-          `;(async () => {`,
-          `  try {`,
-          `    await createRulesAsync(configPath);`,
-          `    console.log('cjs-ok');`,
-          `  } catch (error) {`,
-          `    const message = error instanceof Error ? error.message : String(error);`,
-          `    if (!message.includes('Dynamic import is unavailable')) {`,
-          `      console.error(message);`,
-          `      process.exit(1);`,
-          `    }`,
-          `    console.log('cjs-expected-error');`,
-          `  }`,
-          `})();`
-        ].join('\n')
-      )
-
-      const esmResult = runNodeWithNoCodeGen(esmScriptPath)
-      assert.strictEqual(esmResult.status, 0)
-      assert.match(esmResult.stdout || '', /esm-ok/)
-
-      const cjsResult = runNodeWithNoCodeGen(cjsScriptPath)
-      assert.strictEqual(cjsResult.status, 0)
-      assert.match(cjsResult.stdout || '', /cjs-(ok|expected-error)/)
-    } finally {
-      fs.rmSync(tempDir, { recursive: true, force: true })
-    }
-  })
 })

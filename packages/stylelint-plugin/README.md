@@ -16,8 +16,10 @@ Beta release. Breaking changes may still occur.
 
 ## Requirements
 
-- Node.js >= 20
-- Stylelint v16+
+- Node.js >= 20.19.0
+- Stylelint v17+
+
+> Stylelint v16 users: use `@spiracss/stylelint-plugin@0.3.x`.
 
 ## Install
 
@@ -35,33 +37,15 @@ The canonical setup guide is:
 - [Stylelint Plugin](https://spiracss.jp/tooling/stylelint/)
 
 ```js
-// stylelint.config.js (ESM)
+// stylelint.config.js
 import spiracss, { createRules } from '@spiracss/stylelint-plugin'
 import spiracssConfig from './spiracss.config.js'
 
 export default {
-  plugins: [spiracss, 'stylelint-scss'],
+  plugins: [...spiracss, 'stylelint-scss'],
   customSyntax: 'postcss-scss',
   rules: {
     ...createRules(spiracssConfig),
-    'scss/at-rule-no-unknown': true
-  }
-}
-```
-
-CommonJS example:
-
-```js
-// stylelint.config.js (CommonJS)
-const spiracss = require('@spiracss/stylelint-plugin')
-const plugin = spiracss.default ?? spiracss
-const { createRules } = spiracss
-
-module.exports = {
-  plugins: [plugin, 'stylelint-scss'],
-  customSyntax: 'postcss-scss',
-  rules: {
-    ...createRules('./spiracss.config.js'),
     'scss/at-rule-no-unknown': true
   }
 }
@@ -93,12 +77,10 @@ export default {
 }
 ```
 
-Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use `module.exports = { ... }` instead of `export default`.
-
 ## Notes
 
-- In ESM-only projects, either import the config and pass the object to `createRules(config)` or use `createRulesAsync(path)`.
-- ESM config path shortcut:
+- This package is ESM only. `stylelint.config.js` must use `import`/`export default` (requires `"type": "module"` in `package.json` or use `.mjs` extension).
+- Import the config and pass the object to `createRules(config)`, or use `createRulesAsync(path)`:
   ```js
   import { createRulesAsync } from '@spiracss/stylelint-plugin'
   const rules = await createRulesAsync('./spiracss.config.js')

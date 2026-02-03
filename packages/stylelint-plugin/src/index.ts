@@ -7,7 +7,7 @@ import spiracssPropertyPlacement from './rules/spiracss-property-placement'
 import spiracssPseudoNesting from './rules/spiracss-pseudo-nesting'
 import spiracssRelComments from './rules/spiracss-rel-comments'
 
-// Align with the Stylelint v16 plugin format:
+// Stylelint v17 plugin format:
 // default export is an array of rule plugin definitions.
 export default [
   spiracssClassStructure,

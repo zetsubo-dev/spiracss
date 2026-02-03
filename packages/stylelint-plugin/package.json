@@ -1,6 +1,6 @@
 {
   "name": "@spiracss/stylelint-plugin",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "type": "module",
   "description": "Stylelint plugin enforcing SpiraCSS conventions for class structure, property placement, interaction scope/properties, keyframes naming, pseudo nesting, page layer, and rel-comment links.",
   "homepage": "https://spiracss.jp",
@@ -26,10 +26,8 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.19.0"
   },
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
   "files": [
     "dist"
@@ -37,32 +35,24 @@
   "exports": {
     ".": {
       "types": "./dist/esm/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "default": "./dist/cjs/index.js"
+      "default": "./dist/esm/index.js"
     },
     "./helpers": {
       "types": "./dist/esm/helpers.d.ts",
-      "import": "./dist/esm/helpers.js",
-      "require": "./dist/cjs/helpers.js",
-      "default": "./dist/cjs/helpers.js"
+      "default": "./dist/esm/helpers.js"
     },
     "./types": {
       "types": "./dist/esm/types.d.ts",
-      "import": "./dist/esm/types.js",
-      "require": "./dist/cjs/types.js",
-      "default": "./dist/cjs/types.js"
+      "default": "./dist/esm/types.js"
     }
   },
   "scripts": {
-    "build": "node scripts/clean-dist.cjs && npm run build:cjs && npm run build:esm",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.esm.json && node scripts/fix-esm-output.mjs",
     "prepublishOnly": "yarn build",
-    "build:cjs": "tsc -p tsconfig.build.cjs.json",
-    "build:esm": "tsc -p tsconfig.build.esm.json && node scripts/fix-esm-output.cjs",
     "pretest": "yarn build",
     "test": "TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx ./scripts/run-mocha.mjs \"__tests__/**/*.test.ts\"",
     "lint": "eslint src __tests__",
-    "lint:test": "stylelint \"test/fixtures/**/*.scss\" --config stylelint.config.cjs"
+    "lint:test": "stylelint \"test/fixtures/**/*.scss\" --config stylelint.config.js"
   },
   "dependencies": {
     "postcss-selector-parser": "^7.1.1",
@@ -70,7 +60,7 @@
     "safe-regex": "^2.1.1"
   },
   "peerDependencies": {
-    "stylelint": "^16.0.0"
+    "stylelint": "^17.0.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -84,7 +74,7 @@
     "mocha": "^11.7.5",
     "postcss": "^8.4.49",
     "postcss-scss": "^4.0.9",
-    "stylelint": "^16.0.0",
+    "stylelint": "^17.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.6.0"

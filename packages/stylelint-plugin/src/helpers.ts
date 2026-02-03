@@ -219,18 +219,10 @@ const getErrorCode = (error: unknown): string | undefined => {
   return typeof code === 'string' ? code : undefined
 }
 
-const isRequireEsmError = (error: unknown): boolean => {
-  if (!error) return false
-  const code = getErrorCode(error)
-  if (code === 'ERR_REQUIRE_ESM') return true
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('ERR_REQUIRE_ESM')
-}
-
-const createEsmPathError = (): Error =>
+const createConfigRequiredError = (): Error =>
   new Error(
-    `In ESM environments, createRules() cannot accept a file path.\n` +
-      `Use createRulesAsync(path) or import spiracss.config.js and pass the config object to createRules(config).\n` +
+    `createRules() requires a config object.\n` +
+      `Import spiracss.config.js and pass the config object, or use createRulesAsync(path) for path-based loading.\n` +
       `Example: import config from './spiracss.config.js'`
   )
 
@@ -245,89 +237,10 @@ const createConfigLoadError = (source: string, cause?: unknown): Error => {
   return error
 }
 
-const createRequireEsmLoadError = (absolutePath: string): Error =>
-  new Error(
-    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-      `In ESM projects ("type": "module"), require() is unavailable.\n` +
-      `Use createRulesAsync(path) or import the config and pass it to createRules(config).`
-  )
-
-const createDynamicImportError = (absolutePath: string): Error =>
-  new Error(
-    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-      `Dynamic import is unavailable in this environment.\n` +
-      `Use createRules(config) instead of createRulesAsync(path).`
-  )
-
-const isTsxRuntime = process.execArgv.some((arg, index) => {
-  if (arg !== '--import' && arg !== '--loader') return false
-  const loader = process.execArgv[index + 1] || ''
-  return loader.includes('tsx')
-})
-const canRequire = typeof require === 'function' && !isTsxRuntime
-// Keep dynamic import callable in CJS output (avoid TS rewriting it to require()).
-// Lazy initialization is safe here because module execution is single-threaded.
-let dynamicImport: ((specifier: string) => Promise<unknown>) | null = null
-
-const loadConfigFromPath = (absolutePath: string): SpiracssConfig => {
-  if (!canRequire) {
-    throw createEsmPathError()
-  }
-  try {
-    const loaded = resolveConfigModule(require(absolutePath))
-    if (!loaded) {
-      throw createConfigLoadError(absolutePath)
-    }
-    return loaded
-  } catch (error) {
-    if (isRequireEsmError(error)) {
-      throw createRequireEsmLoadError(absolutePath)
-    }
-    throw createConfigLoadError(absolutePath, error)
-  }
-}
-
 const loadConfigFromPathAsync = async (absolutePath: string): Promise<SpiracssConfig> => {
-  if (canRequire) {
-    try {
-      const loaded = resolveConfigModule(require(absolutePath))
-      if (!loaded) {
-        throw createConfigLoadError(absolutePath)
-      }
-      return loaded
-    } catch (error) {
-      if (!isRequireEsmError(error)) {
-        throw createConfigLoadError(absolutePath, error)
-      }
-    }
-  }
-
   const moduleUrl = pathToFileURL(absolutePath).href
-  if (!canRequire) {
-    try {
-      const loaded = resolveConfigModule(await import(moduleUrl))
-      if (!loaded) {
-        throw createConfigLoadError(absolutePath)
-      }
-      return loaded
-    } catch (error) {
-      throw createConfigLoadError(absolutePath, error)
-    }
-  }
-
-  if (!dynamicImport) {
-    try {
-      dynamicImport = new Function(
-        'specifier',
-        'return import(specifier)'
-      ) as (specifier: string) => Promise<unknown>
-    } catch {
-      throw createDynamicImportError(absolutePath)
-    }
-  }
-
   try {
-    const loaded = resolveConfigModule(await dynamicImport(moduleUrl))
+    const loaded = resolveConfigModule(await import(moduleUrl))
     if (!loaded) {
       throw createConfigLoadError(absolutePath)
     }
@@ -344,13 +257,9 @@ type ConfigTarget = {
 }
 
 const resolveConfigTarget = (
-  configPathOrConfig?: string | SpiracssConfig,
-  options?: { requireSync?: boolean }
+  configPathOrConfig?: string | SpiracssConfig
 ): ConfigTarget => {
   if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
-    if (options?.requireSync && !canRequire) {
-      throw createEsmPathError()
-    }
     const resolvedPath = configPathOrConfig || './spiracss.config.js'
     const absolutePath = path.resolve(resolvedPath)
     return { configSource: absolutePath, absolutePath }
@@ -400,18 +309,12 @@ const finalizeConfig = (
 }
 
 const resolveSpiracssConfig = (
-  configPathOrConfig?: string | SpiracssConfig
+  config: SpiracssConfig
 ): { spiracss: SpiracssConfig; configSource: string } => {
-  const target = resolveConfigTarget(configPathOrConfig, { requireSync: true })
-  if (target.spiracss) return finalizeConfig(target.spiracss, target.configSource)
-  const absolutePath = target.absolutePath
-  // Defensive guard: resolveConfigTarget sets absolutePath for path-based configs.
-  if (!absolutePath) {
-    throw new Error('Missing config path for spiracss.config.js.')
+  if (!config || typeof config === 'string') {
+    throw createConfigRequiredError()
   }
-  ensureConfigFileExists(absolutePath)
-  const spiracss = loadConfigFromPath(absolutePath)
-  return finalizeConfig(spiracss, target.configSource)
+  return finalizeConfig(config, 'spiracss.config.js (object)')
 }
 
 const resolveSpiracssConfigAsync = async (
@@ -721,16 +624,23 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
 }
 
 /**
- * Builds SpiraCSS rules from spiracss.config.js.
- * @param configPathOrConfig - Path to spiracss.config.js (defaults to ./spiracss.config.js) or a config object.
+ * Builds SpiraCSS rules from a spiracss config object.
+ * For path-based loading, use {@link createRulesAsync} instead.
+ * @param config - A spiracss config object (imported from spiracss.config.js).
  * @returns SpiraCSS rules object.
  */
-export function createRules(configPathOrConfig?: string | SpiracssConfig): Record<string, unknown> {
-  const { spiracss, configSource } = resolveSpiracssConfig(configPathOrConfig)
+export function createRules(config: SpiracssConfig): Record<string, unknown> {
+  const { spiracss, configSource } = resolveSpiracssConfig(config)
   ensureConfigSections(spiracss, configSource)
   return buildRules(spiracss)
 }
 
+/**
+ * Builds SpiraCSS rules from a spiracss config object or file path.
+ * Supports both config object (sync resolution) and path string (async import).
+ * @param configPathOrConfig - Path to spiracss.config.js or a config object.
+ * @returns SpiraCSS rules object.
+ */
 export async function createRulesAsync(
   configPathOrConfig?: string | SpiracssConfig
 ): Promise<Record<string, unknown>> {

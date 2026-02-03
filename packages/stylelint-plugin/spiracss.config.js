@@ -1,19 +1,19 @@
 // SpiraCSS config for development
 // Settings to validate rules against stylelint plugin test fixtures.
 
-const path = require('path')
+import path from 'node:path'
 
-module.exports = {
+export default {
   // Alias settings matching the test fixtures structure
-  // Use absolute paths via __dirname so VSCode's stylelint extension resolves correctly.
+  // Use absolute paths via import.meta.dirname so VSCode's stylelint extension resolves correctly.
   aliasRoots: {
-    src: [path.join(__dirname, 'test/fixtures/src')],
-    components: [path.join(__dirname, 'test/fixtures/src/components')],
-    styles: [path.join(__dirname, 'test/fixtures/src/styles')],
-    common: [path.join(__dirname, 'test/fixtures/src/components/common')],
-    pages: [path.join(__dirname, 'test/fixtures/src/components/pages')],
-    parts: [path.join(__dirname, 'test/fixtures/src/components/parts')],
-    assets: [path.join(__dirname, 'test/fixtures/src/assets')]
+    src: [path.join(import.meta.dirname, 'test/fixtures/src')],
+    components: [path.join(import.meta.dirname, 'test/fixtures/src/components')],
+    styles: [path.join(import.meta.dirname, 'test/fixtures/src/styles')],
+    common: [path.join(import.meta.dirname, 'test/fixtures/src/components/common')],
+    pages: [path.join(import.meta.dirname, 'test/fixtures/src/components/pages')],
+    parts: [path.join(import.meta.dirname, 'test/fixtures/src/components/parts')],
+    assets: [path.join(import.meta.dirname, 'test/fixtures/src/assets')]
   },
 
   // Default file name casing for root/child SCSS (generator + stylelint)

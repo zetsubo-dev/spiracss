@@ -4,13 +4,15 @@
 
 The parent decides the child's layout; the child only styles its internals.
 
-SpiraCSS is a CSS architecture based on this single principle — designed so the architecture holds, no matter who writes.
+SpiraCSS is a CSS architecture based on this single principle — design resilience, not rules.
 
 > [See How It Works](https://spiracss.jp/architecture/principles/)
 
 CSS design tends to rely on conventions, and consistency erodes as teams scale.
 SpiraCSS keeps the architecture intact — structure and Stylelint enforce it.
 No new CSS features like `@scope` or `@layer` required. Just familiar SCSS.
+
+Not a better ruleset — a fundamentally different approach.
 
 ## Features
 

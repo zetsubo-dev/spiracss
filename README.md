@@ -28,7 +28,7 @@ A 5-part series on dev.to
 
 1. [CSS Design Is Breaking Down — Why AI Agents Need a New Approach](https://dev.to/zetsubo/how-should-css-architecture-evolve-in-the-age-of-ai-coding-agents-317k)
 2. [CSS Drift — Why Conventions Break Down](https://dev.to/zetsubo/what-does-resilient-mean-defining-drift-and-invariants-16ne)
-3. CSS Architecture Lint — TypeScript-Style Errors *(coming soon)*
+3. [CSS Architecture Lint — TypeScript-Style Errors](https://dev.to/zetsubo/css-architecture-lint-in-the-ai-era-typescript-style-errors-that-tell-you-how-to-fix-it-32cg)
 4. Parent Owns Layout *(coming soon)*
 5. Same Lint, Same Result *(coming soon)*
 

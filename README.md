@@ -22,7 +22,9 @@ Not a better ruleset — a fundamentally different approach.
 
 ## Articles
 
-A 5-part series: *CSS Architecture in the AI Agent Era*
+### CSS Architecture in the AI Agent Era
+
+A 5-part series on dev.to
 
 1. [CSS Design Is Breaking Down — Why AI Agents Need a New Approach](https://dev.to/zetsubo/how-should-css-architecture-evolve-in-the-age-of-ai-coding-agents-317k)
 2. [CSS Drift — Why Conventions Break Down](https://dev.to/zetsubo/what-does-resilient-mean-defining-drift-and-invariants-16ne)

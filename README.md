@@ -22,8 +22,13 @@ Not a better ruleset — a fundamentally different approach.
 
 ## Articles
 
-- [How Should CSS Architecture Evolve in the Age of AI Coding Agents?](https://dev.to/zetsubo/how-should-css-architecture-evolve-in-the-age-of-ai-coding-agents-317k)
-- [What Does "Resilient" Mean? Defining Drift and Invariants](https://dev.to/zetsubo/what-does-resilient-mean-defining-drift-and-invariants-16ne)
+A 5-part series: *CSS Architecture in the AI Agent Era*
+
+1. [CSS Design Is Breaking Down — Why AI Agents Need a New Approach](https://dev.to/zetsubo/how-should-css-architecture-evolve-in-the-age-of-ai-coding-agents-317k)
+2. [CSS Drift — Why Conventions Break Down](https://dev.to/zetsubo/what-does-resilient-mean-defining-drift-and-invariants-16ne)
+3. CSS Architecture Lint — TypeScript-Style Errors *(coming soon)*
+4. Parent Owns Layout *(coming soon)*
+5. Same Lint, Same Result *(coming soon)*
 
 ## Status
 

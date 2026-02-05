@@ -39,3 +39,4 @@ stylelint/plugin/node_modules/
 *.tgz
 *.vsix
 vscode/**/build/*
+devto/

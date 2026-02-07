@@ -51,7 +51,7 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
       true,
       withClassMode({
         elementDepth: 4,
-        external: { prefixes: ['u-'] },
+        external: { classes: ['swiper'], prefixes: ['u-'] },
         childCombinator: false,
         rootSingle: true,
         naming: { blockCase: 'kebab' }
@@ -77,8 +77,8 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
         description: 'root Block remains valid even with compound selectors inside :is()'
       },
       {
-        code: '.tab-panels {}\n.u-hidden {}',
-        description: 'selectors with only external classes are excluded'
+        code: '.tab-panels.u-hidden {}',
+        description: 'external classes are allowed when root Block is included'
       },
       {
         code: '.tab-panels:has(:global(.foo)), .tab-panels:has(:global(.bar)) {}',
@@ -89,9 +89,15 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
     reject: [
       {
         code: '.tab-panels {}\n.swiper {}',
-        description: 'top-level selector without root Block is an error',
+        description: 'external.classes selector without root Block is an error',
         message:
           'Root selector `.swiper` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. (spiracss/class-structure)'
+      },
+      {
+        code: '.tab-panels {}\n.u-hidden {}',
+        description: 'external.prefixes selector without root Block is an error',
+        message:
+          'Root selector `.u-hidden` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. (spiracss/class-structure)'
       },
       {
         code: '.tab-panels {}\n.foo:has(.tab-panels) {}',

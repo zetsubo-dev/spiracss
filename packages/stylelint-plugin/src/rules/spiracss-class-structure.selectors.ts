@@ -61,8 +61,12 @@ export const analyzeRootSelector = (
   rootBlockName: string,
   options: Options,
   patterns: Patterns
-): { hasSpiraClass: boolean; hasRootBlock: boolean; hasOtherBlock: boolean } => {
-  let hasSpiraClass = false
+): {
+  hasAnyClass: boolean
+  hasRootBlock: boolean
+  hasOtherBlock: boolean
+} => {
+  let hasAnyClass = false
   let hasRootBlock = false
   let hasOtherBlock = false
 
@@ -70,15 +74,15 @@ export const analyzeRootSelector = (
 
   sel.walk((node) => {
     if (!isClassNode(node)) return
+    hasAnyClass = true
     const name = node.value
     const kind = classify(name, options, patterns)
-    if (kind !== 'external') hasSpiraClass = true
     if (isInsideNonSameElementPseudo(node, sameElementPseudos)) return
     if (name === rootBlockName) hasRootBlock = true
     if (kind === 'block' && name !== rootBlockName) hasOtherBlock = true
   })
 
-  return { hasSpiraClass, hasRootBlock, hasOtherBlock }
+  return { hasAnyClass, hasRootBlock, hasOtherBlock }
 }
 
 type ProcessContext = {

@@ -425,13 +425,13 @@ const rule = createRule(
           const selectors = parseStrippedSelectors(rule.selector)
           if (selectors.length === 0) return
           selectors.forEach((sel) => {
-            const { hasSpiraClass, hasRootBlock, hasOtherBlock } = analyzeRootSelector(
+            const { hasAnyClass, hasRootBlock, hasOtherBlock } = analyzeRootSelector(
               sel,
               resolvedRootBlockName,
               options,
               patterns
             )
-            if (!hasSpiraClass || hasRootBlock || hasOtherBlock) return
+            if (!hasAnyClass || hasRootBlock || hasOtherBlock) return
             stylelint.utils.report({
               ruleName,
               result,

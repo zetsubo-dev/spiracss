@@ -94,7 +94,7 @@ describe('spiracss/class-structure - selector parse failure', () => {
   }
 }
 
-.block {
+:root {
   > : {
     color: blue;
   }

@@ -55,6 +55,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     },
     { key: 'tooDeepBlockNesting', test: (message) => message.includes('is nested too deeply') },
     { key: 'multipleRootBlocks', test: (message) => message.startsWith('Only one root Block is allowed per file.') },
+    { key: 'duplicateRootBlock', test: (message) => message.startsWith('Root Block `.') && message.includes('must be defined only once per file') },
     { key: 'needChild', test: (message) => message.startsWith('Use a direct-child combinator under the Block:') },
     { key: 'needChildNesting', test: (message) => message.startsWith('Do not write child selectors at the top level.') },
     { key: 'sharedNeedRootBlock', test: (message) => message.startsWith('Place the shared section comment matching') },

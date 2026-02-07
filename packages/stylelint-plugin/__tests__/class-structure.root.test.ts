@@ -20,23 +20,25 @@ describe('spiracss/class-structure - rootSingle option', () => {
       {
         code: '.hero-banner {}',
         description: 'single root Block'
-      },
-      {
-        code: '.hero-banner {}\n@media (min-width: 700px) { .hero-banner {} }',
-        description: '@media alongside the same Block is allowed'
       }
     ],
 
     reject: [
       {
+        code: '.hero-banner {}\n@media (min-width: 700px) { .hero-banner {} }',
+        description: 'error when the same root Block is defined multiple times',
+        message:
+          'Root Block `.hero-banner` must be defined only once per file. Found another top-level selector `.hero-banner`. Merge it into the existing root Block and nest additional selectors there. Auto-fix: move this selector inside `.hero-banner` and rewrite the root-level compound part as nested `&...` selectors (e.g., `.hero-banner { &.<externalClass> { ... } }`). (spiracss/class-structure)'
+      },
+      {
         code: '.hero-banner {}\n.card-list {}',
         description: 'error when multiple root Blocks exist',
-        message: 'Only one root Block is allowed per file. Found `card-list` in addition to `hero-banner`. Split into separate SCSS files or move extra Blocks under the root. (spiracss/class-structure)'
+        message: 'Only one root Block is allowed per file. Found `card-list` in addition to `hero-banner`. Split into separate SCSS files or move extra Blocks under the root. Auto-fix: keep one root Block in this file; split extra roots into separate files, or move them under the existing root Block as nested child selectors. (spiracss/class-structure)'
       },
       {
         code: '.hero-banner, .card-list {}',
         description: 'error when multiple Blocks are defined in a single rule',
-        message: 'Only one root Block is allowed per file. Found `card-list` in addition to `hero-banner`. Split into separate SCSS files or move extra Blocks under the root. (spiracss/class-structure)'
+        message: 'Only one root Block is allowed per file. Found `card-list` in addition to `hero-banner`. Split into separate SCSS files or move extra Blocks under the root. Auto-fix: keep one root Block in this file; split extra roots into separate files, or move them under the existing root Block as nested child selectors. (spiracss/class-structure)'
       }
     ]
   })
@@ -69,11 +71,11 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
         description: 'selector includes the root Block'
       },
       {
-        code: '.tab-panels {}\n:is(.tab-panels) {}',
+        code: ':is(.tab-panels) {}',
         description: 'root Block inside :is() is treated as the same element'
       },
       {
-        code: '.tab-panels {}\n.foo:is(.tab-panels, .bar .baz) {}',
+        code: '.foo:is(.tab-panels, .bar .baz) {}',
         description: 'root Block remains valid even with compound selectors inside :is()'
       },
       {
@@ -84,34 +86,40 @@ describe('spiracss/class-structure - root selectors include the root Block', () 
 
     reject: [
       {
+        code: '.tab-panels.swiper {}',
+        description: 'single root selector with external classes must be nested under the root Block',
+        message:
+          'Root selector `.tab-panels.swiper` must keep the root Block `.tab-panels` as the top-level selector. Move external classes into the root Block using `&.<externalClass>` (e.g., `.tab-panels { &.<externalClass> { ... } }`). Auto-fix: move this rule into `.tab-panels` and convert the compound root selector to nested `&...`. (spiracss/class-structure)'
+      },
+      {
         code: '.tab-panels {}\n.swiper {}',
         description: 'external.classes selector without root Block is an error',
         message:
-          'Root selector `.swiper` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. (spiracss/class-structure)'
+          'Root selector `.swiper` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. Auto-fix: either prepend/include `.tab-panels` in the selector, or move declarations into `.tab-panels { ... }`. (spiracss/class-structure)'
       },
       {
         code: '.tab-panels {}\n.tab-panels.swiper {}',
-        description: 'root selector with external classes must be nested under the root Block',
+        description: 'duplicate root Block selector with external classes is an error',
         message:
-          'Root selector `.tab-panels.swiper` must keep the root Block `.tab-panels` as the top-level selector. Move external classes into the root Block using `&.<class>` (e.g., `.tab-panels { &.swiper { ... } }`). (spiracss/class-structure)'
+          'Root Block `.tab-panels` must be defined only once per file. Found another top-level selector `.tab-panels.swiper`. Merge it into the existing root Block and nest additional selectors there. Auto-fix: move this selector inside `.tab-panels` and rewrite the root-level compound part as nested `&...` selectors (e.g., `.tab-panels { &.<externalClass> { ... } }`). (spiracss/class-structure)'
       },
       {
         code: '.tab-panels {}\n.u-hidden {}',
         description: 'external.prefixes selector without root Block is an error',
         message:
-          'Root selector `.u-hidden` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. (spiracss/class-structure)'
+          'Root selector `.u-hidden` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. Auto-fix: either prepend/include `.tab-panels` in the selector, or move declarations into `.tab-panels { ... }`. (spiracss/class-structure)'
       },
       {
         code: '.tab-panels {}\n.foo:has(.tab-panels) {}',
         description: 'Blocks inside :has() are excluded from root detection',
         message:
-          'Root selector `.foo:has(.tab-panels)` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. (spiracss/class-structure)'
+          'Root selector `.foo:has(.tab-panels)` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. Auto-fix: either prepend/include `.tab-panels` in the selector, or move declarations into `.tab-panels { ... }`. (spiracss/class-structure)'
       },
       {
         code: '.tab-panels, .swiper {}',
         description: 'error when root Block is missing in multi-selector',
         message:
-          'Root selector `.swiper` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. (spiracss/class-structure)'
+          'Root selector `.swiper` must include the root Block `.tab-panels`. Include it in the selector or move this rule under the root Block. Auto-fix: either prepend/include `.tab-panels` in the selector, or move declarations into `.tab-panels { ... }`. (spiracss/class-structure)'
       }
     ]
   })

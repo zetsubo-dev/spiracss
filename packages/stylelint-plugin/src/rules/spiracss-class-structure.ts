@@ -195,8 +195,10 @@ const rule = createRule(
       const elementDepths = new WeakMap<Rule, number>()
       const blockDepths = new WeakMap<Rule, number>()
       const rootBlockRules = new WeakSet<Rule>()
+      const duplicateRootBlockRules = new WeakSet<Rule>()
       let firstRule: Rule | null = null
       let rootBlockName: string | null = null
+      let firstRootBlockDefinition: Rule | null = null
       let hasSpiraClassForRootCheck = false
       const topLevelRules: Rule[] = []
       const filePath: string = (result?.opts?.from as string) || ''
@@ -309,6 +311,19 @@ const rule = createRule(
               message: messages.multipleRootBlocks(rootName, extras)
             })
           }
+          if (extras.length === 0 && rootBlocks.includes(rootName)) {
+            if (firstRootBlockDefinition && firstRootBlockDefinition !== rule) {
+              duplicateRootBlockRules.add(rule)
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: rule,
+                message: messages.duplicateRootBlock(rootName, rule.selector.trim())
+              })
+            } else if (!firstRootBlockDefinition) {
+              firstRootBlockDefinition = rule
+            }
+          }
         }
       })
 
@@ -420,6 +435,7 @@ const rule = createRule(
       if (options.root.single && rootBlockName) {
         const resolvedRootBlockName = rootBlockName
         topLevelRules.forEach((rule) => {
+          if (duplicateRootBlockRules.has(rule)) return
           if (typeof rule.selector !== 'string') return
 
           const selectors = parseStrippedSelectors(rule.selector)

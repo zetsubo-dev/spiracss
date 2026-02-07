@@ -48,7 +48,20 @@ export const messages = createRuleMessages(ruleName, {
       maxItems: extras.length
     })} in addition to ${formatCode(
       root
-    )}. Split into separate SCSS files or move extra Blocks under the root.`,
+    )}. Split into separate SCSS files or move extra Blocks under the root. ` +
+    `Auto-fix: keep one root Block in this file; split extra roots into separate files, ` +
+    `or move them under the existing root Block as nested child selectors.`,
+  duplicateRootBlock: (block: string, selector: string) =>
+    `Root Block ${formatCode(
+      `.${block}`
+    )} must be defined only once per file. Found another top-level selector ${formatCode(
+      selector
+    )}. Merge it into the existing root Block and nest additional selectors there. ` +
+    `Auto-fix: move this selector inside ${formatCode(
+      `.${block}`
+    )} and rewrite the root-level compound part as nested ${formatCode(
+      '&...'
+    )} selectors (e.g., ${formatCode(`.${block} { &.<externalClass> { ... } }`)}).`,
   needChild: (
     child: string,
     sharedPattern: RegExp,
@@ -173,15 +186,21 @@ export const messages = createRuleMessages(ruleName, {
       selector
     )} must include the root Block ${formatCode(
       `.${block}`
-    )}. Include it in the selector or move this rule under the root Block.`,
+    )}. Include it in the selector or move this rule under the root Block. ` +
+    `Auto-fix: either prepend/include ${formatCode(
+      `.${block}`
+    )} in the selector, or move declarations into ${formatCode(`.${block} { ... }`)}.`,
   rootSelectorNeedNesting: (block: string, selector: string) =>
     `Root selector ${formatCode(
       selector
     )} must keep the root Block ${formatCode(
       `.${block}`
     )} as the top-level selector. Move external classes into the root Block using ${formatCode(
-      '&.<class>'
-    )} (e.g., ${formatCode(`.${block} { &.swiper { ... } }`)}).`,
+      '&.<externalClass>'
+    )} (e.g., ${formatCode(`.${block} { &.<externalClass> { ... } }`)}). ` +
+    `Auto-fix: move this rule into ${formatCode(`.${block}`)} and convert the compound root selector to nested ${formatCode(
+      '&...'
+    )}.`,
   missingRootBlock: () =>
     'No root Block found. Define a top-level Block selector that matches the naming rules.',
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0]),

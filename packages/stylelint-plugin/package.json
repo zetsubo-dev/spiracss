@@ -1,6 +1,6 @@
 {
   "name": "@spiracss/stylelint-plugin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "Stylelint plugin enforcing SpiraCSS conventions for class structure, property placement, interaction scope/properties, keyframes naming, pseudo nesting, page layer, and rel-comment links.",
   "homepage": "https://spiracss.jp",

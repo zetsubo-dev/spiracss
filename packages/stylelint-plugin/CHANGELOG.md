@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.1-beta
+
+### Fixed
+
+- `spiracss/class-structure`: with `rootSingle: true`, top-level selectors made only of `external.classes` / `external.prefixes` can no longer bypass root Block inclusion checks.
+
 ## 0.4.0-beta
 
 ### Breaking Changes

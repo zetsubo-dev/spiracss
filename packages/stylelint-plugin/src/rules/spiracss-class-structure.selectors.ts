@@ -65,12 +65,39 @@ export const analyzeRootSelector = (
   hasAnyClass: boolean
   hasRootBlock: boolean
   hasOtherBlock: boolean
+  hasRootBlockCompoundExternal: boolean
 } => {
   let hasAnyClass = false
   let hasRootBlock = false
   let hasOtherBlock = false
+  let hasRootBlockCompoundExternal = false
 
   const sameElementPseudos = new Set([':is', ':where'])
+
+  // Top-level compound classes (no combinator split) are used to detect
+  // root selectors like `.block.external` that should be nested as `&.external`.
+  const compoundClassNames: string[] = []
+  const flushCompound = (): void => {
+    if (compoundClassNames.length === 0) return
+    const hasRootClass = compoundClassNames.includes(rootBlockName)
+    const hasExternalClass = compoundClassNames.some(
+      (name) =>
+        name !== rootBlockName && classify(name, options, patterns) === 'external'
+    )
+    if (hasRootClass && hasExternalClass) hasRootBlockCompoundExternal = true
+    compoundClassNames.length = 0
+  }
+
+  sel.nodes.forEach((node) => {
+    if (node.type === 'combinator') {
+      flushCompound()
+      return
+    }
+    if (node.type === 'class') {
+      compoundClassNames.push(node.value)
+    }
+  })
+  flushCompound()
 
   sel.walk((node) => {
     if (!isClassNode(node)) return
@@ -82,7 +109,12 @@ export const analyzeRootSelector = (
     if (kind === 'block' && name !== rootBlockName) hasOtherBlock = true
   })
 
-  return { hasAnyClass, hasRootBlock, hasOtherBlock }
+  return {
+    hasAnyClass,
+    hasRootBlock,
+    hasOtherBlock,
+    hasRootBlockCompoundExternal
+  }
 }
 
 type ProcessContext = {

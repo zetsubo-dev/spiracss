@@ -79,6 +79,13 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
       test: (message) =>
         message.startsWith('Root selector') && message.includes('must include the root Block')
     },
+    {
+      key: 'rootSelectorNeedNesting',
+      test: (message) =>
+        message.startsWith('Root selector') &&
+        message.includes('must keep the root Block') &&
+        message.includes('top-level selector')
+    },
     { key: 'missingRootBlock', test: (message) => message.startsWith('No root Block found.') },
     { key: 'selectorParseFailed', test: (message) => message.startsWith('Failed to parse one or more selectors') },
     { key: 'fileNameMismatch', test: (message) => message.startsWith('Root Block `.') }

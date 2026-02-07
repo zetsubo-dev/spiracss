@@ -174,6 +174,14 @@ export const messages = createRuleMessages(ruleName, {
     )} must include the root Block ${formatCode(
       `.${block}`
     )}. Include it in the selector or move this rule under the root Block.`,
+  rootSelectorNeedNesting: (block: string, selector: string) =>
+    `Root selector ${formatCode(
+      selector
+    )} must keep the root Block ${formatCode(
+      `.${block}`
+    )} as the top-level selector. Move external classes into the root Block using ${formatCode(
+      '&.<class>'
+    )} (e.g., ${formatCode(`.${block} { &.swiper { ... } }`)}).`,
   missingRootBlock: () =>
     'No root Block found. Define a top-level Block selector that matches the naming rules.',
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0]),

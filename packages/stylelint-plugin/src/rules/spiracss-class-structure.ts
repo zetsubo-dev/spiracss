@@ -425,13 +425,31 @@ const rule = createRule(
           const selectors = parseStrippedSelectors(rule.selector)
           if (selectors.length === 0) return
           selectors.forEach((sel) => {
-            const { hasAnyClass, hasRootBlock, hasOtherBlock } = analyzeRootSelector(
+            const {
+              hasAnyClass,
+              hasRootBlock,
+              hasOtherBlock,
+              hasRootBlockCompoundExternal
+            } = analyzeRootSelector(
               sel,
               resolvedRootBlockName,
               options,
               patterns
             )
-            if (!hasAnyClass || hasRootBlock || hasOtherBlock) return
+            if (!hasAnyClass || hasOtherBlock) return
+            if (hasRootBlockCompoundExternal) {
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: rule,
+                message: messages.rootSelectorNeedNesting(
+                  resolvedRootBlockName,
+                  sel.toString().trim()
+                )
+              })
+              return
+            }
+            if (hasRootBlock) return
             stylelint.utils.report({
               ruleName,
               result,

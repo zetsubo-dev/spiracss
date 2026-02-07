@@ -2,6 +2,14 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.2-beta
+
+### Fixed
+
+- `spiracss/class-structure`: report repeated definitions of the same root Block as `duplicateRootBlock` when `rootSingle: true`.
+- `spiracss/class-structure`: avoid duplicate root diagnostics by suppressing `rootSelectorNeedNesting` when `duplicateRootBlock` is already reported for the same selector.
+- `spiracss/class-structure`: add explicit `Auto-fix` guidance for root-related diagnostics (`multipleRootBlocks`, `duplicateRootBlock`, `rootSelectorMissingBlock`, `rootSelectorNeedNesting`) to improve deterministic AI remediation.
+
 ## 0.4.1-beta
 
 ### Fixed

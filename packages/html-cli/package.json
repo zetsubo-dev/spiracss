@@ -1,6 +1,6 @@
 {
   "name": "@spiracss/html-cli",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "SpiraCSS CLI for HTML-to-SCSS generation, structure linting, and placeholder formatting.",
   "homepage": "https://spiracss.jp",
   "repository": {

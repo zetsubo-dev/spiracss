@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Guide v0.4.1-beta
+# SpiraCSS AI Agent Guide v0.4.2-beta
 
 This document is self-contained (rules + fix guidance live here). For decision-making, assume only this file and spiracss.config.js are authoritative; sample configs below are reference examples.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -11,7 +11,7 @@ Lint messages are actionable fix guidance derived from the current implementatio
 
 Defaults are only a fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.4.1-beta, @spiracss/html-cli v0.4.1-beta.
+Version compatibility: @spiracss/stylelint-plugin v0.4.2-beta, @spiracss/html-cli v0.4.2-beta.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
 ## 1. Design Overview (minimum)
@@ -544,7 +544,7 @@ Definition of done:
 - If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If dynamic class bindings or template syntax are present, stop and report (lint results are not sufficient).
 - Stylelint passes AND @rel path validation passes (when validatePath=true).
 
-### 13.1 Stylelint message keys (v0.4.1-beta)
+### 13.1 Stylelint message keys (v0.4.2-beta)
 
 Stylelint messages include a stable message key and a docs URL with an anchor like `#invalidName`.
 This document lists keys + meanings only; exact message text may change, so rely on tool output.
@@ -558,6 +558,7 @@ spiracss/class-structure:
 - blockTargetsGrandchildElement: parent Block must not style grandchild Elements directly
 - tooDeepBlockNesting: Block > Block > Block nesting is not allowed (basic/shared)
 - multipleRootBlocks: multiple root Blocks in one file
+- duplicateRootBlock: same root Block is defined more than once at top level
 - needChild: missing `>` for direct child selector (basic section)
 - needChildNesting: top-level child selector; must be nested inside the Block
 - sharedNeedRootBlock: shared section must be directly under the root Block
@@ -568,6 +569,7 @@ spiracss/class-structure:
 - invalidStateAttribute: state attributes are disabled when state.mode=class
 - invalidDataValue: invalid data value naming (valueNaming)
 - rootSelectorMissingBlock: selector must include the root Block
+- rootSelectorNeedNesting: root compound selector (e.g. `.block.external`) must be moved under the root as nested `&...`
 - missingRootBlock: no root Block found
 - fileNameMismatch: root Block name must match filename (rootFile/rootCase)
 - selectorParseFailed: selector parse failed; some checks were skipped (warning)
@@ -633,7 +635,7 @@ spiracss/rel-comments:
 - childMismatch: child name does not match the `@rel` target
 - selectorParseFailed: selector parse failed; some checks were skipped (warning)
 
-### 13.2 Autonomy coverage (v0.4.1-beta)
+### 13.2 Autonomy coverage (v0.4.2-beta)
 
 Scope: static HTML classes and selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
 

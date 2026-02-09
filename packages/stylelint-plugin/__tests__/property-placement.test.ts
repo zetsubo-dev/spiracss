@@ -118,6 +118,12 @@ describe('spiracss/property-placement', () => {
       {
         code: `
 .block-name .title {
+  margin-bottom: 8px;
+}`
+      },
+      {
+        code: `
+.block-name .title {
   margin-top: 8px;
 }`
       },
@@ -131,6 +137,12 @@ describe('spiracss/property-placement', () => {
         code: `
 main > section {
   margin-top: 8px;
+}`
+      },
+      {
+        code: `
+.block-name:is(main) {
+  margin-bottom: 8px;
 }`
       },
       {
@@ -2157,6 +2169,12 @@ main > section {
     margin-bottom: 8px;
   }
 }`
+      },
+      {
+        code: `
+main > section {
+  margin-bottom: 8px;
+}`
       }
     ],
 
@@ -2172,6 +2190,18 @@ main > section {
           {
             message:
               '`margin-top` uses a top margin value, which violates the margin-side rule. Selector: `.block-name > .title`. SpiraCSS enforces a single margin direction. Use bottom margins or set the top value to `0`/`auto`/`initial`. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
+main > section {
+  margin-top: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-top` uses a top margin value, which violates the margin-side rule. Selector: `main > section`. SpiraCSS enforces a single margin direction. Use bottom margins or set the top value to `0`/`auto`/`initial`. (spiracss/property-placement)'
           }
         ]
       }

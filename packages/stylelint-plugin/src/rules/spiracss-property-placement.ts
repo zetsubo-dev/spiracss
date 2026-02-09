@@ -552,13 +552,12 @@ const rule = createRule(
         return localSelectors.some((selectorText) => {
           const parsed = selectorCache.parse(selectorText)
           if (parsed.length === 0) return false
-          return parsed.some((selector) => {
-            let hasTag = false
-            selector.walk((node) => {
-              if (node.type === 'tag') hasTag = true
-            })
-            return hasTag
-          })
+          // Only count direct tag nodes in the selector chain.
+          // Tags that appear only inside pseudo arguments (e.g. :is(main))
+          // are not treated as tag-selector rules.
+          return parsed.some((selector) =>
+            selector.nodes.some((node) => node.type === 'tag')
+          )
         })
       }
 

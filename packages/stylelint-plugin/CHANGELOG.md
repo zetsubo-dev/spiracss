@@ -2,6 +2,17 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.3-beta
+
+### Added
+
+- `spiracss/property-placement`: add `marginSideTags` option (default: `true`) to apply `marginSide` checks to tag-selector rules.
+
+### Changed
+
+- `spiracss/property-placement`: refine `marginSideTags` tag detection to count only tags in the selector chain (pseudo-argument-only tags such as `:is(main)` are excluded).
+- `spiracss/property-placement`: add regression tests for tag/class mixed selectors, `marginSide: 'bottom'` with tag selectors, and non-tag unverified selector skip behavior.
+
 ## 0.4.2-beta
 
 ### Fixed

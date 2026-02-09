@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Guide v0.4.2-beta
+# SpiraCSS AI Agent Guide v0.4.3-beta
 
 This document is self-contained (rules + fix guidance live here). For decision-making, assume only this file and spiracss.config.js are authoritative; sample configs below are reference examples.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -11,7 +11,7 @@ Lint messages are actionable fix guidance derived from the current implementatio
 
 Defaults are only a fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.4.2-beta, @spiracss/html-cli v0.4.2-beta.
+Version compatibility: @spiracss/stylelint-plugin v0.4.3-beta, @spiracss/html-cli v0.4.3-beta.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
 ## 1. Design Overview (minimum)
@@ -220,6 +220,7 @@ Property placement enforces the parent/child responsibility split:
 - Item properties are allowed on any direct child selector (`> .child-block` or `> .element`), not on the root Block itself. In practice, child Block is the most common placement context.
 - Internal properties are allowed on the root Block/Element but disallowed on child Block selectors. Child Element selectors (`> .element`) are treated as root — allowed.
 - Enforces one-sided vertical margin (`marginSide`).
+- With `marginSideTags=true` (default), tag-selector rules are also checked for margin-side direction.
 - Restricts `position` on child Block selectors (when `position=true`).
 - `@extend` is always forbidden; `@at-root` is allowed only in the interaction section
   (including external-only roots composed solely of external classes).
@@ -263,6 +264,8 @@ itemInRoot:
 
 marginSideViolation:
 - Config `stylelint.placement.marginSide` enforces a single vertical margin direction (default: `"top"`).
+- Config `stylelint.placement.marginSideTags` controls whether tag-selector rules are checked too (default: `true`).
+- For `marginSideTags`, only tags in the selector chain are counted; tags that appear only inside pseudo arguments (e.g., `:is(main)`) are not treated as tag-selector rules.
 - If `marginSide="top"`: only `margin-top` is allowed; `margin-bottom` (or a shorthand that sets a non-zero bottom) is forbidden.
 - Fix: replace the forbidden side with the allowed one, or set the forbidden side to `0`/`auto`/`initial`.
 - Shorthand example: `margin: 0 16px` is OK (top/bottom are 0); `margin: 0 0 16px` violates when `marginSide="top"`.
@@ -544,7 +547,7 @@ Definition of done:
 - If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If dynamic class bindings or template syntax are present, stop and report (lint results are not sufficient).
 - Stylelint passes AND @rel path validation passes (when validatePath=true).
 
-### 13.1 Stylelint message keys (v0.4.2-beta)
+### 13.1 Stylelint message keys (v0.4.3-beta)
 
 Stylelint messages include a stable message key and a docs URL with an anchor like `#invalidName`.
 This document lists keys + meanings only; exact message text may change, so rely on tool output.
@@ -635,7 +638,7 @@ spiracss/rel-comments:
 - childMismatch: child name does not match the `@rel` target
 - selectorParseFailed: selector parse failed; some checks were skipped (warning)
 
-### 13.2 Autonomy coverage (v0.4.2-beta)
+### 13.2 Autonomy coverage (v0.4.3-beta)
 
 Scope: static HTML classes and selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
 
@@ -811,7 +814,7 @@ Note: Stylelint does not fall back to these defaults; use them only for HTML too
   - variant.mode=data, variant.dataKeys=[data-variant]
   - state.mode=data, state.dataKey=data-state, state.ariaKeys=[aria-expanded, aria-selected, aria-disabled]
 - placement:
-  - elementDepth=4, marginSide="top", position=true, sizeInternal=true, responsiveMixins=[]
+  - elementDepth=4, marginSide="top", marginSideTags=true, position=true, sizeInternal=true, responsiveMixins=[]
 - interactionScope:
   - requireAtRoot=true, requireComment=true, requireTail=true, commentOnly=false
   - pseudos=[:hover, :focus, :focus-visible, :active, :visited]

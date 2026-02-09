@@ -116,6 +116,8 @@ const config = {
       elementDepth: 4,
       // Allowed vertical margin side (top / bottom / default: 'top')
       marginSide: 'top',
+      // Also apply marginSide checks to tag-selector rules (default: true)
+      marginSideTags: true,
       // Enable child Block position restrictions (default: true)
       position: true,
       // Treat width/height/min/max as internal props (default: true)

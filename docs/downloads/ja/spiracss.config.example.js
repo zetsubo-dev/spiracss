@@ -116,6 +116,8 @@ const config = {
       elementDepth: 4,
       // 縦方向マージンの許可側（top / bottom / デフォルト: 'top'）
       marginSide: 'top',
+      // タグセレクタのルールにも marginSide チェックを適用するか（デフォルト: true）
+      marginSideTags: true,
       // child Block の position 制限を有効にするか（デフォルト: true）
       position: true,
       // width/height/min/max を内部プロパティとして扱うか（デフォルト: true）

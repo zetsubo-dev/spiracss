@@ -20,7 +20,8 @@ const defaultOptions: Options = {
     prefixes: []
   },
   margin: {
-    side: 'top'
+    side: 'top',
+    tags: true
   },
   position: true,
   size: {
@@ -46,6 +47,7 @@ export const normalizeOptions = (
   const opt = raw as {
     elementDepth?: number
     marginSide?: Options['margin']['side']
+    marginSideTags?: boolean
     position?: boolean
     sizeInternal?: boolean
     responsiveMixins?: string[]
@@ -79,7 +81,11 @@ export const normalizeOptions = (
           : defaultOptions.element.depth
     },
     margin: {
-      side: normalizeMarginSide(opt.marginSide)
+      side: normalizeMarginSide(opt.marginSide),
+      tags:
+        typeof opt.marginSideTags === 'boolean'
+          ? opt.marginSideTags
+          : defaultOptions.margin.tags
     },
     position:
       typeof opt.position === 'boolean' ? opt.position : defaultOptions.position,

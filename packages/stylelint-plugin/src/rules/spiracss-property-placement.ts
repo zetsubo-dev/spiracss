@@ -58,6 +58,7 @@ const meta = {
 const optionSchema = {
   elementDepth: [isNumber],
   marginSide: [isString],
+  marginSideTags: [isBoolean],
   position: [isBoolean],
   sizeInternal: [isBoolean],
   responsiveMixins: [isString],
@@ -533,6 +534,34 @@ const rule = createRule(
         return key
       }
 
+      const shouldCheckMarginSideForTagSelectors = (
+        resolvedSelectors: string[]
+      ): boolean => {
+        const localSelectors = resolvedSelectors.flatMap((selectorText) =>
+          splitSelectors(selectorText, selectorCache)
+            .map((selector) =>
+              stripGlobalSelectorForRoot(
+                selector,
+                selectorCache,
+                options.cache.selector
+              )
+            )
+            .filter((selector): selector is string => Boolean(selector))
+        )
+        if (localSelectors.length === 0) return false
+        return localSelectors.some((selectorText) => {
+          const parsed = selectorCache.parse(selectorText)
+          if (parsed.length === 0) return false
+          return parsed.some((selector) => {
+            let hasTag = false
+            selector.walk((node) => {
+              if (node.type === 'tag') hasTag = true
+            })
+            return hasTag
+          })
+        })
+      }
+
       const familyOffsetMap = new Map<string, boolean>()
       if (options.position) {
         for (const [rule, decls] of declsByRule) {
@@ -589,8 +618,12 @@ const rule = createRule(
         if (isInsideAtRoot(rule)) continue
         if (typeof rule.selector !== 'string') continue
 
-        const { analysis, resolvedSelectorText } = getRuleAnalysis(rule)
-        if (analysis.status === 'skip') continue
+        const { resolvedSelectors, analysis, resolvedSelectorText } = getRuleAnalysis(rule)
+        const checkTagMarginSideOnly =
+          analysis.status === 'skip' &&
+          options.margin.tags &&
+          shouldCheckMarginSideForTagSelectors(resolvedSelectors)
+        if (analysis.status === 'skip' && !checkTagMarginSideOnly) continue
         if (analysis.status === 'error') {
           stylelint.utils.report({
             ruleName,
@@ -601,7 +634,7 @@ const rule = createRule(
           continue
         }
 
-        const selectorInfos = analysis.selectors
+        const selectorInfos = analysis.status === 'ok' ? analysis.selectors : []
         const resolvedSelector = resolvedSelectorText
 
         const ruleWrapperKey = getWrapperContextKey(rule)
@@ -611,6 +644,7 @@ const rule = createRule(
           if (!prop || prop.startsWith('--')) return
 
           if (isContainerProp(decl)) {
+            if (analysis.status !== 'ok') return
             const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
             if (hasPageRoot) {
               stylelint.utils.report({
@@ -633,28 +667,30 @@ const rule = createRule(
           }
 
           if (isItemProp(prop)) {
-            const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
-            if (hasPageRoot) {
-              stylelint.utils.report({
-                ruleName,
-                result,
-                node: decl,
-                message: messages.pageRootItem(prop, resolvedSelector)
+            if (analysis.status === 'ok') {
+              const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
+              if (hasPageRoot) {
+                stylelint.utils.report({
+                  ruleName,
+                  result,
+                  node: decl,
+                  message: messages.pageRootItem(prop, resolvedSelector)
+                })
+                return
+              }
+              const hasInvalidPlacement = selectorInfos.some((info) => {
+                if (info.kind === 'root') return true
+                return info.tailCombinator === null
               })
-              return
-            }
-            const hasInvalidPlacement = selectorInfos.some((info) => {
-              if (info.kind === 'root') return true
-              return info.tailCombinator === null
-            })
-            if (hasInvalidPlacement) {
-              stylelint.utils.report({
-                ruleName,
-                result,
-                node: decl,
-                message: messages.itemInRoot(prop, resolvedSelector)
-              })
-              return
+              if (hasInvalidPlacement) {
+                stylelint.utils.report({
+                  ruleName,
+                  result,
+                  node: decl,
+                  message: messages.itemInRoot(prop, resolvedSelector)
+                })
+                return
+              }
             }
             if (isMarginSideProp(prop)) {
               const marginSideResult = checkMarginSide(prop, decl.value, options.margin.side)
@@ -672,6 +708,7 @@ const rule = createRule(
           }
 
           if (isInternalProp(prop, options.size.internal)) {
+            if (analysis.status !== 'ok') return
             // Allow min-* = 0 everywhere (self/item exception) before internal checks.
             if (options.size.internal && isZeroMinSize(prop, decl.value)) return
             const hasPageRoot = selectorInfos.some((info) => info.kind === 'page-root')
@@ -706,6 +743,7 @@ const rule = createRule(
           }
 
           if (options.position && prop === 'position') {
+            if (analysis.status !== 'ok') return
             const hasChildBlock = selectorInfos.some((info) => info.kind === 'child-block')
             if (!hasChildBlock) return
             const parsedPosition = parsePositionValue(decl.value)

@@ -129,6 +129,12 @@ describe('spiracss/property-placement', () => {
       },
       {
         code: `
+main > section {
+  margin-top: 8px;
+}`
+      },
+      {
+        code: `
 .block-name :global(.child-block) {
   display: flex;
 }`
@@ -1255,6 +1261,18 @@ body {
       },
       {
         code: `
+main > section {
+  margin-bottom: 8px;
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-bottom` uses a bottom margin value, which violates the margin-side rule. Selector: `main > section`. SpiraCSS enforces a single margin direction. Use top margins or set the bottom value to `0`/`auto`/`initial`. (spiracss/property-placement)'
+          }
+        ]
+      },
+      {
+        code: `
 .block-name {
   > .title {
     margin-bottom: $spacing;
@@ -1974,6 +1992,46 @@ html,
           {
             message:
               '`@at-root` is not allowed in basic/shared sections. Context: `html, .swiper-pagination`. `@at-root` breaks selector hierarchy and should only be used for interaction states. Move this rule to the interaction section using `comments.interaction` (current: `/--interaction/i`), or remove `@at-root` and restructure the selector. (spiracss/property-placement)'
+          }
+        ]
+      }
+    ]
+  })
+
+  testRule({
+    plugins: [propertyPlacement],
+    ruleName: propertyPlacement.ruleName,
+    config: [
+      true,
+      withClassMode({
+        elementDepth: 4,
+        marginSideTags: false,
+        comments: { shared: /--shared/i, interaction: /--interaction/i }
+      })
+    ],
+    customSyntax: 'postcss-scss',
+
+    accept: [
+      {
+        code: `
+main > section {
+  margin-bottom: 8px;
+}`
+      }
+    ],
+
+    reject: [
+      {
+        code: `
+.block-name {
+  > .title {
+    margin-bottom: 8px;
+  }
+}`,
+        warnings: [
+          {
+            message:
+              '`margin-bottom` uses a bottom margin value, which violates the margin-side rule. Selector: `.block-name > .title`. SpiraCSS enforces a single margin direction. Use top margins or set the bottom value to `0`/`auto`/`initial`. (spiracss/property-placement)'
           }
         ]
       }

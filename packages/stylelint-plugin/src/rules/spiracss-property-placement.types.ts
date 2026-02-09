@@ -14,6 +14,7 @@ export type Options = {
   }
   margin: {
     side: 'top' | 'bottom'
+    tags: boolean
   }
   position: boolean
   size: {

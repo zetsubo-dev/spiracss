@@ -113,6 +113,7 @@ type InteractionPropertiesConfig = {
 type PropertyPlacementConfig = {
   elementDepth?: number
   marginSide?: PropertyPlacementOptions['margin']['side']
+  marginSideTags?: boolean
   position?: boolean
   sizeInternal?: boolean
   responsiveMixins?: string[]

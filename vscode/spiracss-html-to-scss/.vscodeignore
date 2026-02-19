@@ -9,10 +9,8 @@ fixtures
 build
 out
 node_modules
-.yarn
-.yarnrc.yml
-.yarnrc
-yarn.lock
+.pnpm-store
+pnpm-lock.yaml
 
 # Config and build files
 .gitignore

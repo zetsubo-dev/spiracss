@@ -112,14 +112,14 @@
   },
   "scripts": {
     "vscode:prepublish": "node esbuild.js --production",
-    "compile": "yarn run check-types && yarn run lint && node esbuild.js",
+    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "yarn run check-types && yarn run lint && node esbuild.js --production && node -e \"require('fs').mkdirSync('build',{recursive:true})\" && npx vsce package --no-yarn --out build/spiracss-html-to-scss-$(node -p \"require('./package.json').version\").vsix",
+    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production && node -e \"require('fs').mkdirSync('build',{recursive:true})\" && pnpm exec vsce package --no-dependencies --out build/spiracss-html-to-scss-$(node -p \"require('./package.json').version\").vsix",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "yarn run test:extension",
+    "test": "pnpm run test:extension",
     "test:extension": "node esbuild.js && vscode-test"
   },
   "devDependencies": {
@@ -142,7 +142,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@spiracss/html-cli": "^0.4.3"
+    "@spiracss/html-cli": "workspace:^0.4.3"
   },
-  "packageManager": "yarn@4.10.3"
+  "packageManager": "pnpm@10.29.2"
 }

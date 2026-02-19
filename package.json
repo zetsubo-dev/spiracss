@@ -2,9 +2,5 @@
   "name": "spiracss-monorepo",
   "version": "0.4.3",
   "private": true,
-  "packageManager": "yarn@4.10.3",
-  "workspaces": [
-    "packages/*",
-    "vscode/*"
-  ]
+  "packageManager": "pnpm@10.29.2"
 }

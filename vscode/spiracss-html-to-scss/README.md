@@ -49,3 +49,8 @@ This extension is designed to be used with the [SpiraCSS Design Principles](http
 - [SpiraCSS Stylelint Plugin (npm)](https://www.npmjs.com/package/@spiracss/stylelint-plugin)
 - [SpiraCSS HTML CLI (npm)](https://www.npmjs.com/package/@spiracss/html-cli)
 - SpiraCSS Comment Links ([VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=spiracss.spiracss-comment-links) / [Open VSX](https://open-vsx.org/extension/spiracss/spiracss-comment-links))
+
+## Development Notes
+
+- In this monorepo, `@spiracss/html-cli` is linked via `workspace:^0.4.3`.
+- Install dependencies from the repository root with `pnpm install`.

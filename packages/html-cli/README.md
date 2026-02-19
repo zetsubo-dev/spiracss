@@ -21,7 +21,7 @@ Beta release. Breaking changes may still occur.
 ## Install
 
 ```bash
-yarn add -D @spiracss/html-cli
+pnpm add -D @spiracss/html-cli
 ```
 
 ```bash
@@ -40,22 +40,22 @@ Use `--root` for a single component root. Use `--selection` for fragments.
 
 ```bash
 # Generate SCSS from a component root (root mode)
-cat file.html | yarn spiracss-html-to-scss --root --stdin --base-dir src/pages
+cat file.html | pnpm exec spiracss-html-to-scss --root --stdin --base-dir src/pages
 
 # Generate SCSS from fragments (selection mode)
-cat fragment.html | yarn spiracss-html-to-scss --selection --stdin --base-dir src/pages
+cat fragment.html | pnpm exec spiracss-html-to-scss --selection --stdin --base-dir src/pages
 
 # Lint a component root
-cat file.html | yarn spiracss-html-lint --root --stdin
+cat file.html | pnpm exec spiracss-html-lint --root --stdin
 
 # Lint fragments
-cat fragment.html | yarn spiracss-html-lint --selection --stdin
+cat fragment.html | pnpm exec spiracss-html-lint --selection --stdin
 
 # Insert placeholders
-cat file.html | yarn spiracss-html-format --stdin
+cat file.html | pnpm exec spiracss-html-format --stdin
 ```
 
-Note: If you use npm, replace `yarn` with `npx` or `npm exec`.
+Note: If you use npm, replace `pnpm exec` with `npx` or `npm exec`.
 
 ## Configuration
 

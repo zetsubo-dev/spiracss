@@ -24,7 +24,7 @@ Beta release. Breaking changes may still occur.
 ## Install
 
 ```bash
-yarn add -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
+pnpm add -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
 ```
 
 ```bash

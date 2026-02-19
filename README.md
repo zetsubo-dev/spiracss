@@ -37,3 +37,8 @@ Not a better ruleset — a fundamentally different approach.
 ## Status
 
 Beta
+
+## Monorepo Development
+
+- Package manager: `pnpm` (`pnpm-workspace.yaml`)
+- Install workspace dependencies from the repo root: `pnpm install`

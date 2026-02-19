@@ -1,5 +1,5 @@
 node_modules
 .serena
-.yarn/install-state.gz
+.pnpm-store
 .vscode-test/
 dist/

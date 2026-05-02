@@ -20,6 +20,10 @@ Not a better ruleset — a fundamentally different approach.
 - **Designed to hold** — Not conventions to memorize. An architecture that stays intact.
 - **AI-agent ready** — Error messages designed for AI agents. Supports AI-driven fixes.
 
+## Companion Tool
+
+[PixelPerfect CSS Diff](https://chromewebstore.google.com/detail/pixelperfect-css-diff/nmidjkccpfpdgnimghefhbgjgeoilldg) is a Chrome extension by the creator of SpiraCSS for visual QA: overlay a reference image, align with guides, capture browser-side CSS changes, and copy the diff as AI-ready fix instructions.
+
 ## Articles
 
 ### Related

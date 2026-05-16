@@ -1,17 +1,15 @@
 import type { NamingOptions, WordCase } from '../types'
-import { createSharedCacheAccessor,DEFAULT_CACHE_SIZE } from './cache'
+import { createSharedCacheAccessor, DEFAULT_CACHE_SIZE } from './cache'
 import type { InvalidOptionReporter } from './normalize'
 
 export const normalizeBlockMaxWords = (value: unknown): number => {
-  const normalized =
-    typeof value === 'number' && Number.isInteger(value) ? value : 2
+  const normalized = typeof value === 'number' && Number.isInteger(value) ? value : 2
   if (normalized < 2) return 2
   if (normalized > 100) return 100
   return normalized
 }
 
-const serializePattern = (pattern: RegExp | undefined): string =>
-  pattern ? `${pattern.source}/${pattern.flags}` : ''
+const serializePattern = (pattern: RegExp | undefined): string => (pattern ? `${pattern.source}/${pattern.flags}` : '')
 
 export const normalizeCustomPattern = (
   value: unknown,
@@ -21,11 +19,7 @@ export const normalizeCustomPattern = (
   if (value === undefined || value === null) return undefined
   if (value instanceof RegExp) {
     if (value.flags.includes('g') || value.flags.includes('y')) {
-      reportInvalid?.(
-        label,
-        value,
-        'RegExp flags "g" and "y" are not allowed for customPatterns.'
-      )
+      reportInvalid?.(label, value, 'RegExp flags "g" and "y" are not allowed for customPatterns.')
       return undefined
     }
     return value
@@ -49,11 +43,7 @@ export const buildBlockPattern = (
   const blockMaxWords = normalizeBlockMaxWords(naming?.blockMaxWords)
   const customBlock = options?.skipCustomPatternValidation
     ? options.customBlock
-    : normalizeCustomPattern(
-        naming?.customPatterns?.block,
-        'naming.customPatterns.block',
-        reportInvalid
-      )
+    : normalizeCustomPattern(naming?.customPatterns?.block, 'naming.customPatterns.block', reportInvalid)
   if (customBlock) return customBlock
 
   const blockPatternCache = getBlockPatternCache(cacheSize)

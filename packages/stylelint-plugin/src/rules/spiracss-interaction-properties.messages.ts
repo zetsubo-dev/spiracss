@@ -9,31 +9,18 @@ import { ruleName } from './spiracss-interaction-properties.constants'
 
 export const messages = createRuleMessages(ruleName, {
   needInteraction: (prop: string, pattern: RegExp) =>
-    `${formatCode(
-      prop
-    )} must be declared inside the SpiraCSS interaction section in root scope ` +
-    `(comment matching ${formatCode(
-      'comments.interaction'
-    )}, current: ${formatPattern(
+    `${formatCode(prop)} must be declared inside the SpiraCSS interaction section in root scope ` +
+    `(comment matching ${formatCode('comments.interaction')}, current: ${formatPattern(
       pattern
     )}; typically in ${formatCode('@at-root &')}).`,
   missingTransitionProperty: () =>
-    `Transition must include explicit property names (e.g., ${formatCode(
-      'transition: opacity 0.2s'
-    )}).`,
+    `Transition must include explicit property names (e.g., ${formatCode('transition: opacity 0.2s')}).`,
   transitionAll: (prop: string) => {
-    const example =
-      prop === 'transition-property'
-        ? 'transition-property: opacity'
-        : 'transition: opacity 0.2s'
-    return `Avoid ${formatCode(
-      `${prop}: all`
-    )}. List explicit properties (e.g., ${formatCode(example)}).`
+    const example = prop === 'transition-property' ? 'transition-property: opacity' : 'transition: opacity 0.2s'
+    return `Avoid ${formatCode(`${prop}: all`)}. List explicit properties (e.g., ${formatCode(example)}).`
   },
   transitionNone: () =>
-    `${formatCode(
-      'transition: none'
-    )} / ${formatCode(
+    `${formatCode('transition: none')} / ${formatCode(
       'transition-property: none'
     )} is not allowed. Use a tiny ${formatCode(
       'transition-duration'
@@ -43,15 +30,11 @@ export const messages = createRuleMessages(ruleName, {
       prop
     )} is not allowed. Use explicit properties (no custom properties or keywords like ${formatCode(
       'inherit'
-    )}/${formatCode('initial')}/${formatCode('unset')}/${formatCode(
-      'revert'
-    )}/${formatCode('revert-layer')}).`,
+    )}/${formatCode('initial')}/${formatCode('unset')}/${formatCode('revert')}/${formatCode('revert-layer')}).`,
   initialOutsideInteraction: (prop: string, target: string, pattern: RegExp) =>
     `${formatCode(prop)} is transitioned for ${formatCode(
       target
     )}. Move its declarations into the interaction section ` +
-    `(comment matching ${formatCode(
-      'comments.interaction'
-    )}, current: ${formatPattern(pattern)}).`,
+    `(comment matching ${formatCode('comments.interaction')}, current: ${formatPattern(pattern)}).`,
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])
 })

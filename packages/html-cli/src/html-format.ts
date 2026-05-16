@@ -55,7 +55,10 @@ function normalizeClassAttributes(html: string, classAttribute: ClassAttribute):
   const shouldChangeClassName = classAttribute === 'class'
   const shouldChangeClass = classAttribute === 'className'
   const dropPlaceholders = (value: string): string =>
-    value.replace(RX.PLACEHOLDER, '').replace(/\s{2,}/g, ' ').trim()
+    value
+      .replace(RX.PLACEHOLDER, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
 
   let attributeChanged = false
   let out = html
@@ -105,9 +108,7 @@ function normalizeClassAttributes(html: string, classAttribute: ClassAttribute):
 
 const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined
-  return value
-    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
-    .map((entry) => entry.trim())
+  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
 }
 
 /* ---------- config loading ---------- */
@@ -131,9 +132,7 @@ async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFor
   let classAttribute: ClassAttribute = 'class'
   let jsxClassBindings: JsxClassBindingsConfig | undefined
   if (config && typeof config === 'object') {
-    const stylelintCfg = (config as Record<string, unknown>).stylelint as
-      | Record<string, unknown>
-      | undefined
+    const stylelintCfg = (config as Record<string, unknown>).stylelint as Record<string, unknown> | undefined
     const base = stylelintCfg?.base as Record<string, unknown> | undefined
     const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
     const baseNaming = base?.naming
@@ -146,9 +145,7 @@ async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFor
       namingSource = 'stylelint.class.naming.customPatterns'
     }
 
-    const htmlFormat = (config as Record<string, unknown>).htmlFormat as
-      | Record<string, unknown>
-      | undefined
+    const htmlFormat = (config as Record<string, unknown>).htmlFormat as Record<string, unknown> | undefined
     if (htmlFormat && typeof htmlFormat === 'object') {
       classAttribute = resolveClassAttribute(htmlFormat.classAttribute)
     }
@@ -173,7 +170,10 @@ const MAX_DEPTH = 256
  * Check whether an element has child tag elements.
  */
 function hasChildElements($: CheerioAPI, $el: Cheerio<Element>): boolean {
-  return $el.children().toArray().some((ch) => ch.type === 'tag')
+  return $el
+    .children()
+    .toArray()
+    .some((ch) => ch.type === 'tag')
 }
 
 type ClassAttr = {
@@ -518,18 +518,21 @@ Examples:
     process.exit(1)
   }
 
-  const { naming, classAttribute, namingSource, jsxClassBindings } =
-    await loadHtmlFormatOptionsFromConfig(rootDir)
-  warnInvalidCustomPatterns(naming, (message) => {
-    console.error(message)
-  }, namingSource)
+  const { naming, classAttribute, namingSource, jsxClassBindings } = await loadHtmlFormatOptionsFromConfig(rootDir)
+  warnInvalidCustomPatterns(
+    naming,
+    (message) => {
+      console.error(message)
+    },
+    namingSource
+  )
   const result = insertPlaceholdersWithInfo(html, naming, classAttribute, { jsxClassBindings })
 
   // If template syntax is detected, warn and skip writing files
   if (result.hasTemplateSyntax) {
     console.error(
       'Warning: Template syntax (EJS, Nunjucks, JSX, etc.) was detected, so processing was skipped.\n' +
-      'Use this only with static HTML fragments.'
+        'Use this only with static HTML fragments.'
     )
     // Only output original HTML for stdout (to keep pipelines working)
     // For file output, do not write to avoid updating mtime

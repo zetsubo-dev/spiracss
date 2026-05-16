@@ -4,10 +4,7 @@ type WarnReporter = (message: string) => void
 
 const CUSTOM_PATTERN_KEYS = ['block', 'element', 'modifier'] as const
 
-const formatCustomPatternKey = (
-  prefix: string,
-  key: (typeof CUSTOM_PATTERN_KEYS)[number]
-): string => `${prefix}.${key}`
+const formatCustomPatternKey = (prefix: string, key: (typeof CUSTOM_PATTERN_KEYS)[number]): string => `${prefix}.${key}`
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   if (!value || typeof value !== 'object') return false
@@ -23,9 +20,7 @@ export const warnInvalidCustomPatterns = (
   const raw = naming.customPatterns as unknown
   if (raw === undefined) return
   if (!isPlainObject(raw)) {
-    warn(
-      `WARN [INVALID_CUSTOM_PATTERN] ${prefix} must be a plain object of RegExp values. Ignored.`
-    )
+    warn(`WARN [INVALID_CUSTOM_PATTERN] ${prefix} must be a plain object of RegExp values. Ignored.`)
     return
   }
 
@@ -34,12 +29,7 @@ export const warnInvalidCustomPatterns = (
     const value = (raw as Record<string, unknown>)[key]
     if (value === undefined) return
     if (!(value instanceof RegExp)) {
-      warn(
-        `WARN [INVALID_CUSTOM_PATTERN] ${formatCustomPatternKey(
-          prefix,
-          key
-        )} must be a RegExp. Ignored.`
-      )
+      warn(`WARN [INVALID_CUSTOM_PATTERN] ${formatCustomPatternKey(prefix, key)} must be a RegExp. Ignored.`)
       return
     }
     if (value.flags.includes('g') || value.flags.includes('y')) {

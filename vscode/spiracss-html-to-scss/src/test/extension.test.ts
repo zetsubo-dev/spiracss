@@ -125,7 +125,6 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     return editor
   }
 
-
   suiteSetup(() => {
     if (fs.existsSync(configPath)) {
       originalConfig = fs.readFileSync(configPath, 'utf8')
@@ -218,7 +217,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
 
       const rootScss = fs.readFileSync(rootFile, 'utf8')
       assert.ok(
-        rootScss.includes('@use "@styles/fixtures-global" as *;'),
+        rootScss.includes("@use '@styles/fixtures-global' as *;"),
         'globalScssModule from config should be reflected'
       )
     } finally {
@@ -283,14 +282,8 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
 
       assert.ok(fs.existsSync(rootFile), 'Root SCSS should be generated for data mode')
       const rootScss = fs.readFileSync(rootFile, 'utf8')
-      assert.ok(
-        rootScss.includes('&[data-variant="primary"]'),
-        'data-variant selector should be present'
-      )
-      assert.ok(
-        rootScss.includes('&[data-state="loading"]'),
-        'data-state selector should be present'
-      )
+      assert.ok(rootScss.includes('&[data-variant="primary"]'), 'data-variant selector should be present')
+      assert.ok(rootScss.includes('&[data-state="loading"]'), 'data-state selector should be present')
     } finally {
       removePath(rootFile)
       removePath(childDir)
@@ -358,7 +351,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       const merged = fs.readFileSync(indexFile, 'utf8')
       const childUses = merged.match(/@use "ChildBox";/g) ?? []
       assert.strictEqual(childUses.length, 1, 'Existing @use entries should not be duplicated')
-      assert.ok(merged.includes('@use "ExtraBox";'), 'Missing @use entries should be added')
+      assert.ok(merged.includes("@use 'ExtraBox';"), 'Missing @use entries should be added')
     } finally {
       removePath(rootFile)
       removePath(childDir)
@@ -385,14 +378,8 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       await vscode.commands.executeCommand('extension.insertSracssPlaceholders')
 
       const updated = doc.getText()
-      assert.ok(
-        updated.includes('className="block-box"'),
-        'className output should follow htmlFormat.classAttribute'
-      )
-      assert.ok(
-        updated.includes('className="element"'),
-        'element placeholder should be inserted'
-      )
+      assert.ok(updated.includes('className="block-box"'), 'className output should follow htmlFormat.classAttribute')
+      assert.ok(updated.includes('className="element"'), 'element placeholder should be inserted')
     } finally {
       if (fs.existsSync(tempFile)) {
         fs.unlinkSync(tempFile)
@@ -453,7 +440,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
 
       const rootScss = fs.readFileSync(rootFile, 'utf8')
       assert.ok(
-        rootScss.includes('@use "@styles/esm-global" as *;'),
+        rootScss.includes("@use '@styles/esm-global' as *;"),
         'globalScssModule from ESM config should be reflected'
       )
     } finally {

@@ -159,10 +159,7 @@ describe('html-format: insertPlaceholders', () => {
       `
       const result = insertPlaceholders(html, defaultNaming)
       // u-hidden is neither Block nor Element (u- prefix is invalid); it has children, so prepend block-box
-      assert.ok(
-        result.includes('class="block-box u-hidden"'),
-        `Expected 'block-box u-hidden', got: ${result}`
-      )
+      assert.ok(result.includes('class="block-box u-hidden"'), `Expected 'block-box u-hidden', got: ${result}`)
     })
   })
 
@@ -708,10 +705,7 @@ describe('html-format: insertPlaceholders', () => {
       `
       const result = insertPlaceholders(html, defaultNaming)
       // Reorder: u-hidden block-box -> block-box u-hidden
-      assert.ok(
-        result.includes('class="block-box u-hidden"'),
-        `Expected block-box to be first, got: ${result}`
-      )
+      assert.ok(result.includes('class="block-box u-hidden"'), `Expected block-box to be first, got: ${result}`)
     })
 
     it('moves placeholder to front at root when not first', () => {
@@ -732,10 +726,7 @@ describe('html-format: insertPlaceholders', () => {
       `
       const result = insertPlaceholders(html, defaultNaming)
       // Reorder: -large element -> element -large
-      assert.ok(
-        result.includes('class="element -large"'),
-        `Expected element to be first, got: ${result}`
-      )
+      assert.ok(result.includes('class="element -large"'), `Expected element to be first, got: ${result}`)
     })
   })
 
@@ -803,13 +794,7 @@ describe('html-format: insertPlaceholders', () => {
     })
 
     it('HTML with JSX template literals and member access is processed', () => {
-      const html = [
-        '<div className={`',
-        '${styles.hero} -wide',
-        '`}>',
-        '<span></span>',
-        '</div>'
-      ].join('')
+      const html = ['<div className={`', '${styles.hero} -wide', '`}>', '<span></span>', '</div>'].join('')
       const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
       assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow static member access')
       assert.ok(
@@ -820,19 +805,10 @@ describe('html-format: insertPlaceholders', () => {
     })
 
     it('HTML with JSX template literals and string literals is processed', () => {
-      const html = [
-        '<div className={`',
-        'hero-section ${"wide"}',
-        '`}>',
-        '<span></span>',
-        '</div>'
-      ].join('')
+      const html = ['<div className={`', 'hero-section ${"wide"}', '`}>', '<span></span>', '</div>'].join('')
       const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
       assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow string literal interpolation')
-      assert.ok(
-        result.html.includes('className="hero-section wide"'),
-        'className should preserve static classes'
-      )
+      assert.ok(result.html.includes('className="hero-section wide"'), 'className should preserve static classes')
       assert.ok(result.html.includes('className="element"'), 'Should add element placeholder')
     })
 
@@ -859,10 +835,7 @@ describe('html-format: insertPlaceholders', () => {
       `
       const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
       assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow JSX bracket member binding')
-      assert.ok(
-        result.html.includes('className="kebab-case"'),
-        'className should be preserved'
-      )
+      assert.ok(result.html.includes('className="kebab-case"'), 'className should be preserved')
       assert.ok(result.html.includes('className="element"'), 'Should add element placeholder')
     })
 
@@ -1081,10 +1054,7 @@ const foo = 'bar'
       `
       const result = insertPlaceholdersWithInfo(html, defaultNaming, 'className')
       assert.strictEqual(result.hasTemplateSyntax, false, 'Should allow empty string className')
-      assert.ok(
-        result.html.includes('className="block-box"'),
-        'className should have block placeholder'
-      )
+      assert.ok(result.html.includes('className="block-box"'), 'className should have block placeholder')
     })
   })
 })

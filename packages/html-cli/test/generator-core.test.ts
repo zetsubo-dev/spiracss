@@ -49,18 +49,9 @@ describe('generator-core', () => {
 
   it('rejects customPatterns with g/y flags', () => {
     const base = { blockCase: 'kebab' as const, elementCase: 'kebab' as const }
-    assert.strictEqual(
-      classifyBaseClass('TITLE', { ...base, customPatterns: { element: /^[A-Z]+$/ } }),
-      'element'
-    )
-    assert.strictEqual(
-      classifyBaseClass('TITLE', { ...base, customPatterns: { element: /^[A-Z]+$/g } }),
-      'invalid'
-    )
-    assert.strictEqual(
-      classifyBaseClass('TITLE', { ...base, customPatterns: { element: /^[A-Z]+$/y } }),
-      'invalid'
-    )
+    assert.strictEqual(classifyBaseClass('TITLE', { ...base, customPatterns: { element: /^[A-Z]+$/ } }), 'element')
+    assert.strictEqual(classifyBaseClass('TITLE', { ...base, customPatterns: { element: /^[A-Z]+$/g } }), 'invalid')
+    assert.strictEqual(classifyBaseClass('TITLE', { ...base, customPatterns: { element: /^[A-Z]+$/y } }), 'invalid')
   })
 
   it('sanitizes HTML fixtures (baseline)', async () => {
@@ -93,8 +84,7 @@ describe('generator-core', () => {
   })
 
   it('sanitizes JSX className member expressions', () => {
-    const jsx =
-      '<div className={s.heroSection}><p className={styles["title"]}></p></div>'
+    const jsx = '<div className={s.heroSection}><p className={styles["title"]}></p></div>'
     const sanitized = sanitizeHtml(jsx)
     assert.ok(sanitized.includes('class="heroSection"'))
     assert.ok(sanitized.includes('class="title"'))
@@ -288,8 +278,7 @@ describe('generator-core', () => {
   })
 
   it('sanitizes script/style blocks', () => {
-    const html =
-      '<script>const tpl = "<body>";</script><style>/* <html> */</style><div class="hero-section"></div>'
+    const html = '<script>const tpl = "<body>";</script><style>/* <html> */</style><div class="hero-section"></div>'
     const sanitized = sanitizeHtml(html)
     assert.ok(!sanitized.includes('<script'))
     assert.ok(!sanitized.includes('<style'))
@@ -305,14 +294,8 @@ describe('generator-core', () => {
 
   it('generates expected SCSS for sample-box root and hero-header', async () => {
     const html = await fsp.readFile(path.join(fixturesDir, 'html/sample-box.html'), 'utf8')
-    const expectedRoot = await fsp.readFile(
-      path.join(fixturesDir, 'html/sample-box.scss'),
-      'utf8'
-    )
-    const expectedHero = await fsp.readFile(
-      path.join(fixturesDir, 'html/scss/hero-header.scss'),
-      'utf8'
-    )
+    const expectedRoot = await fsp.readFile(path.join(fixturesDir, 'html/sample-box.scss'), 'utf8')
+    const expectedHero = await fsp.readFile(path.join(fixturesDir, 'html/scss/hero-header.scss'), 'utf8')
 
     const generated = generateFromHtml(html, fixturesDir, true, baseOptions)
     const root = generated.find((f) => f.path === 'sample-box.scss')?.content
@@ -330,8 +313,8 @@ describe('generator-core', () => {
     const index = generated.find((f) => f.path === 'scss/index.scss')?.content
 
     assert.ok(index, 'index.scss not generated')
-    assert.ok(!index.includes('@use "sample-box";'), 'root block should not be in scss/index.scss')
-    assert.ok(index.includes('@use "hero-header";'), 'child block should be in scss/index.scss')
+    assert.ok(!index.includes("@use 'sample-box';"), 'root block should not be in scss/index.scss')
+    assert.ok(index.includes("@use 'hero-header';"), 'child block should be in scss/index.scss')
   })
 
   it('applies rootFileCase to root SCSS file name', () => {
@@ -371,7 +354,12 @@ describe('generator-core', () => {
   it('HTML lint passes for valid structure', async () => {
     const html = await fsp.readFile(path.join(fixturesDir, 'html/sample-box.html'), 'utf8')
     // Use class mode because fixtures include modifier classes
-    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }, { variant: { mode: 'class' }, state: { mode: 'class' } })
+    const issues = lintHtmlStructure(
+      html,
+      true,
+      { blockCase: 'kebab' },
+      { variant: { mode: 'class' }, state: { mode: 'class' } }
+    )
     assert.strictEqual(issues.length, 0, `Expected no issues, got: ${JSON.stringify(issues)}`)
   })
 
@@ -695,14 +683,8 @@ describe('generator-core', () => {
     const root = generated.find((f) => f.path === 'feature-card.scss')?.content
 
     assert.ok(root, 'feature-card SCSS should be generated')
-    assert.ok(
-      root.includes('&[aria-expanded="true"]'),
-      'aria-expanded "true" should be present'
-    )
-    assert.ok(
-      root.includes('&[aria-expanded="false"]'),
-      'aria-expanded "false" should be present'
-    )
+    assert.ok(root.includes('&[aria-expanded="true"]'), 'aria-expanded "true" should be present')
+    assert.ok(root.includes('&[aria-expanded="false"]'), 'aria-expanded "false" should be present')
   })
 
   it('merges multiple data-variant axes across duplicate elements', async () => {
@@ -1100,10 +1082,7 @@ describe('generator-core', () => {
       prefixes: ['swiper-']
     })
     assert.ok(
-      issues.some(
-        (i) =>
-          i.code === 'INVALID_BASE_CLASS' && i.message.includes('No Block/Element class found')
-      ),
+      issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.message.includes('No Block/Element class found')),
       'Should report missing Block/Element when only modifiers/utilities exist'
     )
   })
@@ -1112,9 +1091,7 @@ describe('generator-core', () => {
     const html = '<div><span class="hero-section"></span></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.ok(
-      issues.some(
-        (i) => i.code === 'INVALID_BASE_CLASS' && i.message.includes('Root element')
-      ),
+      issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.message.includes('Root element')),
       'Should report missing class on the first element'
     )
   })
@@ -1165,8 +1142,7 @@ describe('generator-core', () => {
   })
 
   it('HTML lint ignores html/body inside svg foreignObject', () => {
-    const html =
-      '<div class="hero-section"><svg><foreignObject><body></body></foreignObject></svg></div>'
+    const html = '<div class="hero-section"><svg><foreignObject><body></body></foreignObject></svg></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.strictEqual(issues.length, 0, 'Should ignore foreignObject content')
   })
@@ -1215,8 +1191,7 @@ describe('generator-core', () => {
   })
 
   it('HTML lint ignores html/body inside script content', () => {
-    const html =
-      '<script>const tpl = "<body>";</script><div class="hero-section"></div>'
+    const html = '<script>const tpl = "<body>";</script><div class="hero-section"></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.strictEqual(issues.length, 0, 'Should ignore script content')
   })
@@ -1258,8 +1233,7 @@ describe('generator-core', () => {
   })
 
   it('HTML lint ignores template tag names inside attributes', () => {
-    const html =
-      '<div class="hero-section" data-content="<template>"></div><template class="template-box"></template>'
+    const html = '<div class="hero-section" data-content="<template>"></div><template class="template-box"></template>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.strictEqual(issues.length, 0, 'Should ignore template tag names in attributes')
   })
@@ -1285,8 +1259,7 @@ describe('generator-core', () => {
   })
 
   it('generateFromHtml ignores template tag names inside attributes', () => {
-    const html =
-      '<div class="hero-section" data-content="<template>"></div><template class="template-box"></template>'
+    const html = '<div class="hero-section" data-content="<template>"></div><template class="template-box"></template>'
     const generated = generateFromHtml(html, fixturesDir, true, baseOptions)
     assert.ok(
       generated.some((f) => f.path === 'hero-section.scss'),
@@ -1304,8 +1277,7 @@ describe('generator-core', () => {
   })
 
   it('generateFromHtml ignores html/body inside svg foreignObject', () => {
-    const html =
-      '<div class="hero-section"><svg><foreignObject><body></body></foreignObject></svg></div>'
+    const html = '<div class="hero-section"><svg><foreignObject><body></body></foreignObject></svg></div>'
     const generated = generateFromHtml(html, fixturesDir, true, baseOptions)
     assert.ok(
       generated.some((f) => f.path === 'hero-section.scss'),
@@ -1324,10 +1296,7 @@ describe('generator-core', () => {
 
   it('generateFromHtml fails when the first element has no class', () => {
     const html = '<div><span class="hero-section"></span></div>'
-    assert.throws(
-      () => generateFromHtml(html, fixturesDir, true, baseOptions),
-      /does not have a class attribute/
-    )
+    assert.throws(() => generateFromHtml(html, fixturesDir, true, baseOptions), /does not have a class attribute/)
   })
 
   it('HTML lint treats custom modifierPrefix as modifier (not base)', () => {
@@ -1482,10 +1451,7 @@ describe('generator-core', () => {
     assert.ok(rootFile?.content.includes('&.-featured'), 'Merged output should include -featured')
     assert.ok(rootFile?.content.includes('&.-compact'), 'Merged output should include -compact')
     assert.ok(rootFile?.content.includes('> .title'), 'Merged output should include .title')
-    assert.ok(
-      rootFile?.content.includes('> .description'),
-      'Merged output should include .description'
-    )
+    assert.ok(rootFile?.content.includes('> .description'), 'Merged output should include .description')
   })
 
   it('selection mode merges 3+ duplicate root blocks', () => {
@@ -1507,10 +1473,7 @@ describe('generator-core', () => {
     assert.ok(rootFile?.content.includes('&.-compact'), 'Merged output should include -compact')
     assert.ok(rootFile?.content.includes('&.-wide'), 'Merged output should include -wide')
     assert.ok(rootFile?.content.includes('> .title'), 'Merged output should include .title')
-    assert.ok(
-      rootFile?.content.includes('> .description'),
-      'Merged output should include .description'
-    )
+    assert.ok(rootFile?.content.includes('> .description'), 'Merged output should include .description')
     assert.ok(rootFile?.content.includes('> .meta'), 'Merged output should include .meta')
   })
 
@@ -1535,10 +1498,7 @@ describe('generator-core', () => {
     assert.ok(rootFile, 'profile-card should be generated once in selection mode')
     assert.ok(rootFile?.content.includes('> .content'), 'Merged output should include .content')
     assert.ok(rootFile?.content.includes('> .title'), 'Merged output should include .title')
-    assert.ok(
-      rootFile?.content.includes('> .description'),
-      'Merged output should include .description'
-    )
+    assert.ok(rootFile?.content.includes('> .description'), 'Merged output should include .description')
     assert.ok(rootFile?.content.includes('> .meta'), 'Merged output should include .meta')
     assert.ok(rootFile?.content.includes('> .tag'), 'Merged output should include .tag')
   })

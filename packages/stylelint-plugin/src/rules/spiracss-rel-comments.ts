@@ -10,12 +10,7 @@ import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constan
 import { formatFileBase } from '../utils/formatting'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { normalizeCustomPattern } from '../utils/naming'
-import {
-  CACHE_SCHEMA,
-  COMMENTS_SCHEMA,
-  EXTERNAL_SCHEMA,
-  NAMING_SCHEMA
-} from '../utils/option-schema'
+import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import {
   getCommentText,
@@ -25,12 +20,7 @@ import {
   markSharedRules
 } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import {
   splitSelectors,
@@ -55,10 +45,7 @@ import {
   hasMetaLoadCss,
   hasRuleNodes
 } from './spiracss-rel-comments.root'
-import {
-  collectDirectChildBlocks,
-  collectRootBlockNames
-} from './spiracss-rel-comments.selectors'
+import { collectDirectChildBlocks, collectRootBlockNames } from './spiracss-rel-comments.selectors'
 import type { AliasRoots, RelComment } from './spiracss-rel-comments.types'
 
 // SpiraCSS: @rel and alias link comment rule.
@@ -139,8 +126,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
     type RuleCache = {
       options: ReturnType<typeof normalizeOptions>
       aliasRoots: AliasRoots
@@ -149,9 +135,7 @@ const rule = createRule(
       hasInvalidOptions: boolean
     }
     let cache: RuleCache | null = null
-    const getCache = (
-      reportInvalid?: (optionName: string, value: unknown, detail?: string) => void
-    ): RuleCache => {
+    const getCache = (reportInvalid?: (optionName: string, value: unknown, detail?: string) => void): RuleCache => {
       if (cache) return cache
       let hasInvalidOptions = false
       const handleInvalid = reportInvalid
@@ -163,21 +147,9 @@ const rule = createRule(
       const options = normalizeOptions(rawOptions, handleInvalid)
       const customPatterns = options.naming?.customPatterns
       if (customPatterns) {
-        normalizeCustomPattern(
-          customPatterns.block,
-          'naming.customPatterns.block',
-          handleInvalid
-        )
-        normalizeCustomPattern(
-          customPatterns.element,
-          'naming.customPatterns.element',
-          handleInvalid
-        )
-        normalizeCustomPattern(
-          customPatterns.modifier,
-          'naming.customPatterns.modifier',
-          handleInvalid
-        )
+        normalizeCustomPattern(customPatterns.block, 'naming.customPatterns.block', handleInvalid)
+        normalizeCustomPattern(customPatterns.element, 'naming.customPatterns.element', handleInvalid)
+        normalizeCustomPattern(customPatterns.modifier, 'naming.customPatterns.modifier', handleInvalid)
       }
       cache = {
         options,
@@ -231,8 +203,7 @@ const rule = createRule(
       )
       if (shouldValidate && hasInvalid) return
 
-      const { options, aliasRoots, childScssDir, commentPatterns, hasInvalidOptions } =
-        getCache(reportInvalid)
+      const { options, aliasRoots, childScssDir, commentPatterns, hasInvalidOptions } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
       const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
@@ -252,16 +223,13 @@ const rule = createRule(
       const containsRules = hasRuleNodes(root)
       const needsRulesCheck = !options.skip.noRules || containsRules
       const firstRule = getFirstRuleNode(root)
-      const projectRoot =
-        (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
+      const projectRoot = (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
       const aliasKeys = Object.keys(aliasRoots).filter((key) => {
         if (!ALIAS_KEY_PATTERN.test(key) || key === 'rel') return false
         const bases = Array.isArray(aliasRoots[key]) ? aliasRoots[key] : []
         if (bases.length === 0) return false
         const hasExistingBase = bases.some((base) => {
-          const resolvedBase = path.isAbsolute(base)
-            ? base
-            : path.resolve(projectRoot, base)
+          const resolvedBase = path.isAbsolute(base) ? base : path.resolve(projectRoot, base)
           return checkPathExists(resolvedBase)
         })
         if (!hasExistingBase) return false
@@ -283,19 +251,12 @@ const rule = createRule(
         const selectorTexts = splitSelectors(rule.selector, selectorCache)
         const localSelectors = selectorTexts
           .map((selectorText) =>
-            stripGlobalSelectorForRoot(
-              selectorText,
-              selectorCache,
-              cacheSizes.selector,
-              { preserveCombinator: true }
-            )
+            stripGlobalSelectorForRoot(selectorText, selectorCache, cacheSizes.selector, { preserveCombinator: true })
           )
           .filter((selector): selector is string => Boolean(selector))
         if (localSelectors.length === 0) return
 
-        const selectors = localSelectors.flatMap((selector) =>
-          selectorCache.parse(selector)
-        )
+        const selectors = localSelectors.flatMap((selector) => selectorCache.parse(selector))
         const rootBlocks = collectRootBlockNames(selectors, options)
         if (rootBlocks.length === 0) return
 
@@ -359,10 +320,7 @@ const rule = createRule(
         }
       })
 
-      const requiresParentRel =
-        needsRulesCheck &&
-        options.require.parent &&
-        (requiresMetaRel || requiresScssRel)
+      const requiresParentRel = needsRulesCheck && options.require.parent && (requiresMetaRel || requiresScssRel)
 
       if (requiresParentRel) {
         if (firstRootBlockRule) {
@@ -401,11 +359,7 @@ const rule = createRule(
             stripGlobalSelector(rule.selector || '', selectorCache, cacheSizes.selector, {
               preserveCombinator: true
             }) ?? ''
-          const childBlocks = collectDirectChildBlocks(
-            strippedSelector,
-            options,
-            selectorCache
-          )
+          const childBlocks = collectDirectChildBlocks(strippedSelector, options, selectorCache)
           if (childBlocks.length === 0) return
 
           const firstNode = findFirstBodyNode(rule)
@@ -437,13 +391,7 @@ const rule = createRule(
             .filter((target) => Boolean(target))
             .map((target) => ({
               baseName: path.basename(target),
-              usesChildDir: targetUsesChildDir(
-                target,
-                childScssDir,
-                baseDir,
-                projectRoot,
-                aliasRoots
-              )
+              usesChildDir: targetUsesChildDir(target, childScssDir, baseDir, projectRoot, aliasRoots)
             }))
             .filter((info) => Boolean(info.baseName))
 
@@ -533,9 +481,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

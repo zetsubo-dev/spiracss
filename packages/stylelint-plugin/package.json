@@ -26,7 +26,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=24.15.0 <25"
   },
   "types": "dist/esm/index.d.ts",
   "files": [
@@ -51,8 +51,10 @@
     "prepublishOnly": "pnpm run build",
     "pretest": "pnpm run build",
     "test": "TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx ./scripts/run-mocha.mjs \"__tests__/**/*.test.ts\"",
-    "lint": "eslint src __tests__",
-    "lint:test": "stylelint \"test/fixtures/**/*.scss\" --config stylelint.config.js"
+    "lint": "oxlint src __tests__ --quiet",
+    "lint:test": "stylelint \"test/fixtures/**/*.scss\" --config stylelint.config.js",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check ."
   },
   "dependencies": {
     "postcss-selector-parser": "^7.1.1",
@@ -64,14 +66,11 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.8.0",
+    "@types/node": "^24.12.4",
     "@types/safe-regex": "^1.1.6",
-    "@typescript-eslint/eslint-plugin": "^8.28.0",
-    "@typescript-eslint/parser": "^8.28.0",
-    "eslint": "^9.23.0",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
     "mocha": "^11.7.5",
+    "oxfmt": "^0.50.0",
+    "oxlint": "^1.65.0",
     "postcss": "^8.4.49",
     "postcss-scss": "^4.0.9",
     "stylelint": "^17.0.0",
@@ -79,5 +78,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5.6.0"
   },
-  "packageManager": "pnpm@10.29.2"
+  "packageManager": "pnpm@11.1.2"
 }

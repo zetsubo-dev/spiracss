@@ -1,11 +1,6 @@
 import safeRegex from 'safe-regex'
 
-import type {
-  NormalizedSelectorPolicyBase,
-  SelectorPolicyBase,
-  StateMode,
-  VariantMode
-} from '../types'
+import type { NormalizedSelectorPolicyBase, SelectorPolicyBase, StateMode, VariantMode } from '../types'
 
 const DEBUG_ENV = 'SPIRACSS_DEBUG'
 
@@ -25,11 +20,7 @@ const reportNormalizeError = (label: string, value: unknown): void => {
   console.warn(`[spiracss] Invalid ${label}: ${detail}`)
 }
 
-export type InvalidOptionReporter = (
-  optionName: string,
-  value: unknown,
-  detail?: string
-) => void
+export type InvalidOptionReporter = (optionName: string, value: unknown, detail?: string) => void
 
 export const normalizeCommentPattern = (
   pattern: unknown,
@@ -71,11 +62,7 @@ export const normalizeCommentPattern = (
   return fallback
 }
 
-export const normalizeBoolean = (
-  value: unknown,
-  fallback: boolean,
-  options?: { coerce?: boolean }
-): boolean => {
+export const normalizeBoolean = (value: unknown, fallback: boolean, options?: { coerce?: boolean }): boolean => {
   if (value === undefined) return fallback
   if (options?.coerce) {
     if (typeof value === 'boolean') return value
@@ -96,10 +83,7 @@ export const normalizeString = (value: unknown, fallback: string): string => {
   return trimmed ? trimmed : fallback
 }
 
-export const normalizeStringArray = (
-  value: unknown,
-  fallback: string[]
-): string[] => {
+export const normalizeStringArray = (value: unknown, fallback: string[]): string[] => {
   if (!Array.isArray(value)) return fallback
   if (value.length === 0) return []
   const normalized = value
@@ -160,18 +144,14 @@ export const normalizeSelectorPolicyBase = (
   const variantModeRaw = variant.mode
   const hasVariantMode = Object.prototype.hasOwnProperty.call(variant, 'mode')
   if (hasVariantMode && variantModeRaw !== 'data' && variantModeRaw !== 'class') {
-    throw new Error(
-      `[spiracss] selectorPolicy.variant.mode must be "data" or "class".`
-    )
+    throw new Error(`[spiracss] selectorPolicy.variant.mode must be "data" or "class".`)
   }
   const variantMode: VariantMode = variantModeRaw ?? defaults.variant.mode
 
   const stateModeRaw = state.mode
   const hasStateMode = Object.prototype.hasOwnProperty.call(state, 'mode')
   if (hasStateMode && stateModeRaw !== 'data' && stateModeRaw !== 'class') {
-    throw new Error(
-      `[spiracss] selectorPolicy.state.mode must be "data" or "class".`
-    )
+    throw new Error(`[spiracss] selectorPolicy.state.mode must be "data" or "class".`)
   }
   const stateMode: StateMode = stateModeRaw ?? defaults.state.mode
 
@@ -203,9 +183,7 @@ export const normalizeSelectorPolicyBase = (
   }
 }
 
-const cloneSelectorPolicyBase = (
-  defaults: NormalizedSelectorPolicyBase
-): NormalizedSelectorPolicyBase => ({
+const cloneSelectorPolicyBase = (defaults: NormalizedSelectorPolicyBase): NormalizedSelectorPolicyBase => ({
   variant: {
     mode: defaults.variant.mode,
     dataKeys: [...defaults.variant.dataKeys]

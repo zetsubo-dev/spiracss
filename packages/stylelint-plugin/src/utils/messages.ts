@@ -11,12 +11,7 @@ export const SELECTOR_PARSE_FAILED =
   'Failed to parse one or more selectors, so some checks were skipped. ' +
   'Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors.'
 
-export type RuleMessageArg =
-  | string
-  | number
-  | boolean
-  | RegExp
-  | Array<string | RegExp>
+export type RuleMessageArg = string | number | boolean | RegExp | Array<string | RegExp>
 
 export type RuleMessageArgs = RuleMessageArg[]
 
@@ -36,19 +31,12 @@ const appendDocsLink = (message: string, ruleName: string, messageKey?: string):
 
 type RuleMessageValue = string | ((...args: unknown[]) => string)
 
-export const createRuleMessages = <T extends Record<string, unknown>>(
-  ruleName: string,
-  messages: T
-): T => {
+export const createRuleMessages = <T extends Record<string, unknown>>(ruleName: string, messages: T): T => {
   const wrapped: Record<string, RuleMessageValue> = {}
   for (const [key, value] of Object.entries(messages)) {
     if (typeof value === 'function') {
       wrapped[key] = (...args: unknown[]) =>
-        appendDocsLink(
-          (value as (...args: unknown[]) => string)(...args),
-          ruleName,
-          key
-        )
+        appendDocsLink((value as (...args: unknown[]) => string)(...args), ruleName, key)
       continue
     }
     wrapped[key] = appendDocsLink(value as string, ruleName, key)
@@ -64,9 +52,7 @@ const normalizeSelectorExample = (example: RuleMessageArg | undefined): string |
   if (typeof example === 'number' || typeof example === 'boolean') return String(example)
   if (example instanceof RegExp) return example.toString()
   if (Array.isArray(example)) {
-    return example
-      .map((entry) => (entry instanceof RegExp ? entry.toString() : String(entry)))
-      .join(', ')
+    return example.map((entry) => (entry instanceof RegExp ? entry.toString() : String(entry))).join(', ')
   }
   return String(example)
 }
@@ -79,9 +65,7 @@ export const formatSelectorParseFailed = (example?: RuleMessageArg): string => {
   })}.`
 }
 
-export const selectorParseFailedArgs = (
-  example?: string | null
-): RuleMessageArgs => (example ? [example] : [])
+export const selectorParseFailedArgs = (example?: string | null): RuleMessageArgs => (example ? [example] : [])
 
 const trimTo = (value: string, maxChars: number): string => {
   if (maxChars <= 0) return ''
@@ -91,16 +75,11 @@ const trimTo = (value: string, maxChars: number): string => {
 }
 
 export const escapeInlineCode = (value: string): string => {
-  const normalized = String(value)
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
+  const normalized = String(value).replace(/\r\n/g, '\n').replace(/\r/g, '\n')
   return normalized.replace(/`/g, '\\`').replace(/\n/g, '\\n')
 }
 
-export const formatCode = (
-  value: string,
-  options?: { maxChars?: number }
-): string => {
+export const formatCode = (value: string, options?: { maxChars?: number }): string => {
   const maxChars = options?.maxChars ?? DEFAULT_CODE_MAX_CHARS
   const escaped = escapeInlineCode(value)
   // Keep inline-code formatting even for empty/disabled outputs.
@@ -108,10 +87,7 @@ export const formatCode = (
   return `\`${trimTo(escaped, maxChars)}\``
 }
 
-export const formatPattern = (
-  pattern: RegExp | string,
-  options?: { maxChars?: number }
-): string => {
+export const formatPattern = (pattern: RegExp | string, options?: { maxChars?: number }): string => {
   const value = typeof pattern === 'string' ? pattern : pattern.toString()
   return formatCode(value, options)
 }
@@ -124,10 +100,7 @@ type FormatListOptions = {
   emptyValue?: string
 }
 
-export const formatList = (
-  items: Array<string | RegExp>,
-  options?: FormatListOptions
-): string => {
+export const formatList = (items: Array<string | RegExp>, options?: FormatListOptions): string => {
   // maxChars is a soft ceiling; the +2 keeps backticks/suffixes readable.
   const {
     maxItems = DEFAULT_LIST_MAX_ITEMS,
@@ -149,10 +122,7 @@ export const formatList = (
 
   const maxCount = Math.max(
     1,
-    Math.min(
-      maxItems,
-      Math.floor((softMaxChars + separator.length) / (minItemFootprint + separator.length))
-    )
+    Math.min(maxItems, Math.floor((softMaxChars + separator.length) / (minItemFootprint + separator.length)))
   )
   const totalCount = items.length
   const values: string[] = []
@@ -161,9 +131,7 @@ export const formatList = (
     values.push(item instanceof RegExp ? item.toString() : String(item))
   }
   const buildItems = (count: number, perItemChars: number): string[] =>
-    values
-      .slice(0, count)
-      .map((value) => formatCode(value, { maxChars: perItemChars }))
+    values.slice(0, count).map((value) => formatCode(value, { maxChars: perItemChars }))
 
   const suffixVariants = (remaining: number): string[] => [
     `... (+${remaining} more)`,
@@ -177,17 +145,10 @@ export const formatList = (
     const variants = remaining > 0 ? suffixVariants(remaining) : ['']
 
     for (const suffixText of variants) {
-      const suffixToken =
-        remaining > 0 ? formatCode(suffixText, { maxChars: softMaxChars }) : ''
+      const suffixToken = remaining > 0 ? formatCode(suffixText, { maxChars: softMaxChars }) : ''
       if (remaining > 0 && !suffixToken.includes(String(remaining))) continue
-      const suffixPart =
-        remaining > 0
-          ? count > 0
-            ? `${separator}${suffixToken}`
-            : suffixToken
-          : ''
-      const availableForItems =
-        softMaxChars - suffixPart.length - separatorsLength - codeOverhead * count
+      const suffixPart = remaining > 0 ? (count > 0 ? `${separator}${suffixToken}` : suffixToken) : ''
+      const availableForItems = softMaxChars - suffixPart.length - separatorsLength - codeOverhead * count
       if (count === 0) {
         // When no items fit, return only the remaining-count suffix.
         if (suffixPart.length <= softMaxChars) {
@@ -196,10 +157,7 @@ export const formatList = (
         continue
       }
       if (availableForItems < count * minimumItemChars) continue
-      const perItemChars = Math.min(
-        maxItemCharsForList,
-        Math.floor(availableForItems / count)
-      )
+      const perItemChars = Math.min(maxItemCharsForList, Math.floor(availableForItems / count))
       if (perItemChars < minimumItemChars) continue
       const formattedItems = buildItems(count, perItemChars)
       const output = formattedItems.join(separator) + suffixPart
@@ -218,10 +176,7 @@ export const formatList = (
   return formatCode(fallbackSuffix, { maxChars: Math.max(1, maxChars) })
 }
 
-export const formatConfigList = (
-  items: Array<string | RegExp>,
-  options?: FormatListOptions
-): string => {
+export const formatConfigList = (items: Array<string | RegExp>, options?: FormatListOptions): string => {
   const maxItems = options?.maxItems ?? Math.max(items.length, 1)
   return formatList(items, { ...options, maxItems })
 }

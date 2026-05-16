@@ -6,7 +6,7 @@ import selectorParser, {
   type Selector
 } from 'postcss-selector-parser'
 
-import { createSharedCacheAccessor,DEFAULT_CACHE_SIZE } from './cache'
+import { createSharedCacheAccessor, DEFAULT_CACHE_SIZE } from './cache'
 
 export type SelectorSummary = {
   classes: ClassName[]
@@ -135,9 +135,7 @@ export const createSelectorParserCache = (
   return { parse }
 }
 
-export const createSelectorCacheWithErrorFlag = (
-  maxSize = DEFAULT_CACHE_SIZE
-): SelectorParseTracker => {
+export const createSelectorCacheWithErrorFlag = (maxSize = DEFAULT_CACHE_SIZE): SelectorParseTracker => {
   let hasError = false
   let errorSelector: string | null = null
   const cache = createSelectorParserCache((selector) => {
@@ -213,10 +211,7 @@ export const collectCompoundSegments = (sel: Selector): CompoundSegment[] => {
   return compounds
 }
 
-export const collectCompoundNodes = (
-  sel: Selector,
-  options?: CompoundNodesOptions
-): CompoundNodes[] => {
+export const collectCompoundNodes = (sel: Selector, options?: CompoundNodesOptions): CompoundNodes[] => {
   const sameElementPseudos = options?.sameElementPseudos ?? DEFAULT_SAME_ELEMENT_PSEUDOS
   const compounds: CompoundNodes[] = []
   let current: CompoundNodes = { classes: [], attributes: [], hasNesting: false }

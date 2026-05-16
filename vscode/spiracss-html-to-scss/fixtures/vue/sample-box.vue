@@ -19,26 +19,13 @@
       >
         <h2 class="title">{{ feature.title }}</h2>
         <p class="body">{{ feature.body }}</p>
-        <button
-          v-if="feature.primary"
-          class="button"
-        >
-          Primary action
-        </button>
+        <button v-if="feature.primary" class="button">Primary action</button>
       </article>
     </div>
 
-    <section
-      v-if="showCta"
-      class="cta-section"
-    >
+    <section v-if="showCta" class="cta-section">
       <p class="body">Call to action text.</p>
-      <a
-        class="button"
-        :href="ctaHref"
-      >
-        Go somewhere
-      </a>
+      <a class="button" :href="ctaHref"> Go somewhere </a>
     </section>
   </section>
 </template>

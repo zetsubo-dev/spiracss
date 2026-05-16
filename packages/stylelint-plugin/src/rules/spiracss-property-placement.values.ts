@@ -12,11 +12,7 @@ export type PositionValueParseResult =
   | { status: 'skip' }
 
 type ValueTokenHelpers = {
-  checkMarginSide: (
-    prop: string,
-    value: string,
-    marginSide: 'top' | 'bottom'
-  ) => MarginSideCheckResult
+  checkMarginSide: (prop: string, value: string, marginSide: 'top' | 'bottom') => MarginSideCheckResult
   parsePositionValue: (value: string) => PositionValueParseResult
   isZeroMinSize: (prop: string, value: string) => boolean
 }
@@ -27,12 +23,7 @@ const POSITION_KEYWORDS = new Set(['static', 'relative', 'absolute', 'fixed', 's
 // CSS-wide keywords + initial: skip validation to allow intentional resets.
 const POSITION_SKIP_KEYWORDS = new Set([...GLOBAL_VALUE_KEYWORDS, 'initial'])
 
-const MIN_SIZE_PROP_NAMES = new Set([
-  'min-width',
-  'min-height',
-  'min-inline-size',
-  'min-block-size'
-])
+const MIN_SIZE_PROP_NAMES = new Set(['min-width', 'min-height', 'min-inline-size', 'min-block-size'])
 
 const NUMBER_WITH_UNIT_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[a-z%]+)?$/i
 
@@ -45,10 +36,7 @@ const isZeroNumeric = (value: string): boolean => {
   return Number.isFinite(parsed) && parsed === 0
 }
 
-const getMarginTargetIndex = (
-  count: number,
-  targetSide: 'top' | 'bottom'
-): number | null => {
+const getMarginTargetIndex = (count: number, targetSide: 'top' | 'bottom'): number | null => {
   if (count === 1 || count === 2) {
     return 0
   }
@@ -58,10 +46,7 @@ const getMarginTargetIndex = (
   return null
 }
 
-const getMarginBlockTargetIndex = (
-  count: number,
-  targetSide: 'top' | 'bottom'
-): number | null => {
+const getMarginBlockTargetIndex = (count: number, targetSide: 'top' | 'bottom'): number | null => {
   if (count === 1) return 0
   if (count === 2) return targetSide === 'top' ? 0 : 1
   return null
@@ -69,10 +54,7 @@ const getMarginBlockTargetIndex = (
 
 const createValueTokenCache = (): Map<string, ValueTokenResult> => new Map()
 
-const collectValueTokens = (
-  raw: string,
-  cache: Map<string, ValueTokenResult>
-): ValueTokenResult => {
+const collectValueTokens = (raw: string, cache: Map<string, ValueTokenResult>): ValueTokenResult => {
   const cached = cache.get(raw)
   if (cached) return cached
 
@@ -133,11 +115,7 @@ export const createValueTokenHelpers = (): ValueTokenHelpers => {
   const isZeroMinSize = (prop: string, value: string): boolean =>
     MIN_SIZE_PROP_NAMES.has(prop) && isZeroOnlyValue(value, cache)
 
-  const checkMarginSide = (
-    prop: string,
-    value: string,
-    marginSide: 'top' | 'bottom'
-  ): MarginSideCheckResult => {
+  const checkMarginSide = (prop: string, value: string, marginSide: 'top' | 'bottom'): MarginSideCheckResult => {
     const { tokens, hasInvalidSeparator } = collectValueTokens(value, cache)
     if (hasInvalidSeparator || tokens.length === 0) return 'skip'
     if (tokens.length === 1 && tokens[0].type === 'word') {

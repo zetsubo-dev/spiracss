@@ -1,10 +1,6 @@
 import type { CacheSizes, NamingOptions, NormalizedCacheSizes } from '../types'
 import { normalizeCacheSizes } from './cache'
-import {
-  type InvalidOptionReporter,
-  normalizeCommentPattern,
-  normalizeStringArray
-} from './normalize'
+import { type InvalidOptionReporter, normalizeCommentPattern, normalizeStringArray } from './normalize'
 
 type CommonOptionsInput = Partial<{
   comments: {
@@ -38,8 +34,7 @@ type NormalizedCommonOptions<T extends CommonOptionsDefaults> = {
   [K in keyof T]-?: CommonOptionValues[K & keyof CommonOptionValues]
 }
 
-const hasOwn = (value: object, key: string): boolean =>
-  Object.prototype.hasOwnProperty.call(value, key)
+const hasOwn = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key)
 
 export const normalizeCommonOptions = <T extends CommonOptionsDefaults>(
   raw: CommonOptionsInput,
@@ -53,12 +48,7 @@ export const normalizeCommonOptions = <T extends CommonOptionsDefaults>(
   if (hasOwn(defaults, 'comments')) {
     const fallback = defaults.comments as CommonOptionValues['comments']
     result.comments = {
-      shared: normalizeCommentPattern(
-        rawComments?.shared,
-        fallback.shared,
-        'comments.shared',
-        reportInvalid
-      ),
+      shared: normalizeCommentPattern(rawComments?.shared, fallback.shared, 'comments.shared', reportInvalid),
       interaction: normalizeCommentPattern(
         rawComments?.interaction,
         fallback.interaction,

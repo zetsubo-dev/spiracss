@@ -17,18 +17,11 @@ const defaultOptions: Options = {
   cache: DEFAULT_CACHE_SIZES
 }
 
-export const normalizeOptions = (
-  opt: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (opt: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
   const raw = opt as Partial<Options> & {
     comments?: { shared?: RegExp | string; interaction?: RegExp | string }
     cache?: CacheSizes
   }
-  return normalizeCommonOptions(
-    raw,
-    pickCommonDefaults(defaultOptions),
-    reportInvalid
-  ) as Options
+  return normalizeCommonOptions(raw, pickCommonDefaults(defaultOptions), reportInvalid) as Options
 }

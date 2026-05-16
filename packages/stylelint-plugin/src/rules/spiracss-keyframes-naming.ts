@@ -7,29 +7,12 @@ import type { NamingOptions, WordCase } from '../types'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
-import {
-  isAtRule,
-  isComment,
-  isInsideKeyframes,
-  isKeyframesAtRule
-} from '../utils/postcss-helpers'
+import { isAtRule, isComment, isInsideKeyframes, isKeyframesAtRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isRuleInRootScope } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
-import {
-  isBoolean,
-  isNumber,
-  isPlainObject,
-  isRegExp,
-  isString,
-  isStringArray
-} from '../utils/validate'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
+import { isBoolean, isNumber, isPlainObject, isRegExp, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import type { Options as ClassStructureOptions } from './spiracss-class-structure.types'
@@ -65,8 +48,7 @@ const optionSchema = {
   ...CACHE_SCHEMA
 }
 
-const resolveActionCase = (naming?: NamingOptions): WordCase =>
-  naming?.blockCase ?? 'kebab'
+const resolveActionCase = (naming?: NamingOptions): WordCase => naming?.blockCase ?? 'kebab'
 
 const actionPattern = (actionCase: WordCase, maxWords: number): RegExp => {
   const count = Math.max(1, Math.min(maxWords, 3))
@@ -78,14 +60,12 @@ const actionPattern = (actionCase: WordCase, maxWords: number): RegExp => {
     }
     case 'camel': {
       const head = '[a-z][a-z0-9]*'
-      const rest =
-        count > 1 ? `(?:[A-Z][a-zA-Z0-9]*){0,${count - 1}}` : ''
+      const rest = count > 1 ? `(?:[A-Z][a-zA-Z0-9]*){0,${count - 1}}` : ''
       return new RegExp(`^${head}${rest}$`)
     }
     case 'pascal': {
       const head = '[A-Z][a-z0-9]*'
-      const rest =
-        count > 1 ? `(?:[A-Z][a-zA-Z0-9]*){0,${count - 1}}` : ''
+      const rest = count > 1 ? `(?:[A-Z][a-zA-Z0-9]*){0,${count - 1}}` : ''
       return new RegExp(`^${head}${rest}$`)
     }
     case 'kebab':
@@ -145,33 +125,19 @@ const resolveRootBlockName = (
     const selectorTexts = splitSelectors(rule.selector, selectorCache)
     const localSelectors = selectorTexts
       .map((selectorText) =>
-        stripGlobalSelectorForRoot(
-          selectorText,
-          selectorCache,
-          options.cache.selector,
-          { preserveCombinator: true }
-        )
+        stripGlobalSelectorForRoot(selectorText, selectorCache, options.cache.selector, { preserveCombinator: true })
       )
       .filter((selectorText): selectorText is string => Boolean(selectorText))
     if (localSelectors.length === 0) return
-    const selectors = localSelectors.flatMap((selectorText) =>
-      selectorCache.parse(selectorText)
-    )
-    const rootBlocks = collectRootBlockNames(
-      selectors,
-      options as unknown as ClassStructureOptions,
-      patterns
-    )
+    const selectors = localSelectors.flatMap((selectorText) => selectorCache.parse(selectorText))
+    const rootBlocks = collectRootBlockNames(selectors, options as unknown as ClassStructureOptions, patterns)
     if (rootBlocks.length === 0) return
     rootBlock = rootBlocks[0]
   })
   return rootBlock
 }
 
-const resolveFileBlockName = (
-  filePath: string,
-  patterns: ReturnType<typeof buildPatterns>
-): string | null => {
+const resolveFileBlockName = (filePath: string, patterns: ReturnType<typeof buildPatterns>): string | null => {
   if (!filePath) return null
   const parsed = path.parse(filePath)
   const base = parsed.name
@@ -201,18 +167,11 @@ const collectElementNames = (
     const selectorTexts = splitSelectors(selector, selectorCache)
     const localSelectors = selectorTexts
       .map((selectorText) =>
-        stripGlobalSelectorForRoot(
-          selectorText,
-          selectorCache,
-          options.cache.selector,
-          { preserveCombinator: true }
-        )
+        stripGlobalSelectorForRoot(selectorText, selectorCache, options.cache.selector, { preserveCombinator: true })
       )
       .filter((selectorText): selectorText is string => Boolean(selectorText))
     if (localSelectors.length === 0) return
-    const selectors = localSelectors.flatMap((selectorText) =>
-      selectorCache.parse(selectorText)
-    )
+    const selectors = localSelectors.flatMap((selectorText) => selectorCache.parse(selectorText))
     selectors.forEach((sel) => {
       sel.walkClasses((node) => {
         const name = node.value
@@ -230,11 +189,7 @@ const getSharedPrefix = (name: string, prefixes: string[]): string | null => {
   return found ?? null
 }
 
-const validateSharedName = (
-  name: string,
-  prefix: string,
-  actionRe: RegExp
-): boolean => {
+const validateSharedName = (name: string, prefix: string, actionRe: RegExp): boolean => {
   const rest = name.slice(prefix.length)
   return actionRe.test(rest)
 }
@@ -270,8 +225,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
 
     return (root: Root, result: stylelint.PostcssResult) => {
       const shouldValidate = result.stylelint?.config?.validate !== false
@@ -308,8 +262,7 @@ const rule = createRule(
         ['sharedFiles', 'ignoreFiles', 'ignorePatterns'],
         isStringOrRegExpArray,
         reportInvalid,
-        (optionName) =>
-          `[spiracss] ${optionName} must be an array of strings or RegExp instances.`
+        (optionName) => `[spiracss] ${optionName} must be an array of strings or RegExp instances.`
       )
       if (shouldValidate && hasInvalidArray) return
       const hasInvalidPrefixes = validateOptionsArrayFields(
@@ -328,12 +281,7 @@ const rule = createRule(
       const fromPath = resolveInputPath(resultOptions?.from)
       const rootFromPath = resolveInputPath(root.source?.input?.from)
       const rootFilePath = resolveInputPath(root.source?.input?.file)
-      const filePath: string =
-        fromPath ||
-        resultOptions?.codeFilename ||
-        rootFilePath ||
-        rootFromPath ||
-        ''
+      const filePath: string = fromPath || resultOptions?.codeFilename || rootFilePath || rootFromPath || ''
       const normalizedPath = normalizePath(filePath)
       if (options.ignore.files.length > 0 && matchAny(normalizedPath, options.ignore.files)) {
         return
@@ -341,23 +289,14 @@ const rule = createRule(
       const cacheSizes = options.cache
       const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
       const selectorCache = selectorState.cache
-      const patterns = buildPatterns(
-        options as unknown as ClassStructureOptions,
-        options.cache,
-        reportInvalid
-      )
+      const patterns = buildPatterns(options as unknown as ClassStructureOptions, options.cache, reportInvalid)
       const elementNames = collectElementNames(root, selectorCache, options, patterns)
       const sharedFiles = options.shared.files
       const ignorePatterns = options.ignore.patterns
 
       const rootBlockName =
-        options.block.source === 'file'
-          ? null
-          : resolveRootBlockName(root, selectorCache, options, patterns)
-      const fileBlockName =
-        options.block.source === 'selector'
-          ? null
-          : resolveFileBlockName(filePath, patterns)
+        options.block.source === 'file' ? null : resolveRootBlockName(root, selectorCache, options, patterns)
+      const fileBlockName = options.block.source === 'selector' ? null : resolveFileBlockName(filePath, patterns)
       const blockName =
         options.block.source === 'selector'
           ? rootBlockName
@@ -412,12 +351,7 @@ const rule = createRule(
               ruleName,
               result,
               node,
-              message: messages.invalidSharedName(
-                name,
-                sharedPrefix,
-                actionCase,
-                options.action.maxWords
-              )
+              message: messages.invalidSharedName(name, sharedPrefix, actionCase, options.action.maxWords)
             })
           }
           return
@@ -442,12 +376,7 @@ const rule = createRule(
             ruleName,
             result,
             node,
-            message: messages.invalidName(
-              name,
-              blockName ?? '(unknown)',
-              actionCase,
-              options.action.maxWords
-            )
+            message: messages.invalidName(name, blockName ?? '(unknown)', actionCase, options.action.maxWords)
           })
         }
       })
@@ -457,9 +386,7 @@ const rule = createRule(
           ruleName,
           result,
           node: root,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

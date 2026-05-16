@@ -1,6 +1,6 @@
 // JSX ライクなテンプレートリテラル + フラグメントのフィクスチャ
 
-<>
+;<>
   {/* JSX fragment + コメント */}
   <section class={`sample-box ${isDark ? '-dark' : ''}`}>
     <header className="hero-header">

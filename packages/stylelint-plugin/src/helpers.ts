@@ -173,15 +173,10 @@ type SpiracssConfig = {
   }
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 const isFileNameCase = (value: unknown): value is FileNameCase =>
-  value === 'preserve' ||
-  value === 'kebab' ||
-  value === 'snake' ||
-  value === 'camel' ||
-  value === 'pascal'
+  value === 'preserve' || value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
 
 const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
   if (typeof value === 'string' && isFileNameCase(value)) {
@@ -229,8 +224,7 @@ const createConfigRequiredError = (): Error =>
 
 const createConfigLoadError = (source: string, cause?: unknown): Error => {
   const error = new Error(
-    `Failed to load spiracss.config.js: ${source}\n\n` +
-      `Ensure the config file format is valid.`
+    `Failed to load spiracss.config.js: ${source}\n\n` + `Ensure the config file format is valid.`
   )
   if (cause !== undefined) {
     ;(error as Error & { cause?: unknown }).cause = cause
@@ -257,9 +251,7 @@ type ConfigTarget = {
   spiracss?: SpiracssConfig
 }
 
-const resolveConfigTarget = (
-  configPathOrConfig?: string | SpiracssConfig
-): ConfigTarget => {
+const resolveConfigTarget = (configPathOrConfig?: string | SpiracssConfig): ConfigTarget => {
   if (!configPathOrConfig || typeof configPathOrConfig === 'string') {
     const resolvedPath = configPathOrConfig || './spiracss.config.js'
     const absolutePath = path.resolve(resolvedPath)
@@ -274,17 +266,8 @@ const ensureConfigFileExists = (absolutePath: string): void => {
     hasConfig = fs.existsSync(absolutePath)
   } catch (error) {
     const code = getErrorCode(error)
-    if (
-      code === 'EACCES' ||
-      code === 'EPERM' ||
-      code === 'ELOOP' ||
-      code === 'ENOTDIR' ||
-      code === 'EISDIR'
-    ) {
-      throw new Error(
-        `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-          `Check permissions and path state.`
-      )
+    if (code === 'EACCES' || code === 'EPERM' || code === 'ELOOP' || code === 'ENOTDIR' || code === 'EISDIR') {
+      throw new Error(`Cannot access spiracss.config.js: ${absolutePath}\n\n` + `Check permissions and path state.`)
     }
     throw error
   }
@@ -309,9 +292,7 @@ const finalizeConfig = (
   return { spiracss, configSource }
 }
 
-const resolveSpiracssConfig = (
-  config: SpiracssConfig
-): { spiracss: SpiracssConfig; configSource: string } => {
+const resolveSpiracssConfig = (config: SpiracssConfig): { spiracss: SpiracssConfig; configSource: string } => {
   if (!config || typeof config === 'string') {
     throw createConfigRequiredError()
   }
@@ -361,12 +342,8 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
 }
 
 const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
-  const stylelint =
-    spiracss.stylelint && typeof spiracss.stylelint === 'object'
-      ? spiracss.stylelint
-      : undefined
-  const base =
-    stylelint?.base && typeof stylelint.base === 'object' ? stylelint.base : undefined
+  const stylelint = spiracss.stylelint && typeof spiracss.stylelint === 'object' ? spiracss.stylelint : undefined
+  const base = stylelint?.base && typeof stylelint.base === 'object' ? stylelint.base : undefined
   const interactionScopeConfig =
     stylelint?.interactionScope && typeof stylelint.interactionScope === 'object'
       ? stylelint.interactionScope
@@ -375,25 +352,15 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
     stylelint?.interactionProps && typeof stylelint.interactionProps === 'object'
       ? stylelint.interactionProps
       : undefined
-  const generator =
-    spiracss.generator && typeof spiracss.generator === 'object'
-      ? spiracss.generator
-      : undefined
+  const generator = spiracss.generator && typeof spiracss.generator === 'object' ? spiracss.generator : undefined
   const fileCaseConfig = resolveFileCaseConfig(spiracss.fileCase)
 
-  const mergeObjects = <T extends object>(
-    baseValue?: Partial<T>,
-    override?: Partial<T>
-  ): Partial<T> | undefined => {
+  const mergeObjects = <T extends object>(baseValue?: Partial<T>, override?: Partial<T>): Partial<T> | undefined => {
     if (!baseValue && !override) return undefined
     return { ...(baseValue ?? {}), ...(override ?? {}) }
   }
 
-  const assignIfDefined = <T extends object, K extends keyof T>(
-    target: T,
-    key: K,
-    value: T[K] | undefined
-  ): void => {
+  const assignIfDefined = <T extends object, K extends keyof T>(target: T, key: K, value: T[K] | undefined): void => {
     if (value !== undefined) {
       target[key] = value
     }
@@ -415,16 +382,8 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
         : undefined
 
   const classConfig = { ...(stylelint?.class ?? {}) }
-  assignIfDefined(
-    classConfig,
-    'comments',
-    mergeObjects<CommentConfig>(baseComments, classConfig.comments)
-  )
-  assignIfDefined(
-    classConfig,
-    'external',
-    mergeObjects<ExternalConfig>(baseExternal, classConfig.external)
-  )
+  assignIfDefined(classConfig, 'comments', mergeObjects<CommentConfig>(baseComments, classConfig.comments))
+  assignIfDefined(classConfig, 'external', mergeObjects<ExternalConfig>(baseExternal, classConfig.external))
   if (classConfig.naming === undefined) {
     assignIfDefined(classConfig, 'naming', baseNaming)
   }
@@ -460,19 +419,12 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const sharedNaming = baseNaming ?? classConfig.naming
-  const sharedExternal = mergeObjects<ExternalConfig>(
-    baseExternal,
-    classConfig.external
-  )
+  const sharedExternal = mergeObjects<ExternalConfig>(baseExternal, classConfig.external)
 
   const pageLayerConfig = { ...(stylelint?.pageLayer ?? {}) }
   const pageLayerEnabled = pageLayerConfig.enabled !== false
   delete pageLayerConfig.enabled
-  assignIfDefined(
-    pageLayerConfig,
-    'external',
-    mergeObjects<ExternalConfig>(sharedExternal, pageLayerConfig.external)
-  )
+  assignIfDefined(pageLayerConfig, 'external', mergeObjects<ExternalConfig>(sharedExternal, pageLayerConfig.external))
   if (pageLayerConfig.naming === undefined) {
     assignIfDefined(pageLayerConfig, 'naming', sharedNaming)
   }
@@ -493,16 +445,8 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const placementConfig = { ...(stylelint?.placement ?? {}) }
-  assignIfDefined(
-    placementConfig,
-    'comments',
-    mergeObjects<CommentConfig>(baseComments, placementConfig.comments)
-  )
-  assignIfDefined(
-    placementConfig,
-    'external',
-    mergeObjects<ExternalConfig>(sharedExternal, placementConfig.external)
-  )
+  assignIfDefined(placementConfig, 'comments', mergeObjects<CommentConfig>(baseComments, placementConfig.comments))
+  assignIfDefined(placementConfig, 'external', mergeObjects<ExternalConfig>(sharedExternal, placementConfig.external))
   if (placementConfig.naming === undefined) {
     assignIfDefined(placementConfig, 'naming', sharedNaming)
   }
@@ -518,11 +462,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const interactionScope = { ...(interactionScopeConfig ?? {}) }
-  assignIfDefined(
-    interactionScope,
-    'comments',
-    mergeObjects<CommentConfig>(baseComments, interactionScope.comments)
-  )
+  assignIfDefined(interactionScope, 'comments', mergeObjects<CommentConfig>(baseComments, interactionScope.comments))
   const interactionPolicy = interactionScope.selectorPolicy ?? basePolicy
   if (interactionPolicy !== undefined) {
     interactionScope.selectorPolicy = interactionPolicy
@@ -532,16 +472,8 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const interactionProps = { ...(interactionPropsConfig ?? {}) }
-  assignIfDefined(
-    interactionProps,
-    'comments',
-    mergeObjects<CommentConfig>(baseComments, interactionProps.comments)
-  )
-  assignIfDefined(
-    interactionProps,
-    'external',
-    mergeObjects<ExternalConfig>(sharedExternal, interactionProps.external)
-  )
+  assignIfDefined(interactionProps, 'comments', mergeObjects<CommentConfig>(baseComments, interactionProps.comments))
+  assignIfDefined(interactionProps, 'external', mergeObjects<ExternalConfig>(sharedExternal, interactionProps.external))
   if (interactionProps.naming === undefined) {
     assignIfDefined(interactionProps, 'naming', sharedNaming)
   }
@@ -552,11 +484,7 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   const keyframesConfig = { ...(stylelint?.keyframes ?? {}) }
   const keyframesEnabled = keyframesConfig.enabled !== false
   delete keyframesConfig.enabled
-  assignIfDefined(
-    keyframesConfig,
-    'external',
-    mergeObjects<ExternalConfig>(sharedExternal, keyframesConfig.external)
-  )
+  assignIfDefined(keyframesConfig, 'external', mergeObjects<ExternalConfig>(sharedExternal, keyframesConfig.external))
   if (keyframesConfig.naming === undefined) {
     assignIfDefined(keyframesConfig, 'naming', sharedNaming)
   }
@@ -572,16 +500,8 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
   }
 
   const relConfig = { ...(stylelint?.rel ?? {}) }
-  assignIfDefined(
-    relConfig,
-    'comments',
-    mergeObjects<CommentConfig>(baseComments, relConfig.comments)
-  )
-  assignIfDefined(
-    relConfig,
-    'external',
-    mergeObjects<ExternalConfig>(sharedExternal, relConfig.external)
-  )
+  assignIfDefined(relConfig, 'comments', mergeObjects<CommentConfig>(baseComments, relConfig.comments))
+  assignIfDefined(relConfig, 'external', mergeObjects<ExternalConfig>(sharedExternal, relConfig.external))
   if (relConfig.naming === undefined) {
     assignIfDefined(relConfig, 'naming', sharedNaming)
   }
@@ -642,9 +562,7 @@ export function createRules(config: SpiracssConfig): Record<string, unknown> {
  * @param configPathOrConfig - Path to spiracss.config.js or a config object.
  * @returns SpiraCSS rules object.
  */
-export async function createRulesAsync(
-  configPathOrConfig?: string | SpiracssConfig
-): Promise<Record<string, unknown>> {
+export async function createRulesAsync(configPathOrConfig?: string | SpiracssConfig): Promise<Record<string, unknown>> {
   const { spiracss, configSource } = await resolveSpiracssConfigAsync(configPathOrConfig)
   ensureConfigSections(spiracss, configSource)
   return buildRules(spiracss)

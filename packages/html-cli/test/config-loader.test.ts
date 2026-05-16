@@ -16,8 +16,7 @@ describe('config-loader', () => {
   it('loads a CJS config', async () => {
     const config = await loadSpiracssConfig(cjsConfigPath)
     assert.ok(config)
-    const jsxBindings = (config as Record<string, unknown>)
-      .jsxClassBindings as Record<string, unknown>
+    const jsxBindings = (config as Record<string, unknown>).jsxClassBindings as Record<string, unknown>
     const allowlist = (jsxBindings?.memberAccessAllowlist as string[]) ?? []
     const generator = (config as Record<string, unknown>).generator as Record<string, unknown>
     assert.strictEqual(generator.childScssDir, 'scss')
@@ -27,8 +26,7 @@ describe('config-loader', () => {
   it('loads an ESM config via import fallback', async () => {
     const config = await loadSpiracssConfig(esmConfigPath)
     assert.ok(config)
-    const jsxBindings = (config as Record<string, unknown>)
-      .jsxClassBindings as Record<string, unknown>
+    const jsxBindings = (config as Record<string, unknown>).jsxClassBindings as Record<string, unknown>
     const allowlist = (jsxBindings?.memberAccessAllowlist as string[]) ?? []
     const htmlFormat = (config as Record<string, unknown>).htmlFormat as Record<string, unknown>
     assert.strictEqual(htmlFormat.classAttribute, 'className')
@@ -87,16 +85,12 @@ describe('config-loader', () => {
     try {
       fs.writeFileSync(pkgPath, '{ "type": "module" }', 'utf8')
       fs.writeFileSync(configPath, 'export default { htmlFormat: { classAttribute: "class" } }', 'utf8')
-      const result = spawnSync(
-        process.execPath,
-        ['--disallow-code-generation-from-strings', lintCliPath, '--stdin'],
-        {
-          cwd: tempDir,
-          input: '<div class="hero-banner"></div>',
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe']
-        }
-      )
+      const result = spawnSync(process.execPath, ['--disallow-code-generation-from-strings', lintCliPath, '--stdin'], {
+        cwd: tempDir,
+        input: '<div class="hero-banner"></div>',
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      })
       if (result.status === 0) {
         assert.match(result.stdout || '', /No SpiraCSS HTML structure errors\./)
       } else {

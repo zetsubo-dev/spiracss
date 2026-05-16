@@ -4,14 +4,11 @@ import {
   type InvalidOptionReporter,
   normalizeBoolean,
   normalizeStringArray,
-  safeNormalizeSelectorPolicyBase} from '../utils/normalize'
+  safeNormalizeSelectorPolicyBase
+} from '../utils/normalize'
 import { normalizeCommonOptions } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
-import type {
-  NormalizedSelectorPolicy,
-  Options,
-  SelectorPolicy
-} from './spiracss-interaction-scope.types'
+import type { NormalizedSelectorPolicy, Options, SelectorPolicy } from './spiracss-interaction-scope.types'
 
 const defaultSelectorPolicy: NormalizedSelectorPolicy = createDefaultSelectorPolicyBase()
 
@@ -31,10 +28,7 @@ const defaultOptions: Options = {
   cache: DEFAULT_CACHE_SIZES
 }
 
-export const normalizeOptions = (
-  opt: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (opt: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
   const raw = opt as {
     pseudos?: Options['pseudos']
@@ -72,11 +66,7 @@ export const normalizeOptions = (
     commentOnly: normalizeBoolean(raw.commentOnly, defaultOptions.commentOnly, {
       coerce: true
     }),
-    selectorPolicy: safeNormalizeSelectorPolicyBase(
-      selectorPolicy,
-      defaultSelectorPolicy,
-      reportInvalid
-    ),
+    selectorPolicy: safeNormalizeSelectorPolicyBase(selectorPolicy, defaultSelectorPolicy, reportInvalid),
     ...common
   }
 }

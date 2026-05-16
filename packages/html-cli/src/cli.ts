@@ -25,17 +25,10 @@ type ParsedArgs = {
   json: boolean
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 function isFileNameCase(value: string): value is FileNameCase {
-  return (
-    value === 'preserve' ||
-    value === 'kebab' ||
-    value === 'snake' ||
-    value === 'camel' ||
-    value === 'pascal'
-  )
+  return value === 'preserve' || value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
 }
 
 type FileCaseConfig = {
@@ -58,9 +51,7 @@ const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
 
 const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined
-  return value
-    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
-    .map((entry) => entry.trim())
+  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -100,9 +91,7 @@ async function readStdin(): Promise<string> {
   })
 }
 
-async function loadGeneratorOptions(
-  rootDir: string
-): Promise<GeneratorOptions & { namingSource: string }> {
+async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions & { namingSource: string }> {
   const defaultGlobalScssModule = '@styles/partials/global'
   const defaultPageAlias = 'assets'
   const defaultPageSubdir = 'css'
@@ -187,14 +176,10 @@ async function loadGeneratorOptions(
       ...(isRecord(classExternal) ? classExternal : {})
     }
     if (Array.isArray(external.classes)) {
-      externalClasses = external.classes.filter(
-        (item: unknown) => typeof item === 'string' && item.trim() !== ''
-      )
+      externalClasses = external.classes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
     }
     if (Array.isArray(external.prefixes)) {
-      externalPrefixes = external.prefixes.filter(
-        (item: unknown) => typeof item === 'string' && item.trim() !== ''
-      )
+      externalPrefixes = external.prefixes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
     }
 
     if (selectorPolicyConfig && typeof selectorPolicyConfig === 'object') {
@@ -212,9 +197,13 @@ async function loadGeneratorOptions(
     }
   }
 
-  warnInvalidCustomPatterns(naming, (message) => {
-    console.error(message)
-  }, namingSource)
+  warnInvalidCustomPatterns(
+    naming,
+    (message) => {
+      console.error(message)
+    },
+    namingSource
+  )
 
   return {
     globalScssModule,

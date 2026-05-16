@@ -5,24 +5,13 @@ import stylelint from 'stylelint'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { normalizeCustomPattern } from '../utils/naming'
-import {
-  CACHE_SCHEMA,
-  COMMENTS_SCHEMA,
-  EXTERNAL_SCHEMA,
-  NAMING_SCHEMA,
-  POLICY_SCHEMA
-} from '../utils/option-schema'
+import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule, isAtRule, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isRuleInsideAtRule, markInteractionContainers } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
 import { getLowercasePolicyKeys } from '../utils/selector-policy'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { isRootBlockRule } from './spiracss-class-structure.sections'
@@ -42,7 +31,8 @@ import {
   type SelectorAnalysis,
   type SelectorInfo,
   splitSelectors,
-  stripGlobalSelectorForRoot} from './spiracss-property-placement.selectors'
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 import type { Options } from './spiracss-property-placement.types'
 import { createValueTokenHelpers } from './spiracss-property-placement.values'
 
@@ -132,8 +122,7 @@ const OFFSET_PROP_NAMES = new Set([
   'inset-inline-end'
 ])
 
-const isPaddingProp = (prop: string): boolean =>
-  prop === 'padding' || prop.startsWith('padding-')
+const isPaddingProp = (prop: string): boolean => prop === 'padding' || prop.startsWith('padding-')
 
 const isContainerProp = (decl: Declaration): boolean => {
   const prop = decl.prop.toLowerCase()
@@ -153,8 +142,7 @@ const isContainerProp = (decl: Declaration): boolean => {
 
 const isItemProp = (prop: string): boolean => ITEM_PROP_NAMES.has(prop)
 
-const isMarginSideProp = (prop: string): boolean =>
-  MARGIN_SIDE_PROP_NAMES.has(prop)
+const isMarginSideProp = (prop: string): boolean => MARGIN_SIDE_PROP_NAMES.has(prop)
 
 const isOverflowProp = (prop: string): boolean => OVERFLOW_PROP_NAMES.has(prop)
 
@@ -167,9 +155,7 @@ const isSizeInternalProp = (prop: string): boolean =>
   prop.startsWith('max-')
 
 const isInternalProp = (prop: string, enableSizeInternal: boolean): boolean =>
-  isPaddingProp(prop) ||
-  isOverflowProp(prop) ||
-  (enableSizeInternal && isSizeInternalProp(prop))
+  isPaddingProp(prop) || isOverflowProp(prop) || (enableSizeInternal && isSizeInternalProp(prop))
 
 const isInsideAtRoot = (node: Node): boolean => {
   let current: Node | undefined = node.parent ?? undefined
@@ -190,10 +176,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null
-        ? primaryOption
-        : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
 
     type RuleCache = {
       options: ReturnType<typeof normalizeOptions>
@@ -204,9 +187,7 @@ const rule = createRule(
       hasInvalidOptions: boolean
     }
     let cache: RuleCache | null = null
-    const getCache = (
-      reportInvalid?: (optionName: string, value: unknown, detail?: string) => void
-    ): RuleCache => {
+    const getCache = (reportInvalid?: (optionName: string, value: unknown, detail?: string) => void): RuleCache => {
       if (cache) return cache
       let hasInvalidOptions = false
       const handleInvalid = reportInvalid
@@ -274,14 +255,8 @@ const rule = createRule(
       )
       if (shouldValidate && hasInvalid) return
 
-      const {
-        options,
-        patterns,
-        policySets,
-        classifyOptions,
-        customModifierPattern,
-        hasInvalidOptions
-      } = getCache(reportInvalid)
+      const { options, patterns, policySets, classifyOptions, customModifierPattern, hasInvalidOptions } =
+        getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
       const cacheSizes = options.cache
@@ -301,11 +276,8 @@ const rule = createRule(
       const atRuleIds = new WeakMap<AtRule, number>()
       let atRuleIdSeed = 0
       let firstRule: Rule | null = null
-      const responsiveMixins = new Set(
-        options.responsive.mixins.map((name) => name.toLowerCase())
-      )
-      const { checkMarginSide, parsePositionValue, isZeroMinSize } =
-        createValueTokenHelpers()
+      const responsiveMixins = new Set(options.responsive.mixins.map((name) => name.toLowerCase()))
+      const { checkMarginSide, parsePositionValue, isZeroMinSize } = createValueTokenHelpers()
       const selectorPolicy = options.selectorPolicy
       const variantMode = selectorPolicy.variant.mode
       const stateMode = selectorPolicy.state.mode
@@ -328,9 +300,7 @@ const rule = createRule(
       const externalRootRules = new WeakSet<Rule>()
       const declsByRule = new Map<Rule, Declaration[]>()
 
-      const isExternalRootSelectors = (
-        selectors: ReturnType<typeof selectorCache.parse>
-      ): boolean => {
+      const isExternalRootSelectors = (selectors: ReturnType<typeof selectorCache.parse>): boolean => {
         if (selectors.length === 0) return false
         return selectors.every((sel) => {
           let hasClass = false
@@ -372,20 +342,13 @@ const rule = createRule(
           // Root block detection strips :global parts while preserving leading combinators.
           const localSelectors = selectorTexts
             .map((selector) =>
-              stripGlobalSelectorForRoot(
-                selector,
-                selectorCache,
-                options.cache.selector,
-                {
-                  preserveCombinator: true
-                }
-              )
+              stripGlobalSelectorForRoot(selector, selectorCache, options.cache.selector, {
+                preserveCombinator: true
+              })
             )
             .filter((selector): selector is string => Boolean(selector))
           if (localSelectors.length === 0) return
-          const selectors = localSelectors.flatMap((selector) =>
-            selectorCache.parse(selector)
-          )
+          const selectors = localSelectors.flatMap((selector) => selectorCache.parse(selector))
           const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
           if (rootBlocks.length > 0) {
             rootBlockRules.add(rule)
@@ -417,8 +380,7 @@ const rule = createRule(
       const interactionContainers = markInteractionContainers(
         root,
         commentPatterns,
-        (_comment, parent) =>
-          isRule(parent) && (rootBlockRules.has(parent) || externalRootRules.has(parent))
+        (_comment, parent) => isRule(parent) && (rootBlockRules.has(parent) || externalRootRules.has(parent))
       )
       const selectorExplosion = { example: null as string | null, limit: 0 }
       const reportSelectorExplosion = (selector: string, limit: number): void => {
@@ -426,12 +388,7 @@ const rule = createRule(
         selectorExplosion.limit = limit
       }
       const getResolvedSelectors = (rule: Rule): string[] =>
-        resolveSelectors(
-          rule,
-          selectorCache,
-          resolvedSelectorsCache,
-          reportSelectorExplosion
-        )
+        resolveSelectors(rule, selectorCache, resolvedSelectorsCache, reportSelectorExplosion)
       const resolveContextSelector = (rule: Rule | null | undefined): string => {
         if (!rule || typeof rule.selector !== 'string') return '(unknown)'
         const resolved = getResolvedSelectors(rule)
@@ -452,14 +409,7 @@ const rule = createRule(
         const analysis: SelectorAnalysis =
           resolvedSelectors.length === 0
             ? { status: 'skip' }
-            : analyzeSelectorList(
-                resolvedSelectors,
-                selectorCache,
-                options,
-                policySets,
-                patterns,
-                classifyOptions
-              )
+            : analyzeSelectorList(resolvedSelectors, selectorCache, options, policySets, patterns, classifyOptions)
         const entry = {
           resolvedSelectors,
           analysis,
@@ -509,9 +459,7 @@ const rule = createRule(
             } else if (name === 'include') {
               const params = typeof current.params === 'string' ? current.params : ''
               const mixinName = parseMixinName(params)
-              const allowlisted = mixinName
-                ? responsiveMixins.has(mixinName.toLowerCase())
-                : false
+              const allowlisted = mixinName ? responsiveMixins.has(mixinName.toLowerCase()) : false
               if (!allowlisted) {
                 parts.push(`include:${getAtRuleId(current)}`)
               }
@@ -534,18 +482,10 @@ const rule = createRule(
         return key
       }
 
-      const shouldCheckMarginSideForTagSelectors = (
-        resolvedSelectors: string[]
-      ): boolean => {
+      const shouldCheckMarginSideForTagSelectors = (resolvedSelectors: string[]): boolean => {
         const localSelectors = resolvedSelectors.flatMap((selectorText) =>
           splitSelectors(selectorText, selectorCache)
-            .map((selector) =>
-              stripGlobalSelectorForRoot(
-                selector,
-                selectorCache,
-                options.cache.selector
-              )
-            )
+            .map((selector) => stripGlobalSelectorForRoot(selector, selectorCache, options.cache.selector))
             .filter((selector): selector is string => Boolean(selector))
         )
         if (localSelectors.length === 0) return false
@@ -555,9 +495,7 @@ const rule = createRule(
           // Only count direct tag nodes in the selector chain.
           // Tags that appear only inside pseudo arguments (e.g. :is(main))
           // are not treated as tag-selector rules.
-          return parsed.some((selector) =>
-            selector.nodes.some((node) => node.type === 'tag')
-          )
+          return parsed.some((selector) => selector.nodes.some((node) => node.type === 'tag'))
         })
       }
 
@@ -573,8 +511,7 @@ const rule = createRule(
             if (isInsideAtRoot(decl)) continue
             const prop = decl.prop.toLowerCase()
             if (!OFFSET_PROP_NAMES.has(prop)) continue
-            const wrapperKey =
-              decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
+            const wrapperKey = decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
             familyKeys.forEach((key) => {
               familyOffsetMap.set(`${wrapperKey}::${key}`, true)
             })
@@ -603,10 +540,7 @@ const rule = createRule(
             ruleName,
             result,
             node: atRule,
-            message: messages.forbiddenAtRoot(
-              parentSelector,
-              options.comments.interaction
-            )
+            message: messages.forbiddenAtRoot(parentSelector, options.comments.interaction)
           })
         }
       })
@@ -619,9 +553,7 @@ const rule = createRule(
 
         const { resolvedSelectors, analysis, resolvedSelectorText } = getRuleAnalysis(rule)
         const checkTagMarginSideOnly =
-          analysis.status === 'skip' &&
-          options.margin.tags &&
-          shouldCheckMarginSideForTagSelectors(resolvedSelectors)
+          analysis.status === 'skip' && options.margin.tags && shouldCheckMarginSideForTagSelectors(resolvedSelectors)
         if (analysis.status === 'skip' && !checkTagMarginSideOnly) continue
         if (analysis.status === 'error') {
           stylelint.utils.report({
@@ -791,12 +723,9 @@ const rule = createRule(
               }
               const familyKeys = getRuleFamilyKeys(rule)
               if (!familyKeys) return
-              const wrapperKey =
-                decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
+              const wrapperKey = decl.parent === rule ? ruleWrapperKey : getWrapperContextKey(decl)
               // Require offsets for every selector in a list to avoid partial matches.
-              const hasOffsets = familyKeys.every((key) =>
-                familyOffsetMap.has(`${wrapperKey}::${key}`)
-              )
+              const hasOffsets = familyKeys.every((key) => familyOffsetMap.has(`${wrapperKey}::${key}`))
               if (hasOffsets) return
               stylelint.utils.report({
                 ruleName,
@@ -819,9 +748,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }
@@ -831,10 +758,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorResolutionSkipped(
-            selectorExplosion.limit,
-            selectorExplosion.example
-          ),
+          message: messages.selectorResolutionSkipped(selectorExplosion.limit, selectorExplosion.example),
           severity: 'warning'
         })
       }

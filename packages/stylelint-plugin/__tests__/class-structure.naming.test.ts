@@ -177,8 +177,6 @@ describe('spiracss/class-structure - naming.blockCase variations', () => {
   })
 })
 
-
-
 describe('spiracss/class-structure - naming.blockMaxWords option', () => {
   testRule({
     plugins: [classStructure],
@@ -224,8 +222,6 @@ describe('spiracss/class-structure - naming.blockMaxWords option', () => {
   })
 })
 
-
-
 describe('spiracss/class-structure - naming default word count', () => {
   testRule({
     plugins: [classStructure],
@@ -251,8 +247,6 @@ describe('spiracss/class-structure - naming default word count', () => {
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - naming.modifierPrefix option', () => {
   testRule({
@@ -286,7 +280,8 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
       {
         code: `.hero-banner { &.-primary {} }`,
         description: '"-" prefix does not match as modifier in "_" mode (invalid)',
-        message: 'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&._primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message:
+          'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&._primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -322,13 +317,12 @@ describe('spiracss/class-structure - naming.modifierPrefix option', () => {
       {
         code: `.hero-banner { &.-primary {} }`,
         description: '"-" prefix does not match as modifier in "--" mode (invalid)',
-        message: 'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&.--primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message:
+          'Only modifier classes may be appended to `&`. Found `-primary`. Use `&.<modifier>`. Example: `&.--primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - naming.elementCase/modifierCase option', () => {
   testRule({
@@ -379,7 +373,8 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
       {
         code: `.hero-banner { &.-primary-large {} }`,
         description: 'kebab-case Modifier is invalid in camelCase mode',
-        message: 'Only modifier classes may be appended to `&`. Found `-primary-large`. Use `&.<modifier>`. Example: `&.-primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message:
+          'Only modifier classes may be appended to `&`. Found `-primary-large`. Use `&.<modifier>`. Example: `&.-primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
@@ -432,13 +427,12 @@ describe('spiracss/class-structure - naming.elementCase/modifierCase option', ()
       {
         code: `.hero-banner { &.-primaryLarge {} }`,
         description: 'camelCase Modifier is invalid in PascalCase mode',
-        message: 'Only modifier classes may be appended to `&`. Found `-primaryLarge`. Use `&.<modifier>`. Example: `&.-Primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
+        message:
+          'Only modifier classes may be appended to `&`. Found `-primaryLarge`. Use `&.<modifier>`. Example: `&.-Primary`. If not a modifier, move it to its own selector. (spiracss/class-structure)'
       }
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - naming.customPatterns (all specified)', () => {
   testRule({
@@ -516,8 +510,6 @@ describe('spiracss/class-structure - naming.customPatterns (all specified)', () 
   })
 })
 
-
-
 describe('spiracss/class-structure - naming.customPatterns (partial override)', () => {
   testRule({
     plugins: [classStructure],
@@ -583,7 +575,6 @@ describe('spiracss/class-structure - naming.customPatterns (partial override)', 
   })
 })
 
-
 describe('spiracss/class-structure - naming.customPatterns validation', () => {
   it('reports invalid customPatterns', async () => {
     const result = await lint({
@@ -613,5 +604,4 @@ describe('spiracss/class-structure - naming.customPatterns validation', () => {
     ]
     assert.ok(warningTexts.some((text) => text.includes('naming.customPatterns.block')))
   })
-
 })

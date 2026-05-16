@@ -1,13 +1,10 @@
-export const isBoolean = (value: unknown): value is boolean =>
-  typeof value === 'boolean' || value instanceof Boolean
+export const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean' || value instanceof Boolean
 
-export const isNumber = (value: unknown): value is number =>
-  typeof value === 'number' || value instanceof Number
+export const isNumber = (value: unknown): value is number => typeof value === 'number' || value instanceof Number
 
 export const isRegExp = (value: unknown): value is RegExp => value instanceof RegExp
 
-export const isString = (value: unknown): value is string =>
-  typeof value === 'string' || value instanceof String
+export const isString = (value: unknown): value is string => typeof value === 'string' || value instanceof String
 
 export const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) &&

@@ -21,8 +21,7 @@ const formatModifierHint = (
     )} (current: ${formatPattern(customModifierPattern)})`
   }
   const prefixLabel = modifierPrefix === '' ? '(none)' : modifierPrefix
-  const example =
-    modifierPrefix === '' ? '&.<modifier>' : `&.${modifierPrefix}<modifier>`
+  const example = modifierPrefix === '' ? '&.<modifier>' : `&.${modifierPrefix}<modifier>`
   return `use modifier classes (prefix: ${formatCode(
     prefixLabel
   )}, case: ${formatCode(modifierCase)}; e.g., ${formatCode(example)})`
@@ -37,11 +36,7 @@ const formatPolicyHint = (
   customModifierPattern: RegExp | string
 ): string => {
   if (mode === 'class') {
-    return formatModifierHint(
-      modifierPrefix,
-      modifierCase,
-      customModifierPattern
-    )
+    return formatModifierHint(modifierPrefix, modifierCase, customModifierPattern)
   }
   const attrType = label === 'variant' ? 'data' : 'state'
   return `use ${attrType} attributes (keys: ${formatConfigList(keys)})`
@@ -53,18 +48,14 @@ const pageRootBase = (prop: string, selector: string, propType: string): string 
   'Page roots are decoration-only and cannot define layout. '
 
 const internalInChildBlockBase = (prop: string, selector: string): string =>
-  `${formatCode(
-    prop
-  )} is an internal property (affects the Block's own content/layout) ` +
+  `${formatCode(prop)} is an internal property (affects the Block's own content/layout) ` +
   'and cannot be used on a child Block selector. ' +
   `Selector: ${formatCode(selector)}. ` +
   `Move ${formatCode(prop)} to the child Block's own file. ` +
   `To control it from parent, expose a CSS variable (e.g., ${formatCode(
     `--child-${prop}`
   )}) and consume it in the child Block, or use the project's variant mechanism. ` +
-  `For size properties (width/height/min-*/max-*), set ${formatCode(
-    'sizeInternal: false'
-  )} to skip this check.`
+  `For size properties (width/height/min-*/max-*), set ${formatCode('sizeInternal: false')} to skip this check.`
 
 const internalInChildBlockVariantHint = (
   variantMode: string,
@@ -101,9 +92,8 @@ const internalInChildBlockStateHint = (
 type PositionUnknownReason = 'dynamic' | 'unknown'
 
 // stylelint RuleMessage args accept broader types; keep runtime guard for supported reasons.
-const isPositionUnknownReason = (
-  value: RuleMessageArg | undefined
-): value is PositionUnknownReason => value === 'dynamic' || value === 'unknown'
+const isPositionUnknownReason = (value: RuleMessageArg | undefined): value is PositionUnknownReason =>
+  value === 'dynamic' || value === 'unknown'
 
 export const messages = createRuleMessages(ruleName, {
   containerInChildBlock: (prop: string, selector: string) =>
@@ -111,37 +101,23 @@ export const messages = createRuleMessages(ruleName, {
       prop
     )} is a container property (defines internal layout) and cannot be used on a child Block selector. ` +
     `Selector: ${formatCode(selector)}. ` +
-    `If the parent should be the container, apply ${formatCode(
-      prop
-    )} on the parent Block selector. ` +
-    `If the child should be the container, move ${formatCode(
-      prop
-    )} to the child Block's own stylesheet ` +
+    `If the parent should be the container, apply ${formatCode(prop)} on the parent Block selector. ` +
+    `If the child should be the container, move ${formatCode(prop)} to the child Block's own stylesheet ` +
     '(the file where that Block is defined).',
   itemInRoot: (prop: string, selector: string) =>
-    `${formatCode(
-      prop
-    )} is an item property and cannot be placed on a root Block selector. ` +
+    `${formatCode(prop)} is an item property and cannot be placed on a root Block selector. ` +
     `Selector: ${formatCode(selector)}. ` +
     'Root Blocks should not define their own placement; the parent layout controls item spacing. ' +
-    `Move ${formatCode(
-      prop
-    )} to a direct child selector (${formatCode(
-      '> .child-block'
-    )} or ${formatCode(
+    `Move ${formatCode(prop)} to a direct child selector (${formatCode('> .child-block')} or ${formatCode(
       '> .element'
     )}) under the parent Block ` +
-    `(use the parent file that places this Block, typically linked via ${formatCode(
-      '@rel'
-    )}).`,
+    `(use the parent file that places this Block, typically linked via ${formatCode('@rel')}).`,
   selectorKindMismatch: (selector: string) =>
     `Selector list mixes incompatible kinds (root/element/child Block). ` +
     `Selector: ${formatCode(selector)}. ` +
     'Split selectors into separate rules so placement checks can be applied correctly.',
   marginSideViolation: (prop: string, selector: string, disallowedSide: 'top' | 'bottom') =>
-    `${formatCode(
-      prop
-    )} uses a ${disallowedSide} margin value, which violates the margin-side rule. ` +
+    `${formatCode(prop)} uses a ${disallowedSide} margin value, which violates the margin-side rule. ` +
     `Selector: ${formatCode(selector)}. ` +
     'SpiraCSS enforces a single margin direction. ' +
     `Use ${disallowedSide === 'top' ? 'bottom' : 'top'} margins or set the ${disallowedSide} value to ` +
@@ -165,13 +141,7 @@ export const messages = createRuleMessages(ruleName, {
       modifierCase,
       customModifierPattern
     )} ` +
-    `${internalInChildBlockStateHint(
-      stateMode,
-      stateKeys,
-      modifierPrefix,
-      modifierCase,
-      customModifierPattern
-    )}`,
+    `${internalInChildBlockStateHint(stateMode, stateKeys, modifierPrefix, modifierCase, customModifierPattern)}`,
   positionInChildBlock: (
     value: string,
     selector: string,
@@ -180,18 +150,14 @@ export const messages = createRuleMessages(ruleName, {
   ) => {
     const base = formatCode(`position: ${value}`)
     const selectorPart = `Selector: ${formatCode(selector)}. `
-    const moveHint = `Move ${formatCode(
-      `position: ${value}`
-    )} to the child Block's own file.`
+    const moveHint = `Move ${formatCode(`position: ${value}`)} to the child Block's own file.`
     const moveHintLower = moveHint.replace(/^Move /, 'move ')
     const fixedStickyHint = `If you need ${formatCode(
       'fixed'
     )}/${formatCode('sticky')}, define it in the child Block's own file.`
     const lowered = value.toLowerCase()
     if (lowered === 'fixed' || lowered === 'sticky') {
-      return (
-        `${base} is not allowed on a child Block selector. ` + selectorPart + fixedStickyHint
-      )
+      return `${base} is not allowed on a child Block selector. ` + selectorPart + fixedStickyHint
     }
     if (lowered === 'relative' || lowered === 'absolute') {
       return (
@@ -203,9 +169,7 @@ export const messages = createRuleMessages(ruleName, {
           'inset-block'
         )}/${formatCode('inset-inline')}/${formatCode(
           'inset-block-start'
-        )}/${formatCode('inset-block-end')}/${formatCode(
-          'inset-inline-start'
-        )}/${formatCode('inset-inline-end')} ` +
+        )}/${formatCode('inset-block-end')}/${formatCode('inset-inline-start')}/${formatCode('inset-inline-end')} ` +
         `in the same wrapper context. ` +
         `${formatCode('@media')}/${formatCode('@supports')}/${formatCode(
           '@container'
@@ -221,9 +185,7 @@ export const messages = createRuleMessages(ruleName, {
       `${base} is not allowed on a child Block selector. ` +
       selectorPart +
       `${isPositionUnknownReason(unknownReason) && unknownReason === 'dynamic' ? 'Dynamic values are not allowed here. ' : ''}` +
-      `Use ${formatCode('static')}, or use ${formatCode(
-        'relative'
-      )}/${formatCode(
+      `Use ${formatCode('static')}, or use ${formatCode('relative')}/${formatCode(
         'absolute'
       )} with offsets in the same wrapper context. ` +
       fixedStickyHint
@@ -246,32 +208,20 @@ export const messages = createRuleMessages(ruleName, {
   forbiddenAtRoot: (selector: string, pattern: RegExp) =>
     `${formatCode('@at-root')} is not allowed in basic/shared sections. ` +
     `Context: ${formatCode(selector)}. ` +
-    `${formatCode(
-      '@at-root'
-    )} breaks selector hierarchy and should only be used for interaction states. ` +
-    `Move this rule to the interaction section using ${formatCode(
-      'comments.interaction'
-    )} (current: ${formatPattern(
+    `${formatCode('@at-root')} breaks selector hierarchy and should only be used for interaction states. ` +
+    `Move this rule to the interaction section using ${formatCode('comments.interaction')} (current: ${formatPattern(
       pattern
     )}), ` +
     `or remove ${formatCode('@at-root')} and restructure the selector.`,
   forbiddenExtend: (selector: string, placeholder: string) =>
     `${formatCode('@extend')} is not allowed in SpiraCSS. ` +
     `Context: ${formatCode(selector)} extends ${formatCode(placeholder)}. ` +
-    `${formatCode(
-      '@extend'
-    )} creates implicit dependencies and can cause unexpected selector merging. ` +
+    `${formatCode('@extend')} creates implicit dependencies and can cause unexpected selector merging. ` +
     'Use a mixin, CSS custom properties, or apply the styles directly.',
   selectorResolutionSkipped: (limit: RuleMessageArg, example?: RuleMessageArg) => {
     const limitText = formatCode(String(limit))
-    const exampleText =
-      example !== undefined
-        ? ` Example: ${formatCode(String(example), { maxChars: 80 })}.`
-      : ''
-    return (
-      `Selector resolution exceeded ${limitText} combinations, so some checks were skipped.` +
-      exampleText
-    )
+    const exampleText = example !== undefined ? ` Example: ${formatCode(String(example), { maxChars: 80 })}.` : ''
+    return `Selector resolution exceeded ${limitText} combinations, so some checks were skipped.` + exampleText
   },
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0])
 })

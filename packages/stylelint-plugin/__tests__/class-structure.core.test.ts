@@ -32,22 +32,26 @@ describe('spiracss/class-structure - basic Block/Element checks', () => {
       {
         code: '.hero-banner { .title {} }',
         description: 'childCombinator: true requires child selectors',
-        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
+        message:
+          'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: '.hero-banner { & .title {} }',
         description: 'childCombinator: true rejects "& .child" descendant selectors',
-        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
+        message:
+          'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: '.hero-banner, .hero-banner.-primary { .title {} }',
         description: 'Block detection is stable with multiple selectors; missing child selector is an error',
         warnings: [
           {
-            message: 'Write modifier classes inside the Block using `&.<modifier>`. Example: `.block { &.-primary { ... } }`. Do not use `.block.-primary` or `.-primary` at top level. (spiracss/class-structure)'
+            message:
+              'Write modifier classes inside the Block using `&.<modifier>`. Example: `.block { &.-primary { ... } }`. Do not use `.block.-primary` or `.-primary` at top level. (spiracss/class-structure)'
           },
           {
-            message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
+            message:
+              'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
           }
         ]
       },
@@ -60,7 +64,6 @@ describe('spiracss/class-structure - basic Block/Element checks', () => {
     ]
   })
 })
-
 
 describe('spiracss/class-structure - childCombinator option', () => {
   testRule({
@@ -187,7 +190,6 @@ describe('spiracss/class-structure - childNesting patterns', () => {
   })
 })
 
-
 describe('spiracss/class-structure - Element chain depth checks', () => {
   testRule({
     plugins: [classStructure],
@@ -219,7 +221,6 @@ describe('spiracss/class-structure - Element chain depth checks', () => {
     ]
   })
 })
-
 
 describe('spiracss/class-structure - external class allowance', () => {
   testRule({

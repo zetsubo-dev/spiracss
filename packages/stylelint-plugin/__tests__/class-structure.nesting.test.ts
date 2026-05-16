@@ -68,7 +68,8 @@ describe('spiracss/class-structure - Block nesting depth limits', () => {
       {
         code: '.page-layout { > .section-box { > .inner-box {} } }',
         description: 'Block > Block > Block (two levels) is too deep',
-        message: 'Block `inner-box` is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via `@rel`. (spiracss/class-structure)'
+        message:
+          'Block `inner-box` is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via `@rel`. (spiracss/class-structure)'
       }
     ]
   })
@@ -109,7 +110,8 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
   }
 }`,
         description: 'childCombinator applies inside @media',
-        message: 'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
+        message:
+          'Use a direct-child combinator under the Block: `> .title`. Sections marked by `comments.shared` (current: `/--shared/i`) or `comments.interaction` (current: `/--interaction/i`) are exempt. (spiracss/class-structure)'
       },
       {
         code: `
@@ -134,7 +136,8 @@ describe('spiracss/class-structure - parent/child checks inside @media/@supports
   }
 }`,
         description: 'Block > Block > Block is detected inside @media',
-        message: 'Block `grandchild-block` is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via `@rel`. (spiracss/class-structure)'
+        message:
+          'Block `grandchild-block` is nested too deeply (Block > Block > Block...). Move grandchild Block styles to its own file and link via `@rel`. (spiracss/class-structure)'
       }
     ]
   })

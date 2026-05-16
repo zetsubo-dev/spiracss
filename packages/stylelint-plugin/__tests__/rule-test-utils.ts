@@ -7,9 +7,7 @@ import { appendDocsLink } from '../dist/esm/utils/messages.js'
 import type { LintOptions, LintResult } from './stylelint-helpers.js'
 import { lint } from './stylelint-helpers.js'
 
-const normalizeRootBlock = (code: string): string =>
-  code.replace(/\.block(?![\w-])/g, '.block-name')
-
+const normalizeRootBlock = (code: string): string => code.replace(/\.block(?![\w-])/g, '.block-name')
 
 type TestCase =
   | string
@@ -43,8 +41,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     {
       key: 'invalidName',
       test: (message) =>
-        message.startsWith('Class `') &&
-        message.includes('is not a valid SpiraCSS Block/Element/Modifier')
+        message.startsWith('Class `') && message.includes('is not a valid SpiraCSS Block/Element/Modifier')
     },
     { key: 'elementChainTooDeep', test: (message) => message.startsWith('Element chain is too deep:') },
     { key: 'elementCannotOwnBlock', test: (message) => message.includes('cannot contain a Block') },
@@ -55,9 +52,15 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     },
     { key: 'tooDeepBlockNesting', test: (message) => message.includes('is nested too deeply') },
     { key: 'multipleRootBlocks', test: (message) => message.startsWith('Only one root Block is allowed per file.') },
-    { key: 'duplicateRootBlock', test: (message) => message.startsWith('Root Block `.') && message.includes('must be defined only once per file') },
+    {
+      key: 'duplicateRootBlock',
+      test: (message) => message.startsWith('Root Block `.') && message.includes('must be defined only once per file')
+    },
     { key: 'needChild', test: (message) => message.startsWith('Use a direct-child combinator under the Block:') },
-    { key: 'needChildNesting', test: (message) => message.startsWith('Do not write child selectors at the top level.') },
+    {
+      key: 'needChildNesting',
+      test: (message) => message.startsWith('Do not write child selectors at the top level.')
+    },
     { key: 'sharedNeedRootBlock', test: (message) => message.startsWith('Place the shared section comment matching') },
     { key: 'needAmpForMod', test: (message) => message.startsWith('Write modifier classes inside the Block using') },
     { key: 'needModifierPrefix', test: (message) => message.startsWith('Only modifier classes may be appended to') },
@@ -65,20 +68,16 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     {
       key: 'invalidVariantAttribute',
       test: (message) =>
-        message.startsWith('Attribute `data-variant`') &&
-        message.includes('selectorPolicy.variant.mode')
+        message.startsWith('Attribute `data-variant`') && message.includes('selectorPolicy.variant.mode')
     },
     {
       key: 'invalidStateAttribute',
-      test: (message) =>
-        message.startsWith('Attribute `') &&
-        message.includes('selectorPolicy.state.mode')
+      test: (message) => message.startsWith('Attribute `') && message.includes('selectorPolicy.state.mode')
     },
     { key: 'invalidDataValue', test: (message) => message.includes('does not match `selectorPolicy` valueNaming') },
     {
       key: 'rootSelectorMissingBlock',
-      test: (message) =>
-        message.startsWith('Root selector') && message.includes('must include the root Block')
+      test: (message) => message.startsWith('Root selector') && message.includes('must include the root Block')
     },
     {
       key: 'rootSelectorNeedNesting',
@@ -94,8 +93,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
   'spiracss/interaction-properties': [
     {
       key: 'needInteraction',
-      test: (message) =>
-        message.includes('must be declared inside the SpiraCSS interaction section')
+      test: (message) => message.includes('must be declared inside the SpiraCSS interaction section')
     },
     {
       key: 'missingTransitionProperty',
@@ -105,8 +103,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     { key: 'transitionNone', test: (message) => message.startsWith('`transition: none`') },
     {
       key: 'invalidTransitionProperty',
-      test: (message) =>
-        message.startsWith('Transition property') && message.includes('is not allowed')
+      test: (message) => message.startsWith('Transition property') && message.includes('is not allowed')
     },
     { key: 'initialOutsideInteraction', test: (message) => message.includes('is transitioned for') },
     { key: 'selectorParseFailed', test: (message) => message.startsWith('Failed to parse one or more selectors') }
@@ -116,13 +113,11 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     { key: 'needComment', test: (message) => message.startsWith('Add the interaction comment matching') },
     {
       key: 'needTail',
-      test: (message) =>
-        message.startsWith('Place the `@at-root` interaction block at the end of the root Block')
+      test: (message) => message.startsWith('Place the `@at-root` interaction block at the end of the root Block')
     },
     {
       key: 'needRootBlock',
-      test: (message) =>
-        message.startsWith('The interaction block must be directly under the root Block.')
+      test: (message) => message.startsWith('The interaction block must be directly under the root Block.')
     },
     { key: 'mixedStateVariant', test: (message) => message.startsWith('Do not mix state selectors') },
     { key: 'selectorParseFailed', test: (message) => message.startsWith('Failed to parse one or more selectors') }
@@ -133,19 +128,16 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     {
       key: 'sharedFileOnly',
       test: (message) =>
-        message.startsWith('Shared keyframes `') &&
-        message.includes('must be defined in a shared keyframes file')
+        message.startsWith('Shared keyframes `') && message.includes('must be defined in a shared keyframes file')
     },
     {
       key: 'invalidSharedName',
-      test: (message) =>
-        message.startsWith('Shared keyframes `') && message.includes('must follow')
+      test: (message) => message.startsWith('Shared keyframes `') && message.includes('must follow')
     },
     { key: 'invalidName', test: (message) => message.startsWith('Keyframes `') },
     {
       key: 'missingBlock',
-      test: (message) =>
-        message.startsWith('Cannot determine the root Block for `@keyframes` naming.')
+      test: (message) => message.startsWith('Cannot determine the root Block for `@keyframes` naming.')
     },
     { key: 'selectorParseFailed', test: (message) => message.startsWith('Failed to parse one or more selectors') }
   ],
@@ -162,29 +154,25 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     },
     {
       key: 'pageRootContainer',
-      test: (message) =>
-        message.includes('Page roots are decoration-only') &&
-        message.includes('container property')
+      test: (message) => message.includes('Page roots are decoration-only') && message.includes('container property')
     },
     {
       key: 'pageRootItem',
-      test: (message) =>
-        message.includes('Page roots are decoration-only') && message.includes('item property')
+      test: (message) => message.includes('Page roots are decoration-only') && message.includes('item property')
     },
     {
       key: 'pageRootInternal',
-      test: (message) =>
-        message.includes('Page roots are decoration-only') &&
-        message.includes('an internal property')
+      test: (message) => message.includes('Page roots are decoration-only') && message.includes('an internal property')
     },
-    { key: 'forbiddenAtRoot', test: (message) => message.startsWith('`@at-root` is not allowed in basic/shared sections.') },
+    {
+      key: 'forbiddenAtRoot',
+      test: (message) => message.startsWith('`@at-root` is not allowed in basic/shared sections.')
+    },
     { key: 'forbiddenExtend', test: (message) => message.startsWith('`@extend` is not allowed in SpiraCSS.') },
     { key: 'marginSideViolation', test: (message) => message.includes('violates the margin-side rule') },
     {
       key: 'containerInChildBlock',
-      test: (message) =>
-        message.includes('container property') &&
-        message.includes('child Block selector')
+      test: (message) => message.includes('container property') && message.includes('child Block selector')
     },
     {
       key: 'internalInChildBlock',
@@ -194,8 +182,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
     },
     {
       key: 'itemInRoot',
-      test: (message) =>
-        message.includes('item property and cannot be placed on a root Block selector')
+      test: (message) => message.includes('item property and cannot be placed on a root Block selector')
     },
     {
       key: 'positionInChildBlock',
@@ -205,8 +192,7 @@ const messageKeyMatchers: Record<string, MessageKeyMatcher[]> = {
   'spiracss/page-layer': [
     {
       key: 'missingComponentLink',
-      test: (message) =>
-        message.startsWith('Direct child Blocks in page entry SCSS require a link comment')
+      test: (message) => message.startsWith('Direct child Blocks in page entry SCSS require a link comment')
     },
     {
       key: 'nonComponentLink',
@@ -236,10 +222,7 @@ const appendDocsToMessage = (message: string | undefined, ruleName: string): str
   return appendDocsLink(message, ruleName, resolveMessageKey(message, ruleName))
 }
 
-const normalizeRejectMessages = (
-  cases: TestCase[] | undefined,
-  ruleName: string
-): TestCase[] | undefined => {
+const normalizeRejectMessages = (cases: TestCase[] | undefined, ruleName: string): TestCase[] | undefined => {
   if (!cases) return cases
   return cases.map((item) => {
     if (typeof item === 'string') return item
@@ -269,11 +252,7 @@ type RuleConfig = {
 const normalizeCaseItem = (item: TestCase): Exclude<TestCase, string> =>
   typeof item === 'string' ? { code: item } : item
 
-const createLintOptions = (
-  config: RuleConfig,
-  code: string,
-  codeFilename?: string
-): LintOptions => {
+const createLintOptions = (config: RuleConfig, code: string, codeFilename?: string): LintOptions => {
   const lintOptions: LintOptions = {
     code,
     config: {
@@ -289,10 +268,7 @@ const createLintOptions = (
   return lintOptions
 }
 
-const lintCode = async (
-  config: RuleConfig,
-  item: TestCase
-): Promise<LintResult> => {
+const lintCode = async (config: RuleConfig, item: TestCase): Promise<LintResult> => {
   const caseItem = normalizeCaseItem(item)
   const lintOptions = createLintOptions(config, caseItem.code, caseItem.codeFilename)
   return lint(lintOptions)
@@ -300,8 +276,7 @@ const lintCode = async (
 
 export const testRule = (config: RuleConfig): void => {
   const normalizedReject = normalizeRejectMessages(config.reject, config.ruleName)
-  const acceptCases =
-    config.ruleName === classStructure.ruleName ? normalizeCases(config.accept) : config.accept
+  const acceptCases = config.ruleName === classStructure.ruleName ? normalizeCases(config.accept) : config.accept
   const rejectCases =
     config.ruleName === classStructure.ruleName
       ? normalizeRejectMessages(normalizeCases(config.reject), config.ruleName)
@@ -381,8 +356,7 @@ export const withDataMode = (config: Record<string, unknown>) => {
   }
 }
 
-const buildNamingHint = (naming: NamingOptions = {}): string =>
-  formatNamingHint({ naming })
+const buildNamingHint = (naming: NamingOptions = {}): string => formatNamingHint({ naming })
 
 export const invalidNameMessage = (cls: string, naming?: NamingOptions) =>
   `Class \`${cls}\` is not a valid SpiraCSS Block/Element/Modifier. Rename it to match the configured naming rules. ${buildNamingHint(naming)} (spiracss/class-structure)`

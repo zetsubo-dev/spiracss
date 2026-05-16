@@ -6,10 +6,7 @@ export default defineConfig({
   files: 'dist/test/**/*.test.js',
   version: 'stable',
   workspaceFolder: path.resolve('fixtures'),
-  launchArgs: [
-    '--user-data-dir',
-    path.join(os.tmpdir(), 'vscode-test-spiracss')
-  ],
+  launchArgs: ['--user-data-dir', path.join(os.tmpdir(), 'vscode-test-spiracss')],
   mocha: {
     ui: 'tdd',
     timeout: 20000

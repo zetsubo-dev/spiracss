@@ -6,11 +6,7 @@ import { normalizeCacheSizes } from '../utils/cache'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
-import {
-  collectCompoundSegments,
-  createSelectorCacheWithErrorFlag,
-  type SelectorParserCache
-} from '../utils/selector'
+import { collectCompoundSegments, createSelectorCacheWithErrorFlag, type SelectorParserCache } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
 import { isPlainObject } from '../utils/validate'
 import { ruleName } from './spiracss-pseudo-nesting.constants'
@@ -33,10 +29,7 @@ type Violation = {
   endIndex: number
 }
 
-const collectViolations = (
-  selector: string,
-  selectorCache: SelectorParserCache
-): Violation[] => {
+const collectViolations = (selector: string, selectorCache: SelectorParserCache): Violation[] => {
   const violations: Violation[] = []
   const selectors = selectorCache.parse(selector)
   selectors.forEach((sel) => {
@@ -67,8 +60,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
 
     return (root: Root, result: stylelint.PostcssResult) => {
       const shouldValidate = result.stylelint?.config?.validate !== false
@@ -134,9 +126,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

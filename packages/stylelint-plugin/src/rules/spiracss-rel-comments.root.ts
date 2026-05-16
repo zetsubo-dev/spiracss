@@ -4,8 +4,7 @@ import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constan
 import { isRuleInsideAtRule } from '../utils/section'
 import { extractLinkTargets } from './spiracss-rel-comments.alias'
 
-const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export const hasMetaLoadCss = (root: Root, childScssDir: string): boolean => {
   let hit = false

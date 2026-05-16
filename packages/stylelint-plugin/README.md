@@ -34,6 +34,7 @@ npm install -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
 ## Usage
 
 The canonical setup guide is:
+
 - [Stylelint Plugin](https://spiracss.jp/tooling/stylelint/)
 
 ```js

@@ -6,35 +6,19 @@ import stylelint from 'stylelint'
 
 import { NON_SELECTOR_AT_RULE_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
-import {
-  CACHE_SCHEMA,
-  EXTERNAL_SCHEMA,
-  NAMING_SCHEMA
-} from '../utils/option-schema'
+import { CACHE_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { getCommentText, isRuleInsideAtRule } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { ruleName } from './spiracss-page-layer.constants'
 import { messages } from './spiracss-page-layer.messages'
 import { normalizeOptions } from './spiracss-page-layer.options'
 import type { Options } from './spiracss-page-layer.types'
-import {
-  splitSelectors,
-  stripGlobalSelectorForRoot
-} from './spiracss-property-placement.selectors'
-import {
-  extractLinkTargets,
-  normalizeRelPath,
-  resolvePathCandidates
-} from './spiracss-rel-comments.alias'
+import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
+import { extractLinkTargets, normalizeRelPath, resolvePathCandidates } from './spiracss-rel-comments.alias'
 import { findFirstBodyNode } from './spiracss-rel-comments.root'
 
 export { ruleName }
@@ -56,19 +40,14 @@ const optionSchema = {
   ...CACHE_SCHEMA
 }
 
-const resolvePageEntryDirs = (
-  projectRoot: string,
-  options: Options
-): string[] => {
+const resolvePageEntryDirs = (projectRoot: string, options: Options): string[] => {
   const aliasRoots = options.paths.aliases
   if (!aliasRoots) return []
   const bases = aliasRoots[options.pageEntry.alias]
   if (!Array.isArray(bases) || bases.length === 0) return []
   const subdir = options.pageEntry.subdir.trim()
   const entries = bases.map((base) => {
-    const resolvedBase = path.isAbsolute(base)
-      ? base
-      : path.resolve(projectRoot, base)
+    const resolvedBase = path.isAbsolute(base) ? base : path.resolve(projectRoot, base)
     return subdir ? path.resolve(resolvedBase, subdir) : resolvedBase
   })
   return [...new Set(entries)]
@@ -82,9 +61,7 @@ const isWithinDir = (target: string, rootDir: string): boolean => {
 }
 
 const resolveComponentRoots = (projectRoot: string, options: Options): string[] =>
-  options.paths.components.map((dir) =>
-    path.isAbsolute(dir) ? dir : path.resolve(projectRoot, dir)
-  )
+  options.paths.components.map((dir) => (path.isAbsolute(dir) ? dir : path.resolve(projectRoot, dir)))
 
 const getSelectorTexts = (
   selector: string,
@@ -137,19 +114,14 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null
-        ? primaryOption
-        : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
     type RuleCache = {
       options: ReturnType<typeof normalizeOptions>
       patterns: ReturnType<typeof buildPatterns>
       hasInvalidOptions: boolean
     }
     let cache: RuleCache | null = null
-    const getCache = (
-      reportInvalid?: (optionName: string, value: unknown, detail?: string) => void
-    ): RuleCache => {
+    const getCache = (reportInvalid?: (optionName: string, value: unknown, detail?: string) => void): RuleCache => {
       if (cache) return cache
       let hasInvalidOptions = false
       const handleInvalid = reportInvalid
@@ -212,16 +184,11 @@ const rule = createRule(
 
       const filePath: string = (result?.opts?.from as string) || ''
       if (!filePath) return
-      const projectRoot =
-        (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
+      const projectRoot = (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
       const pageEntryDirs = resolvePageEntryDirs(projectRoot, options)
       if (pageEntryDirs.length === 0) return
-      const absoluteFilePath = path.isAbsolute(filePath)
-        ? filePath
-        : path.resolve(projectRoot, filePath)
-      const isPageEntry = pageEntryDirs.some((dir) =>
-        isWithinDir(absoluteFilePath, dir)
-      )
+      const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(projectRoot, filePath)
+      const isPageEntry = pageEntryDirs.some((dir) => isWithinDir(absoluteFilePath, dir))
       if (!isPageEntry) return
 
       const cacheSizes = options.cache
@@ -235,12 +202,7 @@ const rule = createRule(
         const aliasRoots = options.paths.aliases ?? {}
         for (const target of targets) {
           const normalized = normalizeRelPath(target)
-          const candidates = resolvePathCandidates(
-            normalized,
-            baseDir,
-            projectRoot,
-            aliasRoots
-          )
+          const candidates = resolvePathCandidates(normalized, baseDir, projectRoot, aliasRoots)
           for (const candidate of candidates) {
             const resolved = path.resolve(candidate)
             if (componentRoots.some((rootDir) => isWithinDir(resolved, rootDir))) {
@@ -255,16 +217,10 @@ const rule = createRule(
         if (isRuleInsideAtRule(ruleNode, NON_SELECTOR_AT_RULE_NAMES)) return
         if (typeof ruleNode.selector !== 'string') return
 
-        const selectorTexts = getSelectorTexts(
-          ruleNode.selector,
-          selectorCache,
-          cacheSizes.selector
-        )
+        const selectorTexts = getSelectorTexts(ruleNode.selector, selectorCache, cacheSizes.selector)
         if (selectorTexts.length === 0) return
 
-        const selectors = selectorTexts.flatMap((selectorText) =>
-          selectorCache.parse(selectorText)
-        )
+        const selectors = selectorTexts.flatMap((selectorText) => selectorCache.parse(selectorText))
 
         const childBlocks = new Set<string>()
         selectors.forEach((sel) => {
@@ -302,10 +258,7 @@ const rule = createRule(
             ruleName,
             result,
             node: ruleNode,
-            message: messages.nonComponentLink(
-              ruleNode.selector,
-              options.paths.components
-            )
+            message: messages.nonComponentLink(ruleNode.selector, options.paths.components)
           })
         }
       })
@@ -315,9 +268,7 @@ const rule = createRule(
           ruleName,
           result,
           node: root,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

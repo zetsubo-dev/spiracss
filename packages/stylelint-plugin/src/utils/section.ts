@@ -33,24 +33,18 @@ export const markSectionRules = (
 ): WeakSet<Rule> => {
   const sectionRules = new WeakSet<Rule>()
 
-  walkSectionNodes(
-    root,
-    targetPattern,
-    stopPatterns,
-    isValidAnchor,
-    (node) => {
-      if (isRule(node)) {
-        sectionRules.add(node)
-        node.walkRules((child: Rule) => {
-          if (child !== node) sectionRules.add(child)
-        })
-        return
-      }
+  walkSectionNodes(root, targetPattern, stopPatterns, isValidAnchor, (node) => {
+    if (isRule(node)) {
+      sectionRules.add(node)
       node.walkRules((child: Rule) => {
-        sectionRules.add(child)
+        if (child !== node) sectionRules.add(child)
       })
+      return
     }
-  )
+    node.walkRules((child: Rule) => {
+      sectionRules.add(child)
+    })
+  })
 
   return sectionRules
 }
@@ -72,15 +66,9 @@ export const markSectionContainers = (
     })
   }
 
-  walkSectionNodes(
-    root,
-    targetPattern,
-    stopPatterns,
-    isValidAnchor,
-    (node) => {
-      addContainer(node as Container)
-    }
-  )
+  walkSectionNodes(root, targetPattern, stopPatterns, isValidAnchor, (node) => {
+    addContainer(node as Container)
+  })
 
   return sectionContainers
 }
@@ -170,10 +158,7 @@ export const markInteractionContainers = (
     isValidAnchor
   )
 
-export const isRuleInRootScope = (
-  rule: Rule,
-  allowedAtRules: Set<string>
-): boolean => {
+export const isRuleInRootScope = (rule: Rule, allowedAtRules: Set<string>): boolean => {
   let current: Node | undefined = rule.parent
   while (current) {
     if (current.type === 'root') return true

@@ -1,10 +1,6 @@
 import type { CacheSizes } from '../types'
 import { DEFAULT_CACHE_SIZES } from '../utils/cache'
-import {
-  type InvalidOptionReporter,
-  normalizeBoolean,
-  normalizeString
-} from '../utils/normalize'
+import { type InvalidOptionReporter, normalizeBoolean, normalizeString } from '../utils/normalize'
 import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { isAliasRoots } from '../utils/validate'
 import type { Options } from './spiracss-rel-comments.types'
@@ -12,8 +8,7 @@ import type { Options } from './spiracss-rel-comments.types'
 const isWordCase = (value: unknown): value is Exclude<Options['fileCase'], 'preserve'> =>
   value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
 
-const isFileCase = (value: unknown): value is Options['fileCase'] =>
-  value === 'preserve' || isWordCase(value)
+const isFileCase = (value: unknown): value is Options['fileCase'] => value === 'preserve' || isWordCase(value)
 
 const normalizeFileCase = (
   value: unknown,
@@ -82,10 +77,7 @@ const defaultOptions: Options = {
   cache: DEFAULT_CACHE_SIZES
 }
 
-export const normalizeOptions = (
-  opt: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (opt: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
   const raw = opt as {
     requireScss?: boolean
@@ -105,77 +97,34 @@ export const normalizeOptions = (
     naming?: Options['naming']
     external?: Options['external']
   }
-  const common = normalizeCommonOptions(
-    raw,
-    pickCommonDefaults(defaultOptions),
-    reportInvalid
-  )
+  const common = normalizeCommonOptions(raw, pickCommonDefaults(defaultOptions), reportInvalid)
   const fallbackChildDir = defaultOptions.paths.childDir ?? 'scss'
   const normalizeAliases = (value: unknown): Options['paths']['aliases'] => {
     if (value === undefined) return defaultOptions.paths.aliases
     if (isAliasRoots(value)) return value
-    reportInvalid?.(
-      'aliasRoots',
-      value,
-      '[spiracss] aliasRoots must be an object whose values are string arrays.'
-    )
+    reportInvalid?.('aliasRoots', value, '[spiracss] aliasRoots must be an object whose values are string arrays.')
     return defaultOptions.paths.aliases
   }
   return {
     require: {
-      scss: normalizeBoolean(
-        raw.requireScss,
-        defaultOptions.require.scss,
-        { coerce: true }
-      ),
-      meta: normalizeBoolean(
-        raw.requireMeta,
-        defaultOptions.require.meta,
-        { coerce: true }
-      ),
-      parent: normalizeBoolean(
-        raw.requireParent,
-        defaultOptions.require.parent,
-        { coerce: true }
-      ),
+      scss: normalizeBoolean(raw.requireScss, defaultOptions.require.scss, { coerce: true }),
+      meta: normalizeBoolean(raw.requireMeta, defaultOptions.require.meta, { coerce: true }),
+      parent: normalizeBoolean(raw.requireParent, defaultOptions.require.parent, { coerce: true }),
       child: {
-        enabled: normalizeBoolean(
-          raw.requireChild,
-          defaultOptions.require.child.enabled,
-          { coerce: true }
-        ),
-        shared: normalizeBoolean(
-          raw.requireChildShared,
-          defaultOptions.require.child.shared,
-          { coerce: true }
-        ),
-        interaction: normalizeBoolean(
-          raw.requireChildInteraction,
-          defaultOptions.require.child.interaction,
-          { coerce: true }
-        )
+        enabled: normalizeBoolean(raw.requireChild, defaultOptions.require.child.enabled, { coerce: true }),
+        shared: normalizeBoolean(raw.requireChildShared, defaultOptions.require.child.shared, { coerce: true }),
+        interaction: normalizeBoolean(raw.requireChildInteraction, defaultOptions.require.child.interaction, {
+          coerce: true
+        })
       }
     },
-    fileCase: normalizeFileCase(
-      raw.fileCase,
-      defaultOptions.fileCase,
-      reportInvalid,
-      'fileCase'
-    ),
+    fileCase: normalizeFileCase(raw.fileCase, defaultOptions.fileCase, reportInvalid, 'fileCase'),
     childFileCase: normalizeOptionalFileCase(raw.childFileCase, reportInvalid),
     validate: {
-      path: normalizeBoolean(
-        raw.validatePath,
-        defaultOptions.validate.path,
-        { coerce: true }
-      )
+      path: normalizeBoolean(raw.validatePath, defaultOptions.validate.path, { coerce: true })
     },
     skip: {
-      noRules: normalizeBoolean(
-        raw.skipNoRules,
-        defaultOptions.skip.noRules,
-        { coerce: true }
-      )
+      noRules: normalizeBoolean(raw.skipNoRules, defaultOptions.skip.noRules, { coerce: true })
     },
     paths: {
       childDir: normalizeString(raw.childDir, fallbackChildDir),

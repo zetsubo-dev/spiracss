@@ -3,9 +3,7 @@ import type { Rule } from 'postcss'
 import { createSharedCacheAccessor } from '../utils/cache'
 import { findParentRule } from '../utils/postcss-helpers'
 import type { SelectorParserCache } from '../utils/selector'
-import {
-  buildSelectorPolicySetsBase,
-  type SelectorPolicySetsBase} from '../utils/selector-policy'
+import { buildSelectorPolicySetsBase, type SelectorPolicySetsBase } from '../utils/selector-policy'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
 import { messages } from './spiracss-property-placement.messages'
@@ -59,10 +57,7 @@ const isIdNode = (node: SelectorNode): node is IdNode => node.type === 'id'
 
 const normalizeCombinator = (value: string): string => value.trim() || ' '
 
-const externalClassCache = new WeakMap<
-  Options,
-  { classSet: Set<string>; prefixes: string[] }
->()
+const externalClassCache = new WeakMap<Options, { classSet: Set<string>; prefixes: string[] }>()
 
 const getExternalClassCache = (options: Options): { classSet: Set<string>; prefixes: string[] } => {
   const cached = externalClassCache.get(options)
@@ -129,8 +124,7 @@ type GlobalSelectorAnalysis = {
   selectorCount: number
 }
 type GlobalSelectorCacheEntry = { value: GlobalSelectorAnalysis }
-const getGlobalSelectorCache =
-  createSharedCacheAccessor<string, GlobalSelectorCacheEntry>()
+const getGlobalSelectorCache = createSharedCacheAccessor<string, GlobalSelectorCacheEntry>()
 
 const stripModulePseudos = (selector: ParsedSelector): ParsedSelector => {
   const cloned = selector.clone()
@@ -140,10 +134,7 @@ const stripModulePseudos = (selector: ParsedSelector): ParsedSelector => {
 
     const selectorNodes = Array.isArray(pseudo.nodes)
       ? pseudo.nodes.filter(
-          (
-            child
-          ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-            child.type === 'selector'
+          (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
         )
       : []
 
@@ -179,10 +170,7 @@ const stripLocalPseudos = (selector: ParsedSelector): ParsedSelector => {
 
     const selectorNodes = Array.isArray(pseudo.nodes)
       ? pseudo.nodes.filter(
-          (
-            child
-          ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-            child.type === 'selector'
+          (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
         )
       : []
 
@@ -212,19 +200,13 @@ type GlobalSelectorScan = {
   hasGlobal: boolean
   hasGlobalOutsideNegation: boolean
   rightmostGlobal: boolean
-} & (
-  | { hasBareGlobal: false; bareIndex: null }
-  | { hasBareGlobal: true; bareIndex: number }
-)
+} & ({ hasBareGlobal: false; bareIndex: null } | { hasBareGlobal: true; bareIndex: number })
 
 type GlobalSelectorFlags = {
   hasLocal: boolean
   hasGlobal: boolean
   hasGlobalOutsideNegation: boolean
-} & (
-  | { hasBareGlobal: false; bareIndex: null }
-  | { hasBareGlobal: true; bareIndex: number }
-)
+} & ({ hasBareGlobal: false; bareIndex: null } | { hasBareGlobal: true; bareIndex: number })
 
 const scanSelectorGlobalFlags = (
   selector: ReturnType<SelectorParserCache['parse']>[number],
@@ -260,10 +242,7 @@ const scanSelectorGlobalFlags = (
         hasGlobalOutsideNegation = true
         const nestedSelectors = Array.isArray(node.nodes)
           ? node.nodes.filter(
-              (
-                child
-              ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-                child.type === 'selector'
+              (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
             )
           : []
         if (nestedSelectors.length === 0) {
@@ -275,10 +254,7 @@ const scanSelectorGlobalFlags = (
       }
       const selectorNodes = Array.isArray(node.nodes)
         ? node.nodes.filter(
-            (
-              child
-            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-              child.type === 'selector'
+            (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
           )
         : []
       if (FUNCTIONAL_PSEUDOS.has(value)) {
@@ -335,10 +311,7 @@ const scanSelectorGlobalFlags = (
 
 const isSelectorGlobalOnly = (
   selector: ReturnType<SelectorParserCache['parse']>[number],
-  cache?: WeakMap<
-    ReturnType<SelectorParserCache['parse']>[number],
-    GlobalSelectorFlags & { lastIndex: number | null }
-  >
+  cache?: WeakMap<ReturnType<SelectorParserCache['parse']>[number], GlobalSelectorFlags & { lastIndex: number | null }>
 ): boolean => {
   const scan = scanSelectorGlobalFlags(selector, cache)
   return scan.hasGlobalOutsideNegation && !scan.hasLocal
@@ -357,10 +330,7 @@ const getRightmostSegment = (nodes: SelectorNode[]): SelectorNode[] => {
 
 const isGlobalOnlySegment = (
   segment: SelectorNode[],
-  cache: WeakMap<
-    ReturnType<SelectorParserCache['parse']>[number],
-    GlobalSelectorFlags & { lastIndex: number | null }
-  >
+  cache: WeakMap<ReturnType<SelectorParserCache['parse']>[number], GlobalSelectorFlags & { lastIndex: number | null }>
 ): boolean => {
   let hasNodes = false
   let hasGlobalReference = false
@@ -382,10 +352,7 @@ const isGlobalOnlySegment = (
       const value = typeof node.value === 'string' ? node.value.toLowerCase() : ''
       const selectorNodes = Array.isArray(node.nodes)
         ? node.nodes.filter(
-            (
-              child
-            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-              child.type === 'selector'
+            (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
           )
         : []
       if (value === GLOBAL_PSEUDO) {
@@ -420,20 +387,12 @@ const isGlobalOnlySegment = (
  */
 const scanSelectorGlobalState = (
   selector: ReturnType<SelectorParserCache['parse']>[number],
-  cache: WeakMap<
-    ReturnType<SelectorParserCache['parse']>[number],
-    GlobalSelectorFlags & { lastIndex: number | null }
-  >
+  cache: WeakMap<ReturnType<SelectorParserCache['parse']>[number], GlobalSelectorFlags & { lastIndex: number | null }>
 ): GlobalSelectorScan => {
   const nodes = selector.nodes ?? []
   const scan = scanSelectorGlobalFlags(selector, cache)
   let rightmostGlobal = false
-  if (
-    scan.hasBareGlobal &&
-    scan.bareIndex !== null &&
-    scan.lastIndex !== null &&
-    scan.lastIndex > scan.bareIndex
-  ) {
+  if (scan.hasBareGlobal && scan.bareIndex !== null && scan.lastIndex !== null && scan.lastIndex > scan.bareIndex) {
     rightmostGlobal = true
   } else {
     const rightmostSegment = getRightmostSegment(nodes)
@@ -495,8 +454,7 @@ const analyzeGlobalSelector = (
     const sel = stripLocalPseudos(originalSel)
     const scan = scanSelectorGlobalState(sel, flagsCache)
     const isPureGlobalSelector =
-      (scan.hasGlobalOutsideNegation && !scan.hasLocal) ||
-      (scan.hasBareGlobal && scan.bareIndex === 0)
+      (scan.hasGlobalOutsideNegation && !scan.hasLocal) || (scan.hasBareGlobal && scan.bareIndex === 0)
 
     if (!scan.hasGlobal) {
       const normalized = normalizeStrippedSelector(sel.toString())
@@ -553,10 +511,7 @@ const analyzeGlobalSelector = (
     cloned.walkPseudos((pseudo) => {
       const selectorNodes = Array.isArray(pseudo.nodes)
         ? pseudo.nodes.filter(
-            (
-              child
-            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-              child.type === 'selector'
+            (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
           )
         : []
       if (selectorNodes.length === 0) return
@@ -576,10 +531,7 @@ const analyzeGlobalSelector = (
       })
       const remainingSelectors = Array.isArray(pseudo.nodes)
         ? pseudo.nodes.filter(
-            (
-              child
-            ): child is ReturnType<SelectorParserCache['parse']>[number] =>
-              child.type === 'selector'
+            (child): child is ReturnType<SelectorParserCache['parse']>[number] => child.type === 'selector'
           )
         : []
       if (remainingSelectors.length === 0) {
@@ -598,9 +550,7 @@ const analyzeGlobalSelector = (
       const hasContent = pseudoNodes.some((node) => {
         if (node.type === 'comment') return false
         if (node.type !== 'selector') return true
-        return (node.nodes ?? []).some(
-          (child) => child.type !== 'comment' && child.type !== 'combinator'
-        )
+        return (node.nodes ?? []).some((child) => child.type !== 'comment' && child.type !== 'combinator')
       })
       if (!hasContent) pseudo.remove()
     })
@@ -620,8 +570,7 @@ const analyzeGlobalSelector = (
     else allGlobalOnly = false
   })
 
-  const strippedText =
-    stripped.length > 0 ? stripped.map((item) => item.selector).join(', ') : null
+  const strippedText = stripped.length > 0 ? stripped.map((item) => item.selector).join(', ') : null
   const value: GlobalSelectorAnalysis = {
     stripped: allGlobalOnly ? null : strippedText,
     strippedSelectors: allGlobalOnly ? [] : stripped,
@@ -642,9 +591,7 @@ export const stripGlobalSelector = (
   if (!options?.preserveCombinator) return analysis.stripped
   if (analysis.strippedSelectors.length === 0) return null
   return analysis.strippedSelectors
-    .map((item) =>
-      item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector
-    )
+    .map((item) => (item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector))
     .join(', ')
 }
 
@@ -666,16 +613,11 @@ export const stripGlobalSelectorForRoot = (
     return selectorText
   }
   return analysis.strippedSelectors
-    .map((item) =>
-      item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector
-    )
+    .map((item) => (item.leadingCombinator ? `${item.leadingCombinator} ${item.selector}` : item.selector))
     .join(', ')
 }
 
-export const splitSelectors = (
-  selector: string,
-  cache: SelectorParserCache
-): string[] => {
+export const splitSelectors = (selector: string, cache: SelectorParserCache): string[] => {
   const selectors = cache.parse(selector)
   return selectors.map((sel) => sel.toString().trim()).filter((text) => text.length > 0)
 }
@@ -789,10 +731,7 @@ const analyzeRootSegment = (
   segmentCount: number,
   combinatorCount: number,
   selectorText: string
-):
-  | { status: 'ok'; kind?: 'page-root' }
-  | { status: 'skip' }
-  | { status: 'error'; message: string } => {
+): { status: 'ok'; kind?: 'page-root' } | { status: 'skip' } | { status: 'error'; message: string } => {
   const tags = segment.filter(isTagNode)
   const ids = segment.filter(isIdNode)
   if (tags.length === 0 && ids.length === 0) return { status: 'ok' }
@@ -952,10 +891,7 @@ const analyzeSegmentInfo = (
         if (!pseudoClass) {
           pseudoClass = parsed.baseClass
           pseudoKind = parsed.baseKind
-        } else if (
-          pseudoKind !== parsed.baseKind ||
-          (mode === 'base' && pseudoClass !== parsed.baseClass)
-        ) {
+        } else if (pseudoKind !== parsed.baseKind || (mode === 'base' && pseudoClass !== parsed.baseClass)) {
           return null
         }
       }
@@ -1000,14 +936,7 @@ const analyzeSegmentKind = (
   patterns: ReturnType<typeof buildPatterns>,
   classifyOptions: ClassifyOptions
 ): 'block' | 'element' | null => {
-  const info = analyzeSegmentInfo(
-    segment,
-    options,
-    policy,
-    patterns,
-    classifyOptions,
-    'kind'
-  )
+  const info = analyzeSegmentInfo(segment, options, policy, patterns, classifyOptions, 'kind')
   return info ? info.kind : null
 }
 
@@ -1018,21 +947,11 @@ const analyzeSegmentBase = (
   patterns: ReturnType<typeof buildPatterns>,
   classifyOptions: ClassifyOptions
 ): SegmentBase | null => {
-  const info = analyzeSegmentInfo(
-    segment,
-    options,
-    policy,
-    patterns,
-    classifyOptions,
-    'base'
-  )
+  const info = analyzeSegmentInfo(segment, options, policy, patterns, classifyOptions, 'base')
   return info && 'baseClass' in info ? info : null
 }
 
-const calculateElementDepth = (
-  segmentKinds: Array<'block' | 'element'>,
-  combinators: string[]
-): number => {
+const calculateElementDepth = (segmentKinds: Array<'block' | 'element'>, combinators: string[]): number => {
   // Track consecutive element chains joined by child combinators.
   let maxDepth = 0
   let currentDepth = 0
@@ -1071,12 +990,7 @@ const parseSelectorSegments = (
   const combinators: string[] = []
   collectSegments(parsed[0], segments, combinators)
   if (segments.length === 0) return null
-  const rootCheck = analyzeRootSegment(
-    segments[0],
-    segments.length,
-    combinators.length,
-    selectorText
-  )
+  const rootCheck = analyzeRootSegment(segments[0], segments.length, combinators.length, selectorText)
   return { segments, combinators, rootCheck }
 }
 
@@ -1127,9 +1041,7 @@ const buildSelectorChain = <T extends SegmentKindInfo>(
     segmentKinds.at(-1) === 'block' &&
     segmentKinds.at(-2) === 'block'
   const childBlockScanEnd = allowSiblingBlockTail ? -2 : -1
-  const hasChildBlockBeforeTail = segmentKinds
-    .slice(1, childBlockScanEnd)
-    .some((kind) => kind === 'block')
+  const hasChildBlockBeforeTail = segmentKinds.slice(1, childBlockScanEnd).some((kind) => kind === 'block')
   if (hasChildBlockBeforeTail) return null
 
   const hasChildBlockAtTail = segmentKinds.length > 1 && segmentKinds.at(-1) === 'block'
@@ -1160,8 +1072,8 @@ export const analyzeSelectorList = (
   if (selectorList.length === 0) return { status: 'skip' }
   const normalizedSelectors = selectorList.filter((selector) => selector.length > 0)
   if (normalizedSelectors.length === 0) return { status: 'skip' }
-  const strippedSelectors = normalizedSelectors.flatMap((selector) =>
-    analyzeGlobalSelector(selector, cache, options.cache.selector).strippedSelectors
+  const strippedSelectors = normalizedSelectors.flatMap(
+    (selector) => analyzeGlobalSelector(selector, cache, options.cache.selector).strippedSelectors
   )
   if (strippedSelectors.length === 0) return { status: 'skip' }
 

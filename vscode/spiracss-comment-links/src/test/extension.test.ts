@@ -25,10 +25,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
     const doc = await vscode.workspace.openTextDocument(docUri)
 
     // Run DocumentLinkProvider
-    const links = (await vscode.commands.executeCommand(
-      'vscode.executeLinkProvider',
-      doc.uri
-    )) as vscode.DocumentLink[]
+    const links = (await vscode.commands.executeCommand('vscode.executeLinkProvider', doc.uri)) as vscode.DocumentLink[]
 
     // Ensure @rel links are detected
     assert.ok(links.length > 0, 'Should detect @rel link in comment')
@@ -47,10 +44,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
 
     const doc = await vscode.workspace.openTextDocument(docUri)
 
-    const links = (await vscode.commands.executeCommand(
-      'vscode.executeLinkProvider',
-      doc.uri
-    )) as vscode.DocumentLink[]
+    const links = (await vscode.commands.executeCommand('vscode.executeLinkProvider', doc.uri)) as vscode.DocumentLink[]
 
     const componentsLink = links.find((link) => {
       const text = doc.getText(link.range)
@@ -65,10 +59,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
 
     const doc = await vscode.workspace.openTextDocument(docUri)
 
-    const links = (await vscode.commands.executeCommand(
-      'vscode.executeLinkProvider',
-      doc.uri
-    )) as vscode.DocumentLink[]
+    const links = (await vscode.commands.executeCommand('vscode.executeLinkProvider', doc.uri)) as vscode.DocumentLink[]
 
     const assetsLink = links.find((link) => {
       const text = doc.getText(link.range)
@@ -83,10 +74,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
 
     const doc = await vscode.workspace.openTextDocument(docUri)
 
-    const links = (await vscode.commands.executeCommand(
-      'vscode.executeLinkProvider',
-      doc.uri
-    )) as vscode.DocumentLink[]
+    const links = (await vscode.commands.executeCommand('vscode.executeLinkProvider', doc.uri)) as vscode.DocumentLink[]
 
     const cases = [
       { token: '@src', expected: path.join('src', 'index.scss') },
@@ -99,10 +87,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
     for (const { token, expected } of cases) {
       const link = links.find((link) => doc.getText(link.range).includes(token))
       assert.ok(link, `${token} link should be found`)
-      assert.ok(
-        link?.target?.fsPath.endsWith(expected),
-        `${token} should resolve to ${expected}`
-      )
+      assert.ok(link?.target?.fsPath.endsWith(expected), `${token} should resolve to ${expected}`)
     }
   })
 
@@ -112,10 +97,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
 
     const doc = await vscode.workspace.openTextDocument(docUri)
 
-    const links = (await vscode.commands.executeCommand(
-      'vscode.executeLinkProvider',
-      doc.uri
-    )) as vscode.DocumentLink[]
+    const links = (await vscode.commands.executeCommand('vscode.executeLinkProvider', doc.uri)) as vscode.DocumentLink[]
 
     const cases = [
       {
@@ -341,10 +323,7 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
       })
 
       assert.ok(componentsLink, '@components link should be resolved using default aliasRoots')
-      assert.ok(
-        componentsLink?.target?.fsPath.includes('button.scss'),
-        'Link should point to button.scss'
-      )
+      assert.ok(componentsLink?.target?.fsPath.includes('button.scss'), 'Link should point to button.scss')
     } finally {
       // Cleanup
       if (fs.existsSync(tempFile)) {
@@ -489,5 +468,4 @@ suite('SpiraCSS Comment Links Extension Test Suite', () => {
       }
     }
   })
-
 })

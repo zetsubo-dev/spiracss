@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript"],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off"
+  },
+  "rules": {
+    "typescript/no-explicit-any": "warn"
+  },
+  "ignorePatterns": [
+    "node_modules/**",
+    "dist/**",
+    "out/**",
+    "build/**",
+    "coverage/**",
+    "docs/**",
+    "official-site/**",
+    "starters/**",
+    "template/**",
+    "figma-to-spiracss/**"
+  ],
+  "env": {
+    "builtin": true
+  }
+}

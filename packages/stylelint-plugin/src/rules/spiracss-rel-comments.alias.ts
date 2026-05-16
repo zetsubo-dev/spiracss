@@ -5,14 +5,9 @@ import { createLruCache, DEFAULT_CACHE_SIZE } from '../utils/cache'
 import type { AliasRoots } from './spiracss-rel-comments.types'
 
 const ALIAS_NAME_PATTERN = '[a-z][a-z0-9-]*'
-const aliasTargetRe = new RegExp(
-  `^\\s*@(?!rel\\b)(${ALIAS_NAME_PATTERN})\\/([^\\s*]+)`,
-  'gm'
-)
+const aliasTargetRe = new RegExp(`^\\s*@(?!rel\\b)(${ALIAS_NAME_PATTERN})\\/([^\\s*]+)`, 'gm')
 
-const parseAliasTarget = (
-  target: string
-): { key: string; suffix: string } | null => {
+const parseAliasTarget = (target: string): { key: string; suffix: string } | null => {
   const match = new RegExp(`^@(${ALIAS_NAME_PATTERN})(?:/(.*))?$`).exec(target)
   if (!match) return null
   return { key: match[1], suffix: match[2] ?? '' }
@@ -25,7 +20,10 @@ const shouldReportAliasError = (): boolean => {
   const debug = process.env.SPIRACSS_DEBUG
   if (!debug) return false
   if (debug === '1') return true
-  return debug.split(',').map((entry) => entry.trim()).includes('alias')
+  return debug
+    .split(',')
+    .map((entry) => entry.trim())
+    .includes('alias')
 }
 
 const reportAliasError = (error: unknown): void => {
@@ -34,9 +32,7 @@ const reportAliasError = (error: unknown): void => {
   console.warn(`[spiracss] Alias resolution failed: ${message}`)
 }
 
-type RealpathCacheEntry =
-  | { status: 'ok'; value: string }
-  | { status: 'error' }
+type RealpathCacheEntry = { status: 'ok'; value: string } | { status: 'error' }
 
 const realpathCache = createLruCache<string, RealpathCacheEntry>(DEFAULT_CACHE_SIZE)
 
@@ -112,9 +108,7 @@ export const extractLinkTargets = (text: string | undefined | null): string[] =>
   // @alias/xxx (@assets, @components, etc): alias key is arbitrary (a-z start, alnum + hyphen).
   // Exclude @rel since it is handled by the dedicated pattern above.
   // Only treat "@alias/..." as link targets and ignore non-link comments like @at-root.
-  const aliasMatches = text.matchAll(
-    new RegExp(aliasTargetRe.source, aliasTargetRe.flags)
-  )
+  const aliasMatches = text.matchAll(new RegExp(aliasTargetRe.source, aliasTargetRe.flags))
   for (const match of aliasMatches) {
     targets.push(`@${match[1]}/${match[2]}`)
   }
@@ -130,11 +124,7 @@ export const normalizeRelPath = (raw: string | undefined | null): string => {
   return target
 }
 
-export const resolveAliasCandidates = (
-  target: string,
-  projectRoot: string,
-  aliasRoots: AliasRoots
-): string[] => {
+export const resolveAliasCandidates = (target: string, projectRoot: string, aliasRoots: AliasRoots): string[] => {
   const parsed = parseAliasTarget(target)
   if (!parsed) return []
   const { key, suffix } = parsed

@@ -5,10 +5,7 @@
 import { type CheerioAPI, load } from 'cheerio'
 import type { AnyNode, Element } from 'domhandler'
 
-import {
-  type JsxClassBindingOptions,
-  replaceJsxClassBindings,
-  stripJsxClassBindings} from './jsx-class-bindings'
+import { type JsxClassBindingOptions, replaceJsxClassBindings, stripJsxClassBindings } from './jsx-class-bindings'
 
 /* ---------- type guards ---------- */
 const hasClassAttribute = (node: Element): boolean => {
@@ -32,19 +29,9 @@ function isElement(node: AnyNode): node is Element {
 const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g
 const CDATA_RE = /<!\[CDATA\[[\s\S]*?\]\]>/g
 const QUOTED_VALUE_RE = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g
-const TEXT_CONTAINER_RE =
-  /<\s*(template|textarea|noscript|xmp|listing|foreignObject)\b[^>]*>[\s\S]*?<\/\s*\1\s*>/gi
+const TEXT_CONTAINER_RE = /<\s*(template|textarea|noscript|xmp|listing|foreignObject)\b[^>]*>[\s\S]*?<\/\s*\1\s*>/gi
 const SCRIPT_STYLE_RE = /<\s*(script|style)\b[^>]*>[\s\S]*?<\/\s*\1\s*>/gi
-const ROOT_IGNORED_TAGS = new Set([
-  'template',
-  'textarea',
-  'script',
-  'style',
-  'head',
-  'noscript',
-  'xmp',
-  'listing'
-])
+const ROOT_IGNORED_TAGS = new Set(['template', 'textarea', 'script', 'style', 'head', 'noscript', 'xmp', 'listing'])
 
 const stripForRootScan = (html: string): string =>
   html
@@ -111,8 +98,7 @@ const findExplicitRoot = ($: CheerioAPI, root: 'html' | 'body' | null): Element 
   return undefined
 }
 
-const findFirstElement = ($: CheerioAPI): Element | undefined =>
-  $('*').get().find(isTagElement)
+const findFirstElement = ($: CheerioAPI): Element | undefined => $('*').get().find(isTagElement)
 
 /* ---------- RegExp cache (for sanitize) ---------- */
 const RX = {
@@ -200,22 +186,14 @@ function isWordCase(value: unknown): value is WordCase {
   return value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
 }
 
-function normalizeValueNaming(
-  raw: unknown,
-  fallback: ValueNaming,
-  fieldName: string
-): ValueNaming {
+function normalizeValueNaming(raw: unknown, fallback: ValueNaming, fieldName: string): ValueNaming {
   if (!raw || typeof raw !== 'object') return { ...fallback }
   const value = raw as ValueNamingOptions
   if (value.case !== undefined && !isWordCase(value.case)) {
     throw new Error(`${fieldName}.case must be "kebab" | "snake" | "camel" | "pascal".`)
   }
   if (value.maxWords !== undefined) {
-    if (
-      typeof value.maxWords !== 'number' ||
-      !Number.isInteger(value.maxWords) ||
-      value.maxWords < 1
-    ) {
+    if (typeof value.maxWords !== 'number' || !Number.isInteger(value.maxWords) || value.maxWords < 1) {
       throw new Error(`${fieldName}.maxWords must be a positive integer.`)
     }
   }
@@ -242,8 +220,7 @@ function formatFileBase(input: string, fileCase: FileNameCase): string {
   if (words.length === 0) return input
 
   const lower = words.map((w) => w.toLowerCase())
-  const capitalize = (word: string): string =>
-    word ? word[0].toUpperCase() + word.slice(1) : ''
+  const capitalize = (word: string): string => (word ? word[0].toUpperCase() + word.slice(1) : '')
 
   switch (fileCase) {
     case 'kebab':
@@ -461,11 +438,7 @@ function normalizeSelectorPolicy(raw?: SelectorPolicy): NormalizedSelectorPolicy
     baseValueNaming,
     'selectorPolicy.variant.valueNaming'
   )
-  const stateValueNaming = normalizeValueNaming(
-    state.valueNaming,
-    baseValueNaming,
-    'selectorPolicy.state.valueNaming'
-  )
+  const stateValueNaming = normalizeValueNaming(state.valueNaming, baseValueNaming, 'selectorPolicy.state.valueNaming')
 
   return {
     valueNaming: baseValueNaming,
@@ -709,10 +682,7 @@ function isElementBase(name: string, naming: NamingOptions): boolean {
   }
 }
 
-export function classifyBaseClass(
-  name: string,
-  naming: NamingOptions
-): 'block' | 'element' | 'invalid' {
+export function classifyBaseClass(name: string, naming: NamingOptions): 'block' | 'element' | 'invalid' {
   if (isBlockClass(name, naming)) return 'block'
   if (name.startsWith('-') || name.startsWith('u-')) return 'invalid'
   if (isElementBase(name, naming)) return 'element'
@@ -756,7 +726,6 @@ const findFirstNonExternalBaseKind = (
   }
   return elementCandidate ? 'element' : null
 }
-
 
 function buildModifierPattern(naming: NamingOptions): RegExp {
   const customModifier = normalizeCustomPattern(naming.customPatterns?.modifier)
@@ -835,9 +804,7 @@ const filterModifierTokens = (
 ): string[] => {
   if (modifiers.length === 0) return []
   const pattern = buildModifierPattern(naming)
-  return modifiers.filter(
-    (modifier) => pattern.test(modifier) && !(external && isExternalClass(modifier, external))
-  )
+  return modifiers.filter((modifier) => pattern.test(modifier) && !(external && isExternalClass(modifier, external)))
 }
 
 function dedupAttributeSelectors(list: AttributeSelector[]): AttributeSelector[] {
@@ -977,14 +944,8 @@ function dedup(arr: ComponentStructure[]): ComponentStructure[] {
       })
     } else {
       ex.modifiers = Array.from(new Set([...ex.modifiers, ...item.modifiers]))
-      ex.variantAttributes = dedupAttributeSelectors([
-        ...ex.variantAttributes,
-        ...item.variantAttributes
-      ])
-      ex.stateAttributes = dedupAttributeSelectors([
-        ...ex.stateAttributes,
-        ...item.stateAttributes
-      ])
+      ex.variantAttributes = dedupAttributeSelectors([...ex.variantAttributes, ...item.variantAttributes])
+      ex.stateAttributes = dedupAttributeSelectors([...ex.stateAttributes, ...item.stateAttributes])
       ex.nestedChildren.push(...item.nestedChildren)
       ex.independentChildren.push(...item.independentChildren)
       item.orderedChildren.forEach((child) => {
@@ -1083,14 +1044,8 @@ function buildTreeInternal(
         }
         if (dup) {
           dup.modifiers.push(...c.modifiers.filter((m) => !dup.modifiers.includes(m)))
-          dup.variantAttributes = dedupAttributeSelectors([
-            ...dup.variantAttributes,
-            ...c.variantAttributes
-          ])
-          dup.stateAttributes = dedupAttributeSelectors([
-            ...dup.stateAttributes,
-            ...c.stateAttributes
-          ])
+          dup.variantAttributes = dedupAttributeSelectors([...dup.variantAttributes, ...c.variantAttributes])
+          dup.stateAttributes = dedupAttributeSelectors([...dup.stateAttributes, ...c.stateAttributes])
           dup.nestedChildren.push(...c.nestedChildren)
           dup.independentChildren.push(...c.independentChildren)
           c.orderedChildren.forEach((child) => {
@@ -1190,17 +1145,14 @@ function lintNodeStructure(
   const inferredBaseKind =
     baseKind === 'external' ? findFirstNonExternalBaseKind(node.modifiers, naming, external) : null
   const hasNonExternalClass =
-    baseKind === 'external'
-      ? node.modifiers.some((modifier) => !isExternalClass(modifier, external))
-      : false
+    baseKind === 'external' ? node.modifiers.some((modifier) => !isExternalClass(modifier, external)) : false
   const hasBlockAncestor = ancestorBlock != null
 
   const path = [...pathStack, base]
 
   const isExternalBase = baseKind === 'external'
   const hasBase = baseKind === 'block' || baseKind === 'element'
-  const effectiveBaseKind =
-    baseKind === 'external' && inferredBaseKind ? inferredBaseKind : baseKind
+  const effectiveBaseKind = baseKind === 'external' && inferredBaseKind ? inferredBaseKind : baseKind
 
   if (isExternalBase && hasNonExternalClass) {
     const message = inferredBaseKind
@@ -1286,8 +1238,7 @@ function lintNodeStructure(
     modifierTokens.forEach((modifier) => {
       issues.push({
         code: 'DISALLOWED_MODIFIER',
-        message:
-          `Modifier "${modifier}" is not allowed when selectorPolicy variant/state are both "data".`,
+        message: `Modifier "${modifier}" is not allowed when selectorPolicy variant/state are both "data".`,
         baseClass: base,
         path
       })
@@ -1364,18 +1315,7 @@ function lintNodeStructure(
 
   const children = [...node.nestedChildren, ...node.independentChildren]
   for (const child of children) {
-    lintNodeStructure(
-      child,
-      node,
-      nextAncestorBlock,
-      naming,
-      policy,
-      external,
-      path,
-      false,
-      isRootMode,
-      issues
-    )
+    lintNodeStructure(child, node, nextAncestorBlock, naming, policy, external, path, false, isRootMode, issues)
   }
 }
 
@@ -1411,8 +1351,7 @@ export function lintHtmlStructure(
       if (rootElements.length > 1) {
         issues.push({
           code: 'MULTIPLE_ROOT_ELEMENTS',
-          message:
-            'Multiple root elements found. Root mode expects a single root element.',
+          message: 'Multiple root elements found. Root mode expects a single root element.',
           baseClass: '',
           path: []
         })
@@ -1479,30 +1418,20 @@ function block(
 
   // If the root Block has independent child Blocks, prepend meta.load-css().
   if (isRoot && hasIndependentChildren) {
-    buf.push(`${ind}@include meta.load-css("${childScssDir}");`, '')
+    buf.push(`${ind}@include meta.load-css('${childScssDir}');`, '')
   }
 
   if (layoutMixins.length === 0) {
     buf.push(`${ind}// ${c.isIndependent ? 'block' : 'element'} base styles`, '')
   } else {
     layoutMixins.forEach((mixin) => {
-      buf.push(
-        `${ind}${mixin} {`,
-        `${indent(lv + 1)}// layout mixin`,
-        `${ind}}`,
-        ''
-      )
+      buf.push(`${ind}${mixin} {`, `${indent(lv + 1)}// layout mixin`, `${ind}}`, '')
     })
   }
 
   const variantSelectors = new Set<string>()
   const stateSelectors = new Set<string>()
-  const { variantClassModifiers, stateClassModifiers } = splitClassModifiers(
-    c.modifiers,
-    policy,
-    naming,
-    external
-  )
+  const { variantClassModifiers, stateClassModifiers } = splitClassModifiers(c.modifiers, policy, naming, external)
 
   variantClassModifiers.forEach((m) => {
     variantSelectors.add(`&.${m}`)
@@ -1523,18 +1452,11 @@ function block(
     stateSelectors.add(`&.${m}`)
   })
 
-  const elementStateEntries = c.isIndependent
-    ? collectElementStateEntries(c, policy, naming, external)
-    : []
+  const elementStateEntries = c.isIndependent ? collectElementStateEntries(c, policy, naming, external) : []
 
   variantSelectors.forEach((sel) => {
     if (layoutMixins.length === 0) {
-      buf.push(
-        `${ind}${sel} {`,
-        `${indent(lv + 1)}// variant styles`,
-        `${ind}}`,
-        ''
-      )
+      buf.push(`${ind}${sel} {`, `${indent(lv + 1)}// variant styles`, `${ind}}`, '')
     } else {
       layoutMixins.forEach((mixin) => {
         buf.push(
@@ -1588,8 +1510,10 @@ function block(
 
   // SpiraCSS section layout: shared / interaction (added to every Block)
   if (c.isIndependent) {
+    if (buf.length > 0 && buf[buf.length - 1] !== '') {
+      buf.push('')
+    }
     buf.push(
-      '',
       `${ind}// --shared ----------------------------------------`,
       '',
       `${ind}// --interaction -----------------------------------`
@@ -1598,23 +1522,13 @@ function block(
     if (stateSelectors.size > 0 || elementStateEntries.length > 0) {
       buf.push(`${ind}@at-root & {`)
       stateSelectors.forEach((sel) => {
-        buf.push(
-          `${indent(lv + 1)}${sel} {`,
-          `${indent(lv + 2)}// state styles`,
-          `${indent(lv + 1)}}`,
-          ''
-        )
+        buf.push(`${indent(lv + 1)}${sel} {`, `${indent(lv + 2)}// state styles`, `${indent(lv + 1)}}`, '')
       })
       elementStateEntries.forEach((entry) => {
         const pathSelector = formatElementPath(entry.path)
         buf.push(`${indent(lv + 1)}${pathSelector} {`)
         entry.selectors.forEach((sel) => {
-          buf.push(
-            `${indent(lv + 2)}${sel} {`,
-            `${indent(lv + 3)}// state styles`,
-            `${indent(lv + 2)}}`,
-            ''
-          )
+          buf.push(`${indent(lv + 2)}${sel} {`, `${indent(lv + 3)}// state styles`, `${indent(lv + 2)}}`, '')
         })
         buf.push(`${indent(lv + 1)}}`, '')
       })
@@ -1640,8 +1554,8 @@ function scssContent(
   const { globalScssModule, pageEntryPrefix, layoutMixins, childScssDir } = opts
 
   const header = c.isRoot
-    ? `@use "${globalScssModule}" as *;\n@use "sass:meta";\n\n// ${pageEntryPrefix}/${hint}\n\n`
-    : `@use "${globalScssModule}" as *;\n\n${
+    ? `@use '${globalScssModule}' as *;\n@use 'sass:meta';\n\n// ${pageEntryPrefix}/${hint}\n\n`
+    : `@use '${globalScssModule}' as *;\n\n${
         parent
           ? `// @rel/${
               parentRootFileBase
@@ -1686,9 +1600,7 @@ export function generateFromHtml(
     if (!explicitRoot) {
       const rootElements = $.root().children().get().filter(isRootCandidate)
       if (rootElements.length > 1) {
-        throw new Error(
-          'Multiple root elements found. Root mode expects a single root element.'
-        )
+        throw new Error('Multiple root elements found. Root mode expects a single root element.')
       }
     }
     const explicitNode = findExplicitRoot($, explicitRoot)
@@ -1736,16 +1648,7 @@ export function generateFromHtml(
       // parent always exists, so hint is unused (pass empty string just in case)
       results.push({
         path: relPath,
-        content: scssContent(
-          comp,
-          parent,
-          '',
-          opts,
-          policy,
-          external,
-          childFileCase,
-          parentRootFileBase
-        )
+        content: scssContent(comp, parent, '', opts, policy, external, childFileCase, parentRootFileBase)
       })
     }
     for (const ch of comp.independentChildren) {
@@ -1765,9 +1668,7 @@ export function generateFromHtml(
 
   for (const tree of mergedRoots) {
     const rootFileBase = formatFileBase(tree.baseClass, rootFileCase)
-    const rootFile = isRootMode
-      ? `${rootFileBase}.scss`
-      : `${childDir}/${rootFileBase}.scss`
+    const rootFile = isRootMode ? `${rootFileBase}.scss` : `${childDir}/${rootFileBase}.scss`
     // When isRootMode, the parent file is typically a page entry like index.scss.
     const pageEntryHint = isRootMode ? 'index.scss' : 'page-entry.scss'
     results.push({
@@ -1776,9 +1677,9 @@ export function generateFromHtml(
     })
 
     if (!isRootMode) {
-      uses.add(`@use "${rootFileBase}";`)
+      uses.add(`@use '${rootFileBase}';`)
     }
-    gatherIndependent(tree).forEach((f) => uses.add(`@use "${f.replace(/\.scss$/, '')}";`))
+    gatherIndependent(tree).forEach((f) => uses.add(`@use '${f.replace(/\.scss$/, '')}';`))
 
     emitComponents(tree, tree, rootFileBase)
   }
@@ -1794,11 +1695,7 @@ export function generateFromHtml(
   return results
 }
 
-export function summarizeRootBlocks(
-  rawHtml: string,
-  isRootMode: boolean,
-  opts: GeneratorOptions
-): RootBlockSummary[] {
+export function summarizeRootBlocks(rawHtml: string, isRootMode: boolean, opts: GeneratorOptions): RootBlockSummary[] {
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
   const sanitized = sanitizeHtml(raw, opts.jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)

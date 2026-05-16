@@ -1,9 +1,6 @@
 import type { CacheSizes, NormalizedSelectorPolicyBase } from '../types'
 import { DEFAULT_CACHE_SIZES } from '../utils/cache'
-import {
-  type InvalidOptionReporter,
-  normalizeStringArray,
-  safeNormalizeSelectorPolicyBase} from '../utils/normalize'
+import { type InvalidOptionReporter, normalizeStringArray, safeNormalizeSelectorPolicyBase } from '../utils/normalize'
 import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type { Options } from './spiracss-property-placement.types'
@@ -39,10 +36,7 @@ const defaultOptions: Options = {
   cache: DEFAULT_CACHE_SIZES
 }
 
-export const normalizeOptions = (
-  raw: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (raw: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!raw || typeof raw !== 'object') return { ...defaultOptions }
   const opt = raw as {
     elementDepth?: number
@@ -58,11 +52,7 @@ export const normalizeOptions = (
     selectorPolicy?: Options['selectorPolicy']
   }
   const selectorPolicy = opt.selectorPolicy
-  const common = normalizeCommonOptions(
-    opt,
-    pickCommonDefaults(defaultOptions),
-    reportInvalid
-  )
+  const common = normalizeCommonOptions(opt, pickCommonDefaults(defaultOptions), reportInvalid)
 
   const normalizeMarginSide = (value: unknown): Options['margin']['side'] => {
     const lowered = typeof value === 'string' ? value.toLowerCase() : ''
@@ -75,37 +65,20 @@ export const normalizeOptions = (
 
   return {
     element: {
-      depth:
-        typeof opt.elementDepth === 'number'
-          ? opt.elementDepth
-          : defaultOptions.element.depth
+      depth: typeof opt.elementDepth === 'number' ? opt.elementDepth : defaultOptions.element.depth
     },
     margin: {
       side: normalizeMarginSide(opt.marginSide),
-      tags:
-        typeof opt.marginSideTags === 'boolean'
-          ? opt.marginSideTags
-          : defaultOptions.margin.tags
+      tags: typeof opt.marginSideTags === 'boolean' ? opt.marginSideTags : defaultOptions.margin.tags
     },
-    position:
-      typeof opt.position === 'boolean' ? opt.position : defaultOptions.position,
+    position: typeof opt.position === 'boolean' ? opt.position : defaultOptions.position,
     size: {
-      internal:
-        typeof opt.sizeInternal === 'boolean'
-          ? opt.sizeInternal
-          : defaultOptions.size.internal
+      internal: typeof opt.sizeInternal === 'boolean' ? opt.sizeInternal : defaultOptions.size.internal
     },
     responsive: {
-      mixins: normalizeStringArray(
-        opt.responsiveMixins,
-        defaultOptions.responsive.mixins
-      )
+      mixins: normalizeStringArray(opt.responsiveMixins, defaultOptions.responsive.mixins)
     },
-    selectorPolicy: safeNormalizeSelectorPolicyBase(
-      selectorPolicy,
-      defaultSelectorPolicy,
-      reportInvalid
-    ),
+    selectorPolicy: safeNormalizeSelectorPolicyBase(selectorPolicy, defaultSelectorPolicy, reportInvalid),
     ...common
   }
 }

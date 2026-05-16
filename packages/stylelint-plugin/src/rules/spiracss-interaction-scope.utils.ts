@@ -5,11 +5,7 @@ import { isAtRule, isComment, isContainer } from '../utils/postcss-helpers'
 import { getCommentText, isRuleInRootScope } from '../utils/section'
 import type { SelectorParserCache } from '../utils/selector'
 import { buildSelectorPolicySetsBase } from '../utils/selector-policy'
-import type {
-  NormalizedSelectorPolicy,
-  SelectorAnalysis,
-  SelectorPolicySets
-} from './spiracss-interaction-scope.types'
+import type { NormalizedSelectorPolicy, SelectorAnalysis, SelectorPolicySets } from './spiracss-interaction-scope.types'
 
 export const normalizePseudo = (value: string): string => `:${value.replace(/^:+/, '')}`
 
@@ -29,9 +25,8 @@ const getNodeIndex = (container: NodeContainer, node: Node): number => {
   return indexMap.get(node) ?? -1
 }
 
-export const buildSelectorPolicySets = (
-  policy: NormalizedSelectorPolicy
-): SelectorPolicySets => buildSelectorPolicySetsBase(policy)
+export const buildSelectorPolicySets = (policy: NormalizedSelectorPolicy): SelectorPolicySets =>
+  buildSelectorPolicySetsBase(policy)
 
 export const analyzeSelector = (
   selector: string,
@@ -68,10 +63,7 @@ export const analyzeSelector = (
         const name = attr.attribute || ''
         if (!name) return
         const normalizedName = name.toLowerCase()
-        if (
-          policySets.dataVariantEnabled &&
-          policySets.variantKeys.has(normalizedName)
-        ) {
+        if (policySets.dataVariantEnabled && policySets.variantKeys.has(normalizedName)) {
           selectorHasVariant = true
         }
         if (policySets.dataStateEnabled && normalizedName === policySets.stateKey) {
@@ -106,10 +98,7 @@ export const hasAtRootNestingParam = (atRoot: AtRule | null): boolean => {
   return params.includes('&')
 }
 
-export const startsWithNestingToken = (
-  selector: string,
-  selectorCache: SelectorParserCache
-): boolean => {
+export const startsWithNestingToken = (selector: string, selectorCache: SelectorParserCache): boolean => {
   if (!selector) return false
   const selectors = selectorCache.parse(selector)
   if (selectors.length === 0) return false
@@ -124,8 +113,7 @@ export const startsWithNestingToken = (
   })
 }
 
-export const isRootLevelRule = (rule: Rule): boolean =>
-  isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)
+export const isRootLevelRule = (rule: Rule): boolean => isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)
 
 export const findCommentBefore = (node: Node): string | null => {
   let current: Node | undefined = node

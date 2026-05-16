@@ -6,17 +6,12 @@ import {
   collectNestingSiblingClasses,
   collectSelectorSummary,
   type CompoundNodes,
-  isInsideNonSameElementPseudo} from '../utils/selector'
+  isInsideNonSameElementPseudo
+} from '../utils/selector'
 import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import { messages } from './spiracss-class-structure.messages'
 import { classify } from './spiracss-class-structure.patterns'
-import type {
-  ClassifyOptions,
-  Kind,
-  Options,
-  Patterns,
-  SelectorPolicyData
-} from './spiracss-class-structure.types'
+import type { ClassifyOptions, Kind, Options, Patterns, SelectorPolicyData } from './spiracss-class-structure.types'
 
 const isClassNode = (node: SelectorNode): node is ClassName => node.type === 'class'
 
@@ -40,11 +35,7 @@ export const collectRootBlockNames = (
   return [...names]
 }
 
-export const hasValidSpiraClass = (
-  selectors: Selector[],
-  options: Options,
-  patterns: Patterns
-): boolean => {
+export const hasValidSpiraClass = (selectors: Selector[], options: Options, patterns: Patterns): boolean => {
   return selectors.some((sel) => {
     let found = false
     sel.walkClasses((node) => {
@@ -81,8 +72,7 @@ export const analyzeRootSelector = (
     if (compoundClassNames.length === 0) return
     const hasRootClass = compoundClassNames.includes(rootBlockName)
     const hasExternalClass = compoundClassNames.some(
-      (name) =>
-        name !== rootBlockName && classify(name, options, patterns) === 'external'
+      (name) => name !== rootBlockName && classify(name, options, patterns) === 'external'
     )
     if (hasRootClass && hasExternalClass) hasRootBlockCompoundExternal = true
     compoundClassNames.length = 0
@@ -143,21 +133,12 @@ const getModifierExample = (options: Options): string => {
   return `${prefix || ''}${token}`
 }
 
-const reportAttributeViolations = (
-  compounds: CompoundNodes[],
-  ctx: ProcessContext
-): void => {
+const reportAttributeViolations = (compounds: CompoundNodes[], ctx: ProcessContext): void => {
   const { parentKind, report, options, patterns, policyData } = ctx
   const selectorPolicy = options.selectorPolicy
   const variantValueNaming = selectorPolicy.variant.valueNaming
   const stateValueNaming = selectorPolicy.state.valueNaming
-  const {
-    reservedVariantKeys,
-    reservedStateKey,
-    reservedAriaKeys,
-    variantValuePattern,
-    stateValuePattern
-  } = policyData
+  const { reservedVariantKeys, reservedStateKey, reservedAriaKeys, variantValuePattern, stateValuePattern } = policyData
   const modifierExample = getModifierExample(options)
   const customModifierPattern = options.naming?.customPatterns?.modifier
 
@@ -176,67 +157,31 @@ const reportAttributeViolations = (
       if (name.startsWith('data-')) {
         if (reservedVariantKeys.has(name)) {
           if (selectorPolicy.variant.mode === 'class') {
-            report(
-              messages.invalidVariantAttribute(
-                name,
-                modifierExample,
-                customModifierPattern
-              )
-            )
+            report(messages.invalidVariantAttribute(name, modifierExample, customModifierPattern))
             return
           }
           if (attrValue && !variantValuePattern.test(attrValue)) {
-            report(
-              messages.invalidDataValue(
-                name,
-                attrValue,
-                variantValueNaming.case,
-                variantValueNaming.maxWords
-              )
-            )
+            report(messages.invalidDataValue(name, attrValue, variantValueNaming.case, variantValueNaming.maxWords))
           }
         } else if (name === reservedStateKey) {
           if (selectorPolicy.state.mode !== 'data') {
-            report(
-              messages.invalidStateAttribute(
-                name,
-                modifierExample,
-                customModifierPattern
-              )
-            )
+            report(messages.invalidStateAttribute(name, modifierExample, customModifierPattern))
             return
           }
           if (attrValue && !stateValuePattern.test(attrValue)) {
-            report(
-              messages.invalidDataValue(
-                name,
-                attrValue,
-                stateValueNaming.case,
-                stateValueNaming.maxWords
-              )
-            )
+            report(messages.invalidDataValue(name, attrValue, stateValueNaming.case, stateValueNaming.maxWords))
           }
         }
       } else if (name.startsWith('aria-')) {
         if (reservedAriaKeys.has(name) && selectorPolicy.state.mode !== 'data') {
-          report(
-            messages.invalidStateAttribute(
-              name,
-              modifierExample,
-              customModifierPattern
-            )
-          )
+          report(messages.invalidStateAttribute(name, modifierExample, customModifierPattern))
         }
       }
     })
   })
 }
 
-const collectInvalidNestingClasses = (
-  sel: Selector,
-  options: Options,
-  patterns: Patterns
-): Set<string> => {
+const collectInvalidNestingClasses = (sel: Selector, options: Options, patterns: Patterns): Set<string> => {
   const invalidClasses = new Set<string>()
   collectNestingSiblingClasses(sel).forEach((name) => {
     const kind = classify(name, options, patterns)
@@ -300,12 +245,7 @@ const resolveKind = (
   return classify(base.value, options, patterns)
 }
 
-const resolveStructuralKind = (
-  classes: ClassName[],
-  kind: Kind,
-  options: Options,
-  patterns: Patterns
-): Kind => {
+const resolveStructuralKind = (classes: ClassName[], kind: Kind, options: Options, patterns: Patterns): Kind => {
   const structuralBase = [...classes].reverse().find((c) => {
     const currentKind = classify(c.value, options, patterns)
     return currentKind !== 'modifier' && currentKind !== 'external'
@@ -313,11 +253,7 @@ const resolveStructuralKind = (
   return structuralBase ? classify(structuralBase.value, options, patterns) : kind
 }
 
-const resolveElementDepth = (
-  kind: Kind,
-  parentKind: Kind | undefined,
-  parentDepth: number
-): number =>
+const resolveElementDepth = (kind: Kind, parentKind: Kind | undefined, parentDepth: number): number =>
   kind === 'element' ? (parentKind === 'element' ? parentDepth + 1 : 1) : 0
 
 const reportElementHierarchyViolations = (
@@ -338,14 +274,7 @@ const reportElementHierarchyViolations = (
 
   if (baseKind === 'element') {
     if (depth > options.element.depth) {
-      report(
-        messages.elementChainTooDeep(
-          parentLabel,
-          baseValue,
-          depth,
-          options.element.depth
-        )
-      )
+      report(messages.elementChainTooDeep(parentLabel, baseValue, depth, options.element.depth))
     }
     return true
   }
@@ -381,13 +310,7 @@ const reportBlockCombinatorViolations = (
   const missingChild = !hasNesting && !firstCombinator
   const wrongCombinator = firstCombinator && firstCombinator !== '>'
   if (missingChild || wrongCombinator) {
-    report(
-      messages.needChild(
-        baseValue,
-        options.comments.shared,
-        options.comments.interaction
-      )
-    )
+    report(messages.needChild(baseValue, options.comments.shared, options.comments.interaction))
     return
   }
 
@@ -397,11 +320,7 @@ const reportBlockCombinatorViolations = (
   }
 }
 
-const reportBlockDepthViolation = (
-  ctx: ProcessContext,
-  kind: Kind,
-  baseValue: string
-): void => {
+const reportBlockDepthViolation = (ctx: ProcessContext, kind: Kind, baseValue: string): void => {
   const { parentKind, parentBlockDepth, report, isInteraction } = ctx
   if (kind !== 'block' || isInteraction) return
   const blockDepth = parentKind === 'block' ? parentBlockDepth + 1 : 0
@@ -410,11 +329,7 @@ const reportBlockDepthViolation = (
   }
 }
 
-const reportBlockGrandchildElementViolation = (
-  ctx: ProcessContext,
-  kind: Kind,
-  baseValue: string
-): void => {
+const reportBlockGrandchildElementViolation = (ctx: ProcessContext, kind: Kind, baseValue: string): void => {
   const { parentKind, parentBlockDepth, parentSelector, report, isInteraction } = ctx
   if (parentKind !== 'block' || kind !== 'element' || isInteraction) return
   if (parentBlockDepth < 1 || !parentSelector) return
@@ -430,26 +345,15 @@ const reportBlockGrandchildElementViolation = (
  * @returns Structural kind used for parent/child depth tracking, or null when ignored.
  */
 export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null => {
-  const {
-    parentKind,
-    parentDepth,
-    report,
-    options,
-    patterns,
-    policyData,
-    namingHint
-  } = ctx
-  const { classes, hasNesting, firstCombinator, combinatorCount } =
-    collectSelectorSummary(sel)
+  const { parentKind, parentDepth, report, options, patterns, policyData, namingHint } = ctx
+  const { classes, hasNesting, firstCombinator, combinatorCount } = collectSelectorSummary(sel)
 
   const compounds = collectCompoundNodes(sel)
   reportAttributeViolations(compounds, ctx)
 
   if (classes.length === 0) return null
   // Check non-modifier classes in the &.foo pattern first.
-  const invalidNestingClasses = hasNesting
-    ? collectInvalidNestingClasses(sel, options, patterns)
-    : new Set<string>()
+  const invalidNestingClasses = hasNesting ? collectInvalidNestingClasses(sel, options, patterns) : new Set<string>()
   const modifierExample = getModifierExample(options)
   reportInvalidNestingClasses(invalidNestingClasses, report, modifierExample)
 
@@ -460,9 +364,9 @@ export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null
   const modifierClasses = classes.filter((c) => patterns.modifierRe.test(c.value))
   const modifierClass = modifierClasses[0]
 
-  const modifiersAllowed =
-    !(options.selectorPolicy.variant.mode === 'data' &&
-      options.selectorPolicy.state.mode === 'data')
+  const modifiersAllowed = !(
+    options.selectorPolicy.variant.mode === 'data' && options.selectorPolicy.state.mode === 'data'
+  )
   if (!modifiersAllowed && modifierClasses.length > 0) {
     // Display lowercase keys in messages to match actual selector matching behavior.
     const { variantKeys, stateKeys } = getLowercasePolicyKeys(options.selectorPolicy)
@@ -505,14 +409,7 @@ export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null
 
   reportModifierPlacementViolation(kind, hasNesting, parentKind, report, modifierExample)
 
-  reportBlockCombinatorViolations(
-    ctx,
-    kind,
-    base.value,
-    hasNesting,
-    firstCombinator,
-    combinatorCount
-  )
+  reportBlockCombinatorViolations(ctx, kind, base.value, hasNesting, firstCombinator, combinatorCount)
   reportBlockGrandchildElementViolation(ctx, kind, base.value)
 
   return structuralKind

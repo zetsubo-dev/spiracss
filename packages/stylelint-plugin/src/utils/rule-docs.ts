@@ -1,5 +1,4 @@
-const DOCS_BASE_URL =
-  'https://spiracss.jp/stylelint-rules'
+const DOCS_BASE_URL = 'https://spiracss.jp/stylelint-rules'
 
 const RULE_DOCS_PATHS: Record<string, string> = {
   'spiracss/class-structure': 'class-structure',

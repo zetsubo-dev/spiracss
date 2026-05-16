@@ -6,46 +6,18 @@ import stylelint from 'stylelint'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { formatFileBase } from '../utils/formatting'
 import { selectorParseFailedArgs } from '../utils/messages'
-import {
-  CACHE_SCHEMA,
-  COMMENTS_SCHEMA,
-  EXTERNAL_SCHEMA,
-  NAMING_SCHEMA,
-  POLICY_SCHEMA
-} from '../utils/option-schema'
+import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { getCommentText, isRuleInsideAtRule, safeTestPattern } from '../utils/section'
-import {
-  createSelectorCacheWithErrorFlag,
-  type SelectorParserCache
-} from '../utils/selector'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
-import {
-  isBoolean,
-  isNumber,
-  isPlainObject,
-  isString,
-  isStringArray
-} from '../utils/validate'
+import { createSelectorCacheWithErrorFlag, type SelectorParserCache } from '../utils/selector'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
+import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { ruleName } from './spiracss-class-structure.constants'
 import { messages } from './spiracss-class-structure.messages'
 import { normalizeOptions } from './spiracss-class-structure.options'
-import {
-  buildPatterns,
-  buildSelectorPolicyData,
-  formatNamingHint
-} from './spiracss-class-structure.patterns'
-import {
-  isRootBlockRule,
-  markInteractionRules,
-  markSharedRules
-} from './spiracss-class-structure.sections'
+import { buildPatterns, buildSelectorPolicyData, formatNamingHint } from './spiracss-class-structure.patterns'
+import { isRootBlockRule, markInteractionRules, markSharedRules } from './spiracss-class-structure.sections'
 import {
   analyzeRootSelector,
   collectRootBlockNames,
@@ -55,10 +27,7 @@ import {
   processSelector
 } from './spiracss-class-structure.selectors'
 import type { Kind } from './spiracss-class-structure.types'
-import {
-  splitSelectors,
-  stripGlobalSelectorForRoot
-} from './spiracss-property-placement.selectors'
+import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
 
 export { ruleName }
 
@@ -99,10 +68,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null
-        ? primaryOption
-        : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
     type RuleCache = {
       options: ReturnType<typeof normalizeOptions>
       commentPatterns: { sharedCommentPattern: RegExp; interactionCommentPattern: RegExp }
@@ -112,9 +78,7 @@ const rule = createRule(
       hasInvalidOptions: boolean
     }
     let cache: RuleCache | null = null
-    const getCache = (
-      reportInvalid?: (optionName: string, value: unknown, detail?: string) => void
-    ): RuleCache => {
+    const getCache = (reportInvalid?: (optionName: string, value: unknown, detail?: string) => void): RuleCache => {
       if (cache) return cache
       let hasInvalidOptions = false
       const handleInvalid = reportInvalid
@@ -178,14 +142,7 @@ const rule = createRule(
       )
       if (shouldValidate && hasInvalid) return
 
-      const {
-        options,
-        commentPatterns,
-        patterns,
-        policyData,
-        namingHint,
-        hasInvalidOptions
-      } = getCache(reportInvalid)
+      const { options, commentPatterns, patterns, policyData, namingHint, hasInvalidOptions } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
       const cacheSizes = options.cache
@@ -205,31 +162,19 @@ const rule = createRule(
       const normalizedPath = filePath ? path.normalize(filePath) : ''
       const pathSegments = normalizedPath ? normalizedPath.split(path.sep).filter(Boolean) : []
       const fileName = filePath ? path.basename(filePath) : ''
-      const fileBaseRaw =
-        fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
-      const fileBase = fileBaseRaw.endsWith('.module')
-        ? fileBaseRaw.slice(0, -'.module'.length)
-        : fileBaseRaw
+      const fileBaseRaw = fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
+      const fileBase = fileBaseRaw.endsWith('.module') ? fileBaseRaw.slice(0, -'.module'.length) : fileBaseRaw
 
-      const parseStrippedSelectors = (
-        selectorText: string
-      ): ReturnType<SelectorParserCache['parse']> => {
+      const parseStrippedSelectors = (selectorText: string): ReturnType<SelectorParserCache['parse']> => {
         const selectorTexts = splitSelectors(selectorText, selectorCache)
         const localSelectors = selectorTexts
           .map((selector) =>
-            stripGlobalSelectorForRoot(
-              selector,
-              selectorCache,
-              cacheSizes.selector,
-              { preserveCombinator: true }
-            )
+            stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector, { preserveCombinator: true })
           )
           .filter((selector): selector is string => Boolean(selector))
         // Preserve leading combinators so relative selectors (e.g. :global(...) > .block)
         // do not count as root Block definitions.
-        return localSelectors.flatMap((selector) =>
-          selectorCache.parse(selector)
-        )
+        return localSelectors.flatMap((selector) => selectorCache.parse(selector))
       }
 
       const isGlobalWrapperRule = (rule: Rule): boolean => {
@@ -243,9 +188,7 @@ const rule = createRule(
         // leading combinators introduced by stripping `:global(...)`.
         const selectorTexts = splitSelectors(rule.selector, selectorCache)
         const strippedSelectors = selectorTexts
-          .map((selector) =>
-            stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector)
-          )
+          .map((selector) => stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector))
           .filter((selector): selector is string => Boolean(selector))
         const selectors = strippedSelectors.flatMap((selector) => selectorCache.parse(selector))
         if (selectors.length === 0) return true
@@ -343,8 +286,7 @@ const rule = createRule(
           }
           return false
         })()
-        const parentSelector =
-          parentRule && typeof parentRule.selector === 'string' ? parentRule.selector : undefined
+        const parentSelector = parentRule && typeof parentRule.selector === 'string' ? parentRule.selector : undefined
         const parentDepth = parentRule ? elementDepths.get(parentRule) || 0 : 0
         const parentBlockDepth = parentRule ? blockDepths.get(parentRule) || 0 : 0
 
@@ -392,12 +334,7 @@ const rule = createRule(
         const ruleKind = mergeRuleKinds(structuralKinds)
         if (ruleKind) {
           ruleKinds.set(rule, ruleKind)
-          const depth =
-            ruleKind === 'element'
-              ? parentKind === 'element'
-                ? parentDepth + 1
-                : 1
-              : 0
+          const depth = ruleKind === 'element' ? (parentKind === 'element' ? parentDepth + 1 : 1) : 0
           elementDepths.set(rule, depth)
           if (ruleKind === 'block') {
             const blockDepth = parentKind === 'block' ? parentBlockDepth + 1 : 0
@@ -426,9 +363,7 @@ const rule = createRule(
           ruleName,
           result,
           node: comment,
-          message: messages.sharedNeedRootBlock(
-            options.comments.shared
-          )
+          message: messages.sharedNeedRootBlock(options.comments.shared)
         })
       })
 
@@ -441,12 +376,7 @@ const rule = createRule(
           const selectors = parseStrippedSelectors(rule.selector)
           if (selectors.length === 0) return
           selectors.forEach((sel) => {
-            const {
-              hasAnyClass,
-              hasRootBlock,
-              hasOtherBlock,
-              hasRootBlockCompoundExternal
-            } = analyzeRootSelector(
+            const { hasAnyClass, hasRootBlock, hasOtherBlock, hasRootBlockCompoundExternal } = analyzeRootSelector(
               sel,
               resolvedRootBlockName,
               options,
@@ -458,10 +388,7 @@ const rule = createRule(
                 ruleName,
                 result,
                 node: rule,
-                message: messages.rootSelectorNeedNesting(
-                  resolvedRootBlockName,
-                  sel.toString().trim()
-                )
+                message: messages.rootSelectorNeedNesting(resolvedRootBlockName, sel.toString().trim())
               })
               return
             }
@@ -470,10 +397,7 @@ const rule = createRule(
               ruleName,
               result,
               node: rule,
-              message: messages.rootSelectorMissingBlock(
-                resolvedRootBlockName,
-                sel.toString().trim()
-              )
+              message: messages.rootSelectorMissingBlock(resolvedRootBlockName, sel.toString().trim())
             })
           })
         })
@@ -515,9 +439,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

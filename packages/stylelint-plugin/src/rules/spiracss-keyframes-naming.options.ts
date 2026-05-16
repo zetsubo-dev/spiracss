@@ -2,18 +2,13 @@ import safeRegex from 'safe-regex'
 
 import type { CacheSizes } from '../types'
 import { DEFAULT_CACHE_SIZES } from '../utils/cache'
-import {
-  type InvalidOptionReporter,
-  normalizeBoolean,
-  normalizeStringArray
-} from '../utils/normalize'
+import { type InvalidOptionReporter, normalizeBoolean, normalizeStringArray } from '../utils/normalize'
 import { normalizeCommonOptions } from '../utils/options'
 import type { BlockNameSource, Options } from './spiracss-keyframes-naming.types'
 
 const DEFAULT_SHARED_FILES = ['keyframes.scss']
 
-const escapeRegExp = (text: string): string =>
-  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const toSuffixPattern = (text: string): RegExp => {
   const normalized = text.replace(/\\/g, '/')
@@ -21,9 +16,7 @@ const toSuffixPattern = (text: string): RegExp => {
   return new RegExp(`${escaped}$`)
 }
 
-const DEFAULT_SHARED_FILE_PATTERNS = DEFAULT_SHARED_FILES.map((file) =>
-  toSuffixPattern(file)
-)
+const DEFAULT_SHARED_FILE_PATTERNS = DEFAULT_SHARED_FILES.map((file) => toSuffixPattern(file))
 
 const defaultOptions: Options = {
   action: {
@@ -50,11 +43,7 @@ const defaultOptions: Options = {
   cache: DEFAULT_CACHE_SIZES
 }
 
-const normalizeActionMaxWords = (
-  value: unknown,
-  fallback: number,
-  reportInvalid?: InvalidOptionReporter
-): number => {
+const normalizeActionMaxWords = (value: unknown, fallback: number, reportInvalid?: InvalidOptionReporter): number => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   const intValue = Math.trunc(value)
   if (intValue < 1 || intValue > 3) {
@@ -71,11 +60,7 @@ const normalizeBlockNameSource = (
 ): BlockNameSource => {
   if (value === 'selector' || value === 'file' || value === 'selector-or-file') return value
   if (value !== undefined) {
-    reportInvalid?.(
-      'blockSource',
-      value,
-      '[spiracss] blockSource must be "selector", "file", or "selector-or-file".'
-    )
+    reportInvalid?.('blockSource', value, '[spiracss] blockSource must be "selector", "file", or "selector-or-file".')
   }
   return fallback
 }
@@ -145,15 +130,9 @@ const normalizeFilePatterns = (
   return patterns
 }
 
-const normalizeSharedPrefixes = (
-  value: unknown,
-  fallback: string[]
-): string[] => normalizeStringArray(value, fallback)
+const normalizeSharedPrefixes = (value: unknown, fallback: string[]): string[] => normalizeStringArray(value, fallback)
 
-export const normalizeOptions = (
-  opt: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (opt: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
   const raw = opt as {
     actionMaxWords?: number
@@ -179,53 +158,20 @@ export const normalizeOptions = (
   )
   return {
     action: {
-      maxWords: normalizeActionMaxWords(
-        raw.actionMaxWords,
-        defaultOptions.action.maxWords,
-        reportInvalid
-      )
+      maxWords: normalizeActionMaxWords(raw.actionMaxWords, defaultOptions.action.maxWords, reportInvalid)
     },
     block: {
-      source: normalizeBlockNameSource(
-        raw.blockSource,
-        defaultOptions.block.source,
-        reportInvalid
-      ),
-      warnMissing: normalizeBoolean(
-        raw.blockWarnMissing,
-        defaultOptions.block.warnMissing,
-        { coerce: true }
-      )
+      source: normalizeBlockNameSource(raw.blockSource, defaultOptions.block.source, reportInvalid),
+      warnMissing: normalizeBoolean(raw.blockWarnMissing, defaultOptions.block.warnMissing, { coerce: true })
     },
     shared: {
-      prefixes: normalizeSharedPrefixes(
-        raw.sharedPrefixes,
-        defaultOptions.shared.prefixes
-      ),
-      files: normalizeFilePatterns(
-        raw.sharedFiles,
-        DEFAULT_SHARED_FILES,
-        reportInvalid,
-        'sharedFiles'
-      )
+      prefixes: normalizeSharedPrefixes(raw.sharedPrefixes, defaultOptions.shared.prefixes),
+      files: normalizeFilePatterns(raw.sharedFiles, DEFAULT_SHARED_FILES, reportInvalid, 'sharedFiles')
     },
     ignore: {
-      files: normalizeFilePatterns(
-        raw.ignoreFiles,
-        undefined,
-        reportInvalid,
-        'ignoreFiles'
-      ),
-      patterns: normalizePatternList(
-        raw.ignorePatterns,
-        reportInvalid,
-        'ignorePatterns'
-      ),
-      skipPlacement: normalizeBoolean(
-        raw.ignoreSkipPlacement,
-        defaultOptions.ignore.skipPlacement,
-        { coerce: true }
-      )
+      files: normalizeFilePatterns(raw.ignoreFiles, undefined, reportInvalid, 'ignoreFiles'),
+      patterns: normalizePatternList(raw.ignorePatterns, reportInvalid, 'ignorePatterns'),
+      skipPlacement: normalizeBoolean(raw.ignoreSkipPlacement, defaultOptions.ignore.skipPlacement, { coerce: true })
     },
     ...common
   }

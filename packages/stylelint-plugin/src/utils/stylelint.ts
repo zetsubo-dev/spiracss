@@ -64,8 +64,7 @@ export const validateOptionsArrayFields = (
   reportInvalid?: (optionName: string, value: unknown, detail?: string) => void,
   detail?: string | ((optionName: string, value: unknown) => string | undefined)
 ): boolean => {
-  const optionsObject =
-    rawOptions && typeof rawOptions === 'object' ? (rawOptions as Record<string, unknown>) : null
+  const optionsObject = rawOptions && typeof rawOptions === 'object' ? (rawOptions as Record<string, unknown>) : null
   if (!optionsObject) return false
   const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
     if (!path.includes('.')) return obj[path]

@@ -24,17 +24,11 @@ export const messages = createRuleMessages(ruleName, {
       child
     )}. Move the Block to the parent Block level or refactor.`,
   blockDescendantSelector: (parent: string, child: string) =>
-    `Avoid chained selectors under ${formatCode(
-      parent
-    )}. Only target direct children (${formatCode(
+    `Avoid chained selectors under ${formatCode(parent)}. Only target direct children (${formatCode(
       '> .child'
-    )}). Move ${formatCode(
-      `.${child}`
-    )} styles into the child Block/Element file.`,
+    )}). Move ${formatCode(`.${child}`)} styles into the child Block/Element file.`,
   blockTargetsGrandchildElement: (parent: string, child: string) =>
-    `Do not style grandchild Elements from ${formatCode(
-      parent
-    )}. Move ${formatCode(
+    `Do not style grandchild Elements from ${formatCode(parent)}. Move ${formatCode(
       `.${child}`
     )} styles into the child Block file.`,
   tooDeepBlockNesting: (cls: string) =>
@@ -46,9 +40,7 @@ export const messages = createRuleMessages(ruleName, {
   multipleRootBlocks: (root: string, extras: string[]) =>
     `Only one root Block is allowed per file. Found ${formatList(extras, {
       maxItems: extras.length
-    })} in addition to ${formatCode(
-      root
-    )}. Split into separate SCSS files or move extra Blocks under the root. ` +
+    })} in addition to ${formatCode(root)}. Split into separate SCSS files or move extra Blocks under the root. ` +
     `Auto-fix: keep one root Block in this file; split extra roots into separate files, ` +
     `or move them under the existing root Block as nested child selectors.`,
   duplicateRootBlock: (block: string, selector: string) =>
@@ -62,66 +54,36 @@ export const messages = createRuleMessages(ruleName, {
     )} and rewrite the root-level compound part as nested ${formatCode(
       '&...'
     )} selectors (e.g., ${formatCode(`.${block} { &.<externalClass> { ... } }`)}).`,
-  needChild: (
-    child: string,
-    sharedPattern: RegExp,
-    interactionPattern: RegExp
-  ) =>
-    `Use a direct-child combinator under the Block: ${formatCode(
-      `> .${child}`
-    )}. ` +
-    `Sections marked by ${formatCode(
-      'comments.shared'
-    )} (current: ${formatPattern(
-      sharedPattern
-    )}) ` +
-    `or ${formatCode(
-      'comments.interaction'
-    )} (current: ${formatPattern(
-      interactionPattern
-    )}) are exempt.`,
+  needChild: (child: string, sharedPattern: RegExp, interactionPattern: RegExp) =>
+    `Use a direct-child combinator under the Block: ${formatCode(`> .${child}`)}. ` +
+    `Sections marked by ${formatCode('comments.shared')} (current: ${formatPattern(sharedPattern)}) ` +
+    `or ${formatCode('comments.interaction')} (current: ${formatPattern(interactionPattern)}) are exempt.`,
   needChildNesting: (selector: string) =>
     `Do not write child selectors at the top level. Selector: ${formatCode(
       selector
-    )}. Nest it inside the Block (e.g., ${formatCode(
-      '.block { > .child { ... } }'
-    )}).`,
+    )}. Nest it inside the Block (e.g., ${formatCode('.block { > .child { ... } }')}).`,
   sharedNeedRootBlock: (sharedPattern: RegExp) =>
-    `Place the shared section comment matching ${formatCode(
-      'comments.shared'
-    )} (current: ${formatPattern(
+    `Place the shared section comment matching ${formatCode('comments.shared')} (current: ${formatPattern(
       sharedPattern
     )}) directly under the root Block ` +
-    `(root wrappers like ${formatCode('@layer')}/${formatCode(
-      '@supports'
-    )}/${formatCode('@media')}/${formatCode(
+    `(root wrappers like ${formatCode('@layer')}/${formatCode('@supports')}/${formatCode('@media')}/${formatCode(
       '@container'
     )}/${formatCode('@scope')} are allowed). Do not nest inside child rules.`,
   needAmpForMod: (example: string) => {
-    const exampleHint = example
-      ? ` Example: ${formatCode(`.block { &.${example} { ... } }`)}.`
-      : ''
+    const exampleHint = example ? ` Example: ${formatCode(`.block { &.${example} { ... } }`)}.` : ''
     const invalidExample = example
-      ? ` Do not use ${formatCode(`.block.${example}`)} or ${formatCode(
-          `.${example}`
-        )} at top level.`
+      ? ` Do not use ${formatCode(`.block.${example}`)} or ${formatCode(`.${example}`)} at top level.`
       : ' Do not use modifier classes at the top level.'
-    return `Write modifier classes inside the Block using ${formatCode(
-      '&.<modifier>'
-    )}.${exampleHint}${invalidExample}`
+    return `Write modifier classes inside the Block using ${formatCode('&.<modifier>')}.${exampleHint}${invalidExample}`
   },
   needModifierPrefix: (cls: string, example: string) => {
     const exampleHint = example ? ` Example: ${formatCode(`&.${example}`)}.` : ''
-    return `Only modifier classes may be appended to ${formatCode(
-      '&'
-    )}. Found ${formatCode(cls)}. Use ${formatCode(
+    return `Only modifier classes may be appended to ${formatCode('&')}. Found ${formatCode(cls)}. Use ${formatCode(
       '&.<modifier>'
     )}.${exampleHint} If not a modifier, move it to its own selector.`
   },
   disallowedModifier: (variantKeys: string[], stateKeys: string[]) =>
-    `Modifier classes are disabled because ${formatCode(
-      'selectorPolicy.variant.mode'
-    )} and ${formatCode(
+    `Modifier classes are disabled because ${formatCode('selectorPolicy.variant.mode')} and ${formatCode(
       'selectorPolicy.state.mode'
     )} are both ${formatCode('data')}. ` +
     `Use variant attributes (current: ${formatConfigList(
@@ -129,11 +91,7 @@ export const messages = createRuleMessages(ruleName, {
     )}) or state attributes (current: ${formatConfigList(
       stateKeys
     )}) instead, or enable class mode in ${formatCode('selectorPolicy')}.`,
-  invalidVariantAttribute: (
-    attr: string,
-    example: string,
-    customModifierPattern?: RuleMessageArgs[number]
-  ) => {
+  invalidVariantAttribute: (attr: string, example: string, customModifierPattern?: RuleMessageArgs[number]) => {
     const pattern =
       customModifierPattern instanceof RegExp || typeof customModifierPattern === 'string'
         ? customModifierPattern
@@ -143,19 +101,15 @@ export const messages = createRuleMessages(ruleName, {
           'naming.customPatterns.modifier'
         )} (current: ${formatPattern(pattern)}).`
       : example
-      ? `Use modifier classes instead (e.g., ${formatCode(`&.${example}`)}).`
-      : 'Use modifier classes that match the configured naming rules.'
+        ? `Use modifier classes instead (e.g., ${formatCode(`&.${example}`)}).`
+        : 'Use modifier classes that match the configured naming rules.'
     return (
       `Attribute ${formatCode(attr)} is disabled because ${formatCode(
         'selectorPolicy.variant.mode'
       )} is ${formatCode('class')}. ` + hint
     )
   },
-  invalidStateAttribute: (
-    attr: string,
-    example: string,
-    customModifierPattern?: RuleMessageArgs[number]
-  ) => {
+  invalidStateAttribute: (attr: string, example: string, customModifierPattern?: RuleMessageArgs[number]) => {
     const pattern =
       customModifierPattern instanceof RegExp || typeof customModifierPattern === 'string'
         ? customModifierPattern
@@ -165,8 +119,8 @@ export const messages = createRuleMessages(ruleName, {
           'naming.customPatterns.modifier'
         )} (current: ${formatPattern(pattern)}).`
       : example
-      ? `Use modifier classes instead (e.g., ${formatCode(`&.${example}`)}).`
-      : 'Use modifier classes that match the configured naming rules.'
+        ? `Use modifier classes instead (e.g., ${formatCode(`&.${example}`)}).`
+        : 'Use modifier classes that match the configured naming rules.'
     return (
       `Attribute ${formatCode(attr)} is disabled because ${formatCode(
         'selectorPolicy.state.mode'
@@ -174,26 +128,20 @@ export const messages = createRuleMessages(ruleName, {
     )
   },
   invalidDataValue: (attr: string, value: string, caseName: string, maxWords: number) =>
-    `Attribute ${formatCode(attr)} value ${formatCode(
-      value
-    )} does not match ${formatCode(
+    `Attribute ${formatCode(attr)} value ${formatCode(value)} does not match ${formatCode(
       'selectorPolicy'
     )} valueNaming (case: ${formatCode(caseName)}, maxWords: ${formatCode(
       String(maxWords)
     )}). Rename it to match the configured rules.`,
   rootSelectorMissingBlock: (block: string, selector: string) =>
-    `Root selector ${formatCode(
-      selector
-    )} must include the root Block ${formatCode(
+    `Root selector ${formatCode(selector)} must include the root Block ${formatCode(
       `.${block}`
     )}. Include it in the selector or move this rule under the root Block. ` +
     `Auto-fix: either prepend/include ${formatCode(
       `.${block}`
     )} in the selector, or move declarations into ${formatCode(`.${block} { ... }`)}.`,
   rootSelectorNeedNesting: (block: string, selector: string) =>
-    `Root selector ${formatCode(
-      selector
-    )} must keep the root Block ${formatCode(
+    `Root selector ${formatCode(selector)} must keep the root Block ${formatCode(
       `.${block}`
     )} as the top-level selector. Move external classes into the root Block using ${formatCode(
       '&.<externalClass>'
@@ -201,13 +149,10 @@ export const messages = createRuleMessages(ruleName, {
     `Auto-fix: move this rule into ${formatCode(`.${block}`)} and convert the compound root selector to nested ${formatCode(
       '&...'
     )}.`,
-  missingRootBlock: () =>
-    'No root Block found. Define a top-level Block selector that matches the naming rules.',
+  missingRootBlock: () => 'No root Block found. Define a top-level Block selector that matches the naming rules.',
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0]),
   fileNameMismatch: (block: string, expectedFiles: string[], actualFile: string) =>
-    `Root Block ${formatCode(
-      `.${block}`
-    )} must be defined in ${formatList(expectedFiles, {
+    `Root Block ${formatCode(`.${block}`)} must be defined in ${formatList(expectedFiles, {
       maxItems: expectedFiles.length
     })} (found ${formatCode(actualFile)}). Rename the file or the Block.`
 })

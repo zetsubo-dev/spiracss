@@ -93,20 +93,20 @@ describe('spiracss/class-structure - --shared section behavior', () => {
   }
 }`,
         description: '--shared section must be directly under the root Block',
-        message: 'Place the shared section comment matching `comments.shared` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+        message:
+          'Place the shared section comment matching `comments.shared` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
       },
       {
         code: `
 // --shared
 .hero-banner { > .title {} }`,
         description: '--shared comments at the file top level are invalid',
-        message: 'Place the shared section comment matching `comments.shared` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
+        message:
+          'Place the shared section comment matching `comments.shared` (current: `/--shared/i`) directly under the root Block (root wrappers like `@layer`/`@supports`/`@media`/`@container`/`@scope` are allowed). Do not nest inside child rules. (spiracss/class-structure)'
       }
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - --interaction section behavior', () => {
   testRule({
@@ -207,8 +207,6 @@ describe('spiracss/class-structure - --interaction section behavior', () => {
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - --shared section details', () => {
   testRule({

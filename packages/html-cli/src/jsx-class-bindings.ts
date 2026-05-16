@@ -129,11 +129,7 @@ function findNextClassAttribute(input: string, start: number): FoundAttribute | 
   return null
 }
 
-function readStringLiteral(
-  input: string,
-  start: number,
-  quote: "'" | '"'
-): StringLiteralResult | null {
+function readStringLiteral(input: string, start: number, quote: "'" | '"'): StringLiteralResult | null {
   let i = start + 1
   let value = ''
   let escaped = false
@@ -261,10 +257,7 @@ function readBracketStringLiteral(input: string, start: number): StringLiteralRe
   }
 }
 
-function extractStaticClassNames(
-  expression: string,
-  options: ExtractOptions = {}
-): ClassExtraction {
+function extractStaticClassNames(expression: string, options: ExtractOptions = {}): ClassExtraction {
   const strict = options.strict ?? false
   const offset = options.offset ?? 0
   const allowlist = normalizeAllowlist(options.memberAccessAllowlist)
@@ -475,15 +468,7 @@ function extractStaticClassNames(
 
     const prev = getPreviousNonWhitespaceChar(stripped, baseStart - 1)
     const next = getNextNonWhitespaceChar(stripped, bracket.endIndex)
-    if (
-      prev === '.' ||
-      prev === ']' ||
-      prev === ')' ||
-      next === '(' ||
-      next === '.' ||
-      next === '?' ||
-      next === '['
-    ) {
+    if (prev === '.' || prev === ']' || prev === ')' || next === '(' || next === '.' || next === '?' || next === '[') {
       removeTokensInRange(bracketIndex, bracket.endIndex)
       bracketIndex = stripped.indexOf('[', bracket.endIndex)
       continue
@@ -534,9 +519,7 @@ function extractStaticClassNames(
     }
   }
 
-  const sorted = tokenEntries
-    .slice()
-    .sort((a, b) => (a.pos === b.pos ? a.order - b.order : a.pos - b.pos))
+  const sorted = tokenEntries.slice().sort((a, b) => (a.pos === b.pos ? a.order - b.order : a.pos - b.pos))
   const seen = new Set<string>()
   const classes: string[] = []
   sorted.forEach((token) => {
@@ -552,10 +535,7 @@ function extractStaticClassNames(
   }
 }
 
-export function replaceJsxClassBindings(
-  html: string,
-  options: JsxClassBindingOptions = {}
-): JsxClassBindingResult {
+export function replaceJsxClassBindings(html: string, options: JsxClassBindingOptions = {}): JsxClassBindingResult {
   const markUnsupportedOnEmpty = options.markUnsupportedOnEmpty ?? false
   const strict = options.strict ?? false
   let cursor = 0

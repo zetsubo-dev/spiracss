@@ -6,33 +6,13 @@ import stylelint from 'stylelint'
 import { PSEUDO_ELEMENTS } from '../utils/constants'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { selectorParseFailedArgs } from '../utils/messages'
-import {
-  CACHE_SCHEMA,
-  COMMENTS_SCHEMA,
-  EXTERNAL_SCHEMA,
-  NAMING_SCHEMA
-} from '../utils/option-schema'
-import {
-  findParentRule,
-  isContainer,
-  isInsideKeyframes,
-  isRule
-} from '../utils/postcss-helpers'
+import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
+import { findParentRule, isContainer, isInsideKeyframes, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
-import {
-  getCommentText,
-  isRuleInRootScope,
-  markInteractionContainers,
-  safeTestPattern
-} from '../utils/section'
+import { getCommentText, isRuleInRootScope, markInteractionContainers, safeTestPattern } from '../utils/section'
 import { isInsideNonSameElementPseudo } from '../utils/selector'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
@@ -40,10 +20,7 @@ import type { ClassifyOptions } from './spiracss-class-structure.types'
 import { ruleName } from './spiracss-interaction-properties.constants'
 import { messages } from './spiracss-interaction-properties.messages'
 import { normalizeOptions } from './spiracss-interaction-properties.options'
-import {
-  splitSelectors,
-  stripGlobalSelectorForRoot
-} from './spiracss-property-placement.selectors'
+import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
 
 export { ruleName }
 
@@ -88,24 +65,10 @@ const ANIMATION_PROPERTIES = new Set([
 ])
 
 const TRANSITION_LIST_PROPERTIES = new Set(['transition', 'transition-property'])
-const TIMING_KEYWORDS = new Set([
-  'ease',
-  'ease-in',
-  'ease-out',
-  'ease-in-out',
-  'linear',
-  'step-start',
-  'step-end'
-])
+const TIMING_KEYWORDS = new Set(['ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'step-start', 'step-end'])
 
 const PROPERTY_NAME_RE = /^-?[a-z][a-z0-9-]*$/i
-const FORBIDDEN_TRANSITION_KEYWORDS = new Set([
-  'inherit',
-  'initial',
-  'unset',
-  'revert',
-  'revert-layer'
-])
+const FORBIDDEN_TRANSITION_KEYWORDS = new Set(['inherit', 'initial', 'unset', 'revert', 'revert-layer'])
 type TransitionParseError = 'missing' | 'all' | 'none' | 'invalid'
 
 const splitTopLevel = (value: string, separator: string): string[] => {
@@ -167,9 +130,7 @@ const findPropertyToken = (tokens: string[]): string | null => {
   return candidates[0]
 }
 
-const parseTransitionList = (
-  value: string
-): { properties: string[]; error?: TransitionParseError } => {
+const parseTransitionList = (value: string): { properties: string[]; error?: TransitionParseError } => {
   const trimmed = value.trim()
   if (!trimmed) return { properties: [], error: 'missing' }
   if (trimmed.toLowerCase() === 'none') return { properties: [], error: 'none' }
@@ -191,9 +152,7 @@ const parseTransitionList = (
   return { properties }
 }
 
-const parseTransitionProperty = (
-  value: string
-): { properties: string[]; error?: TransitionParseError } => {
+const parseTransitionProperty = (value: string): { properties: string[]; error?: TransitionParseError } => {
   const trimmed = value.trim()
   if (!trimmed) return { properties: [], error: 'missing' }
   if (trimmed.toLowerCase() === 'none') return { properties: [], error: 'none' }
@@ -246,8 +205,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
 
     return (root: Root, result: stylelint.PostcssResult) => {
       const shouldValidate = result.stylelint?.config?.validate !== false
@@ -373,23 +331,12 @@ const rule = createRule(
         const selectorTexts = splitSelectors(rule.selector, selectorCache)
         const localSelectors = selectorTexts
           .map((selectorText) =>
-            stripGlobalSelectorForRoot(
-              selectorText,
-              selectorCache,
-              cacheSizes.selector,
-              { preserveCombinator: true }
-            )
+            stripGlobalSelectorForRoot(selectorText, selectorCache, cacheSizes.selector, { preserveCombinator: true })
           )
           .filter((selector): selector is string => Boolean(selector))
         if (localSelectors.length === 0) return
-        const selectors = localSelectors.flatMap((selector) =>
-          selectorCache.parse(selector)
-        )
-        const rootBlocks = collectRootBlockNames(
-          selectors,
-          classifyOptions,
-          patterns
-        )
+        const selectors = localSelectors.flatMap((selector) => selectorCache.parse(selector))
+        const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
         if (rootBlocks.length === 0) return
         rootBlockName = rootBlocks[0]
       })
@@ -400,12 +347,9 @@ const rule = createRule(
         const cached = ruleKeys.get(rule)
         if (cached) return cached
         const selector = typeof rule.selector === 'string' ? rule.selector : ''
-        const stripped = stripGlobalSelectorForRoot(
-          selector,
-          selectorCache,
-          cacheSizes.selector,
-          { preserveCombinator: true }
-        )
+        const stripped = stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector, {
+          preserveCombinator: true
+        })
         if (!stripped) {
           ruleKeys.set(rule, [])
           return []
@@ -421,20 +365,14 @@ const rule = createRule(
             let hasNonSameElementClass = false
             let pseudoElement: string | null = null
             sel.walk((node) => {
-              if (
-                node.type === 'class' &&
-                !isInsideNonSameElementPseudo(node, keySameElementPseudos)
-              ) {
+              if (node.type === 'class' && !isInsideNonSameElementPseudo(node, keySameElementPseudos)) {
                 if (isInsidePseudo(node)) {
                   pseudoClasses.push(node.value)
                 } else {
                   directClasses.push(node.value)
                 }
               }
-              if (
-                node.type === 'class' &&
-                isInsideNonSameElementPseudo(node, keySameElementPseudos)
-              ) {
+              if (node.type === 'class' && isInsideNonSameElementPseudo(node, keySameElementPseudos)) {
                 hasNonSameElementClass = true
               }
               if (node.type === 'nesting') hasNesting = true
@@ -444,9 +382,7 @@ const rule = createRule(
                 if (name) pseudoElement = name
               }
             })
-            const pickBaseClass = (
-              classList: string[]
-            ): { name: string; kind: string } | null => {
+            const pickBaseClass = (classList: string[]): { name: string; kind: string } | null => {
               for (let i = classList.length - 1; i >= 0; i -= 1) {
                 const name = classList[i]
                 const kind = classify(name, classifyOptions, patterns)
@@ -461,9 +397,7 @@ const rule = createRule(
                 if (parentRule) {
                   const parentKeys = resolveKeys(parentRule)
                   parentKeys.forEach((parentKey) => {
-                    const key = pseudoElement
-                      ? `${parentKey}::${pseudoElement}`
-                      : parentKey
+                    const key = pseudoElement ? `${parentKey}::${pseudoElement}` : parentKey
                     keys.add(key)
                   })
                 }
@@ -500,11 +434,7 @@ const rule = createRule(
         })
       }
 
-      const reportTransitionError = (
-        decl: Declaration,
-        prop: string,
-        error: TransitionParseError
-      ): void => {
+      const reportTransitionError = (decl: Declaration, prop: string, error: TransitionParseError): void => {
         const message =
           error === 'all'
             ? messages.transitionAll(prop)
@@ -517,11 +447,7 @@ const rule = createRule(
       }
 
       const outsideDeclsByKey = new Map<string, Map<string, Declaration[]>>()
-      const addOutsideDecls = (
-        keys: string[],
-        prop: string,
-        decl: Declaration
-      ): void => {
+      const addOutsideDecls = (keys: string[], prop: string, decl: Declaration): void => {
         keys.forEach((key) => {
           let propMap = outsideDeclsByKey.get(key)
           if (!propMap) {
@@ -552,18 +478,12 @@ const rule = createRule(
             ruleName,
             result,
             node: decl,
-            message: messages.needInteraction(
-              prop,
-              options.comments.interaction
-            )
+            message: messages.needInteraction(prop, options.comments.interaction)
           })
         }
 
         if (TRANSITION_LIST_PROPERTIES.has(prop)) {
-          const parsed =
-            prop === 'transition'
-              ? parseTransitionList(decl.value)
-              : parseTransitionProperty(decl.value)
+          const parsed = prop === 'transition' ? parseTransitionList(decl.value) : parseTransitionProperty(decl.value)
           if (parsed.error) {
             reportTransitionError(decl, prop, parsed.error)
             return
@@ -573,7 +493,6 @@ const rule = createRule(
             if (keys.length > 0) addTransitionTargets(keys, parsed.properties)
           }
         }
-
       })
       outsideDeclsByKey.forEach((propMap, key) => {
         const targets = transitionedProps.get(key)
@@ -586,11 +505,7 @@ const rule = createRule(
               ruleName,
               result,
               node: decl,
-              message: messages.initialOutsideInteraction(
-                prop,
-                label,
-                options.comments.interaction
-              )
+              message: messages.initialOutsideInteraction(prop, label, options.comments.interaction)
             })
           })
         })
@@ -601,9 +516,7 @@ const rule = createRule(
           ruleName,
           result,
           node: root,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

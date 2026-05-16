@@ -1,10 +1,6 @@
 import type { CacheSizes } from '../types'
 import { DEFAULT_CACHE_SIZES } from '../utils/cache'
-import {
-  type InvalidOptionReporter,
-  normalizeKeyList,
-  normalizeString
-} from '../utils/normalize'
+import { type InvalidOptionReporter, normalizeKeyList, normalizeString } from '../utils/normalize'
 import { normalizeCommonOptions } from '../utils/options'
 import { isAliasRoots } from '../utils/validate'
 import type { Options } from './spiracss-page-layer.types'
@@ -31,10 +27,7 @@ const normalizePageEntrySubdir = (value: unknown, fallback: string): string => {
   return normalizeString(value, fallback)
 }
 
-export const normalizeOptions = (
-  opt: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (opt: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!opt || typeof opt !== 'object') return { ...defaultOptions }
   const raw = opt as {
     pageEntryAlias?: string
@@ -57,21 +50,14 @@ export const normalizeOptions = (
   const normalizeAliases = (value: unknown): Options['paths']['aliases'] => {
     if (value === undefined) return defaultOptions.paths.aliases
     if (isAliasRoots(value)) return value
-    reportInvalid?.(
-      'aliasRoots',
-      value,
-      '[spiracss] aliasRoots must be an object whose values are string arrays.'
-    )
+    reportInvalid?.('aliasRoots', value, '[spiracss] aliasRoots must be an object whose values are string arrays.')
     return defaultOptions.paths.aliases
   }
 
   return {
     pageEntry: {
       alias: normalizeString(raw.pageEntryAlias, defaultOptions.pageEntry.alias),
-      subdir: normalizePageEntrySubdir(
-        raw.pageEntrySubdir,
-        defaultOptions.pageEntry.subdir
-      )
+      subdir: normalizePageEntrySubdir(raw.pageEntrySubdir, defaultOptions.pageEntry.subdir)
     },
     paths: {
       components: normalizeKeyList(

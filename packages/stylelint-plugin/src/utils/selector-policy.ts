@@ -37,10 +37,7 @@ export const getLowercasePolicyKeys = (
 ): { variantKeys: string[]; stateKeys: string[] } => {
   const variantKeys = policy.variant.dataKeys.map((key) => key.toLowerCase())
   const stateKeys = Array.from(
-    new Set([
-      policy.state.dataKey.toLowerCase(),
-      ...policy.state.ariaKeys.map((key) => key.toLowerCase())
-    ])
+    new Set([policy.state.dataKey.toLowerCase(), ...policy.state.ariaKeys.map((key) => key.toLowerCase())])
   )
   return { variantKeys, stateKeys }
 }

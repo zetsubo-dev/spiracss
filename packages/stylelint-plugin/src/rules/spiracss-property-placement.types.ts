@@ -1,8 +1,4 @@
-import type {
-  NamingOptions,
-  NormalizedCacheSizes,
-  NormalizedSelectorPolicyBase
-} from '../types'
+import type { NamingOptions, NormalizedCacheSizes, NormalizedSelectorPolicyBase } from '../types'
 
 export type Options = {
   element: {

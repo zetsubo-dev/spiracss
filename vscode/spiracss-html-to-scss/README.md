@@ -27,10 +27,10 @@ This extension is designed to be used with the [SpiraCSS Design Principles](http
 
 ## Commands
 
-| Command | Keybinding |
-|---------|------------|
-| Generate SpiraCSS SCSS from Root | `Cmd+Ctrl+A` |
-| Generate SpiraCSS SCSS from Selection | `Cmd+Ctrl+S` |
+| Command                                            | Keybinding   |
+| -------------------------------------------------- | ------------ |
+| Generate SpiraCSS SCSS from Root                   | `Cmd+Ctrl+A` |
+| Generate SpiraCSS SCSS from Selection              | `Cmd+Ctrl+S` |
 | Insert SpiraCSS placeholders (block-box / element) | `Cmd+Ctrl+D` |
 
 ## Quick Start

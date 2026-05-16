@@ -83,37 +83,44 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
       {
         code: '.block[data-variant="primary"] { > .title {} }',
         description: 'class mode disallows data-variant',
-        message: 'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block[aria-expanded="true"] { > .title {} }',
         description: 'class mode disallows state aria attributes',
-        message: 'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block { > .element[data-state="open"] {} }',
         description: 'class mode disallows data-state',
-        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block { &[data-state="open"] {} }',
         description: 'class mode also disallows data-state on &',
-        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block { &:not([data-state="open"]) {} }',
         description: 'class mode validates reserved keys inside :not()',
-        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block:is([data-variant="primary"]) { color: red; }',
         description: 'class mode validates reserved keys inside :is()',
-        message: 'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block:where([aria-expanded="true"]) { color: red; }',
         description: 'class mode validates reserved keys inside :where()',
-        message: 'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `aria-expanded` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: ':not(.block) [data-variant="primary"] { color: red; }',
@@ -124,7 +131,8 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
       {
         code: '.foo:is(.block)[data-state="open"] { color: red; }',
         description: 'validate reserved keys even for SpiraCSS classes inside :is()',
-        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.foo:not(.block)[data-state="open"] { color: red; }',
@@ -143,13 +151,12 @@ describe('spiracss/class-structure - attribute selector combinations', () => {
       {
         code: '.foo:where(.block)[data-state="open"] { color: red; }',
         description: 'validate reserved keys even for SpiraCSS classes inside :where()',
-        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       }
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - attribute allowance in data mode', () => {
   testRule({
@@ -185,10 +192,6 @@ describe('spiracss/class-structure - attribute allowance in data mode', () => {
     ]
   })
 })
-
-
-
-
 
 describe('spiracss/class-structure - modifiers in data mode', () => {
   testRule({
@@ -316,8 +319,6 @@ describe('spiracss/class-structure - data value naming', () => {
   })
 })
 
-
-
 describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
   testRule({
     plugins: [classStructure],
@@ -351,7 +352,8 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
       {
         code: '.block[data-state="open"] { > .title {} }',
         description: 'state=class disallows data-state',
-        message: 'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-state` is disabled because `selectorPolicy.state.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       },
       {
         code: '.block[aria-expanded="true"] { > .title {} }',
@@ -402,13 +404,12 @@ describe('spiracss/class-structure - selectorPolicy mixed mode', () => {
       {
         code: '.block[data-variant="primary"] { > .title {} }',
         description: 'variant=class disallows data-variant',
-        message: 'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
+        message:
+          'Attribute `data-variant` is disabled because `selectorPolicy.variant.mode` is `class`. Use modifier classes instead (e.g., `&.-primary`). (spiracss/class-structure)'
       }
     ]
   })
 })
-
-
 
 describe('spiracss/class-structure - selectorPolicy validation', () => {
   const assertInvalidSelectorPolicy = async (

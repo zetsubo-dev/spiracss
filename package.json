@@ -2,5 +2,8 @@
   "name": "spiracss-monorepo",
   "version": "0.4.3",
   "private": true,
-  "packageManager": "pnpm@10.29.2"
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "packageManager": "pnpm@11.1.2"
 }

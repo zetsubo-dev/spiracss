@@ -5,13 +5,9 @@ import { collectCompoundNodes, type SelectorParserCache } from '../utils/selecto
 import type { Options } from './spiracss-rel-comments.types'
 
 const isExternalClass = (name: string, options: Options): boolean =>
-  options.external.classes.includes(name) ||
-  options.external.prefixes.some((prefix) => name.startsWith(prefix))
+  options.external.classes.includes(name) || options.external.prefixes.some((prefix) => name.startsWith(prefix))
 
-export const collectRootBlockNames = (
-  selectors: Selector[],
-  options: Options
-): string[] => {
+export const collectRootBlockNames = (selectors: Selector[], options: Options): string[] => {
   const names = new Set<string>()
   const cacheSize = options.cache.naming
   const blockRe = buildBlockPattern(options.naming, cacheSize)

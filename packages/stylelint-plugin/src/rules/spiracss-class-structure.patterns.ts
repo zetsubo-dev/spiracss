@@ -1,11 +1,7 @@
 import type { NormalizedCacheSizes, WordCase } from '../types'
 import { createSharedCacheAccessor } from '../utils/cache'
 import { formatCode, formatPattern } from '../utils/messages'
-import {
-  buildBlockPattern,
-  normalizeBlockMaxWords,
-  normalizeCustomPattern
-} from '../utils/naming'
+import { buildBlockPattern, normalizeBlockMaxWords, normalizeCustomPattern } from '../utils/naming'
 import type { InvalidOptionReporter } from '../utils/normalize'
 import type {
   ClassifyOptions,
@@ -18,13 +14,10 @@ import type {
 
 type NamingHintOptions = Pick<ClassifyOptions, 'naming'>
 
-const serializePattern = (pattern: RegExp | undefined): string =>
-  pattern ? `${pattern.source}/${pattern.flags}` : ''
+const serializePattern = (pattern: RegExp | undefined): string => (pattern ? `${pattern.source}/${pattern.flags}` : '')
 
 const normalizeWordCase = (value: unknown, fallback: WordCase): WordCase =>
-  value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
-    ? value
-    : fallback
+  value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal' ? value : fallback
 
 const getPatternsCache = createSharedCacheAccessor<string, Patterns>()
 
@@ -75,23 +68,13 @@ export const formatNamingHint = (options: NamingHintOptions): string => {
     `modifierPrefix=${formatCode(prefixLabel)}`
   ]
   const customParts: string[] = []
-  const customBlock = normalizeCustomPattern(
-    naming.customPatterns?.block,
-    'naming.customPatterns.block'
-  )
-  const customElement = normalizeCustomPattern(
-    naming.customPatterns?.element,
-    'naming.customPatterns.element'
-  )
-  const customModifier = normalizeCustomPattern(
-    naming.customPatterns?.modifier,
-    'naming.customPatterns.modifier'
-  )
+  const customBlock = normalizeCustomPattern(naming.customPatterns?.block, 'naming.customPatterns.block')
+  const customElement = normalizeCustomPattern(naming.customPatterns?.element, 'naming.customPatterns.element')
+  const customModifier = normalizeCustomPattern(naming.customPatterns?.modifier, 'naming.customPatterns.modifier')
   if (customBlock) customParts.push(`block=${formatPattern(customBlock)}`)
   if (customElement) customParts.push(`element=${formatPattern(customElement)}`)
   if (customModifier) customParts.push(`modifier=${formatPattern(customModifier)}`)
-  const customHint =
-    customParts.length > 0 ? ` Custom patterns: ${customParts.join(', ')}.` : ''
+  const customHint = customParts.length > 0 ? ` Custom patterns: ${customParts.join(', ')}.` : ''
   return `Naming: ${parts.join(', ')}.${customHint}`
 }
 
@@ -108,11 +91,7 @@ export const buildPatterns = (
   const blockMaxWords = normalizeBlockMaxWords(naming.blockMaxWords)
 
   // Support partial customPatterns overrides (only specified ones replace defaults).
-  const customBlock = normalizeCustomPattern(
-    naming.customPatterns?.block,
-    'naming.customPatterns.block',
-    reportInvalid
-  )
+  const customBlock = normalizeCustomPattern(naming.customPatterns?.block, 'naming.customPatterns.block', reportInvalid)
   const customElement = normalizeCustomPattern(
     naming.customPatterns?.element,
     'naming.customPatterns.element',
@@ -138,76 +117,73 @@ export const buildPatterns = (
   const cached = patternsCache.get(cacheKey)
   if (cached) return cached
 
-  const blockRe = buildBlockPattern(
-    naming,
-    cacheSizes.naming,
-    reportInvalid,
-    {
-      customBlock,
-      skipCustomPatternValidation: true
-    }
-  )
+  const blockRe = buildBlockPattern(naming, cacheSizes.naming, reportInvalid, {
+    customBlock,
+    skipCustomPatternValidation: true
+  })
 
-  const elementRe = customElement ?? (() => {
-    switch (elementCase) {
-      case 'kebab':
-      case 'snake':
-        // title / lede
-        return /^[a-z][a-z0-9]*$/
-      case 'camel':
-        // Single word only (no inner uppercase).
-        return /^[a-z][a-z0-9]*$/
-      case 'pascal':
-        // Single word only (no inner uppercase).
-        return /^[A-Z][a-z0-9]*$/
-      default:
-        return /^[a-z][a-z0-9]*$/
-    }
-  })()
-
-  const modifierRe = customModifier ?? (() => {
-    // Modifiers allow 1-2 words (SpiraCSS rule), prefixed by modifierPrefix.
-    const prefixEscaped = modifierPrefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
-    const base = (() => {
-      switch (modifierCase) {
-        case 'kebab': {
-          const one = '[a-z0-9]+'
-          const two = '[a-z0-9]+-[a-z0-9]+'
-          return `(?:${one}|${two})`
-        }
-        case 'snake': {
-          const one = '[a-z0-9]+'
-          const two = '[a-z0-9]+_[a-z0-9]+'
-          return `(?:${one}|${two})`
-        }
-        case 'camel': {
-          const one = '[a-z][a-zA-Z0-9]*'
-          const two = '[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*'
-          return `(?:${one}|${two})`
-        }
-        case 'pascal': {
-          const one = '[A-Z][a-zA-Z0-9]*'
-          const two = '[A-Z][a-z0-9]*[A-Z][a-zA-Z0-9]*'
-          return `(?:${one}|${two})`
-        }
-        default: {
-          const one = '[a-z0-9]+'
-          const two = '[a-z0-9]+-[a-z0-9]+'
-          return `(?:${one}|${two})`
-        }
+  const elementRe =
+    customElement ??
+    (() => {
+      switch (elementCase) {
+        case 'kebab':
+        case 'snake':
+          // title / lede
+          return /^[a-z][a-z0-9]*$/
+        case 'camel':
+          // Single word only (no inner uppercase).
+          return /^[a-z][a-z0-9]*$/
+        case 'pascal':
+          // Single word only (no inner uppercase).
+          return /^[A-Z][a-z0-9]*$/
+        default:
+          return /^[a-z][a-z0-9]*$/
       }
     })()
-    return new RegExp(`^${prefixEscaped}${base}$`)
-  })()
+
+  const modifierRe =
+    customModifier ??
+    (() => {
+      // Modifiers allow 1-2 words (SpiraCSS rule), prefixed by modifierPrefix.
+      const prefixEscaped = modifierPrefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+      const base = (() => {
+        switch (modifierCase) {
+          case 'kebab': {
+            const one = '[a-z0-9]+'
+            const two = '[a-z0-9]+-[a-z0-9]+'
+            return `(?:${one}|${two})`
+          }
+          case 'snake': {
+            const one = '[a-z0-9]+'
+            const two = '[a-z0-9]+_[a-z0-9]+'
+            return `(?:${one}|${two})`
+          }
+          case 'camel': {
+            const one = '[a-z][a-zA-Z0-9]*'
+            const two = '[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*'
+            return `(?:${one}|${two})`
+          }
+          case 'pascal': {
+            const one = '[A-Z][a-zA-Z0-9]*'
+            const two = '[A-Z][a-z0-9]*[A-Z][a-zA-Z0-9]*'
+            return `(?:${one}|${two})`
+          }
+          default: {
+            const one = '[a-z0-9]+'
+            const two = '[a-z0-9]+-[a-z0-9]+'
+            return `(?:${one}|${two})`
+          }
+        }
+      })()
+      return new RegExp(`^${prefixEscaped}${base}$`)
+    })()
 
   const patterns = { blockRe, elementRe, modifierRe }
   patternsCache.set(cacheKey, patterns)
   return patterns
 }
 
-export const buildSelectorPolicyData = (
-  policy: NormalizedSelectorPolicy
-): SelectorPolicyData => ({
+export const buildSelectorPolicyData = (policy: NormalizedSelectorPolicy): SelectorPolicyData => ({
   reservedVariantKeys: new Set(policy.variant.dataKeys.map((key) => key.toLowerCase())),
   reservedStateKey: policy.state.dataKey.toLowerCase(),
   reservedAriaKeys: new Set(policy.state.ariaKeys.map((key) => key.toLowerCase())),
@@ -222,11 +198,7 @@ export const buildSelectorPolicyData = (
  * @param patterns - Compiled naming patterns for Block/Element/Modifier.
  * @returns Classification kind for the class name.
  */
-export const classify = (
-  name: string,
-  options: ClassifyOptions,
-  patterns: Patterns
-): Kind => {
+export const classify = (name: string, options: ClassifyOptions, patterns: Patterns): Kind => {
   const external = options.external
   if (external.classes.includes(name) || external.prefixes.some((p) => name.startsWith(p))) {
     return 'external'

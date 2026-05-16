@@ -148,7 +148,8 @@ describe('spiracss/rel-comments - basic checks', () => {
   }
 }`,
         description: 'child Block name and @rel file name do not match',
-        message: 'Link comment must include `child-block.scss`, `child-block.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `child-block.scss`, `child-block.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       },
       {
         code: `
@@ -298,7 +299,8 @@ describe('spiracss/rel-comments - fileCase option', () => {
   }
 }`,
         description: 'reject kebab-case file name when fileCase=pascal',
-        message: 'Link comment must include `ChildBlock.scss`, `ChildBlock.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `ChildBlock.scss`, `ChildBlock.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -362,7 +364,8 @@ describe('spiracss/rel-comments - fileCase variants', () => {
   }
 }`,
         description: 'kebab fileCase rejects PascalCase filename',
-        message: 'Link comment must include `child-block.scss`, `child-block.module.scss` for direct child `.ChildBlock`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `child-block.scss`, `child-block.module.scss` for direct child `.ChildBlock`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -423,7 +426,8 @@ describe('spiracss/rel-comments - fileCase variants', () => {
   }
 }`,
         description: 'snake fileCase rejects kebab filename',
-        message: 'Link comment must include `child_block.scss`, `child_block.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `child_block.scss`, `child_block.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -484,7 +488,8 @@ describe('spiracss/rel-comments - fileCase variants', () => {
   }
 }`,
         description: 'camel fileCase rejects kebab filename',
-        message: 'Link comment must include `childBlock.scss`, `childBlock.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `childBlock.scss`, `childBlock.module.scss` for direct child `.child-block`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -547,7 +552,8 @@ describe('spiracss/rel-comments - childFileCase option', () => {
   }
 }`,
         description: 'reject PascalCase file name inside childDir when childFileCase=kebab',
-        message: 'Link comment must include `site-logo.scss`, `site-logo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `site-logo.scss`, `site-logo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -601,7 +607,8 @@ describe('spiracss/rel-comments - childFileCase option', () => {
   }
 }`,
         description: 'reject PascalCase when alias root includes childDir',
-        message: 'Link comment must include `site-logo.scss`, `site-logo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `site-logo.scss`, `site-logo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -653,7 +660,8 @@ describe('spiracss/rel-comments - childFileCase option', () => {
   }
 }`,
         description: 'childFileCase fallback: reject kebab when fileCase=pascal',
-        message: 'Link comment must include `SiteLogo.scss`, `SiteLogo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `SiteLogo.scss`, `SiteLogo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -746,7 +754,8 @@ describe('spiracss/rel-comments - childFileCase option', () => {
   }
 }`,
         description: 'reverse: reject kebab inside childDir when childFileCase=pascal',
-        message: 'Link comment must include `SiteLogo.scss`, `SiteLogo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `SiteLogo.scss`, `SiteLogo.module.scss` for direct child `.site-logo`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -809,7 +818,8 @@ describe('spiracss/rel-comments - fileCase default preserve', () => {
   }
 }`,
         description: 'default preserve rejects kebab filename for camelCase class',
-        message: 'Link comment must include `childBlock.scss`, `childBlock.module.scss` for direct child `.childBlock`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
+        message:
+          'Link comment must include `childBlock.scss`, `childBlock.module.scss` for direct child `.childBlock`. Update the `@rel` path to match. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#childMismatch (spiracss/rel-comments)'
       }
     ]
   })
@@ -945,15 +955,9 @@ describe('spiracss/rel-comments - naming.customPatterns validation', () => {
       ...warnings.map((warning) => warning.text)
     ]
     assert.ok(result.errored, 'invalid customPatterns should stop validation')
-    assert.ok(
-      warningTexts.some((text) => text.includes('naming.customPatterns.block'))
-    )
-    assert.ok(
-      warningTexts.some((text) => text.includes('naming.customPatterns.element'))
-    )
-    assert.ok(
-      warningTexts.some((text) => text.includes('naming.customPatterns.modifier'))
-    )
+    assert.ok(warningTexts.some((text) => text.includes('naming.customPatterns.block')))
+    assert.ok(warningTexts.some((text) => text.includes('naming.customPatterns.element')))
+    assert.ok(warningTexts.some((text) => text.includes('naming.customPatterns.modifier')))
   })
 
   it('skips invalid option warnings when validate is false', () => {
@@ -1205,7 +1209,8 @@ describe('spiracss/rel-comments - validatePath: true', () => {
   }
 }`,
         description: '@rel path to a missing file (reject)',
-        message: 'Link target not found: `non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
+        message:
+          'Link target not found: `non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       },
       {
         code: `
@@ -1217,7 +1222,8 @@ describe('spiracss/rel-comments - validatePath: true', () => {
   }
 }`,
         description: '@components alias to a missing file (reject)',
-        message: 'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
+        message:
+          'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       }
     ]
   })
@@ -1272,7 +1278,6 @@ describe('spiracss/rel-comments - validatePath error handling', () => {
     }
   })
 })
-
 
 describe('spiracss/rel-comments - child block comments default behavior', () => {
   testRule({
@@ -1357,7 +1362,8 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'in normal sections, link comments are required directly under child Blocks',
-        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+        message:
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -1368,7 +1374,8 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'non-link comments are an error',
-        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+        message:
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -1380,7 +1387,8 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'link comments are required directly under child Blocks even inside @at-root &',
-        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+        message:
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       },
       {
         code: `
@@ -1391,12 +1399,12 @@ describe('spiracss/rel-comments - child block comments default behavior', () => 
   }
 }`,
         description: 'child Block comments are required inside the shared section',
-        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+        message:
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       }
     ]
   })
 })
-
 
 describe('spiracss/rel-comments - child block comments opt-out in shared/interaction', () => {
   testRule({
@@ -1451,7 +1459,8 @@ describe('spiracss/rel-comments - child block comments opt-out in shared/interac
   }
 }`,
         description: 'normal sections require child Block comments',
-        message: 'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
+        message:
+          'Missing child link comment. Add `// @rel/<child>.scss` or `// @<alias>/<child>.scss` using `aliasRoots` (current: `none`) as the first line inside each direct child rule (`> .child`). Example: `> .child { // @rel/child.scss }`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#missingChildRel (spiracss/rel-comments)'
       }
     ]
   })
@@ -1514,7 +1523,8 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
   }
 }`,
         description: 'error when no file is found in any aliasRoots candidate',
-        message: 'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
+        message:
+          'Link target not found: `@components/non-existent-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       },
       {
         code: `
@@ -1526,7 +1536,8 @@ describe('rel-comments - resolving multiple aliasRoots', () => {
   }
 }`,
         description: 'undefined alias key is an error',
-        message: 'Link target not found: `@unknown/unknown-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
+        message:
+          'Link target not found: `@unknown/unknown-block.scss`. Fix the path or `aliasRoots`. Docs: https://spiracss.jp/stylelint-rules/rel-comments/#notFound (spiracss/rel-comments)'
       }
     ]
   })

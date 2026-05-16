@@ -75,9 +75,7 @@ const bumpConfigImportNonce = (): void => {
 const warnConfigLoadError = (root: string, error: unknown): void => {
   if (configWarningRoots.has(root)) return
   configWarningRoots.add(root)
-  const message = l10n.t(
-    'Failed to load spiracss.config.js. Comment Links settings might not be applied.'
-  )
+  const message = l10n.t('Failed to load spiracss.config.js. Comment Links settings might not be applied.')
   const detail = error instanceof Error ? error.message : String(error)
   window.showWarningMessage(message)
   if (DEBUG) {
@@ -89,12 +87,7 @@ const warnAliasRootOutside = (root: string, base: string): void => {
   const key = `${root}::${base}`
   if (aliasRootWarningKeys.has(key)) return
   aliasRootWarningKeys.add(key)
-  window.showWarningMessage(
-    l10n.t(
-      'aliasRoots path is outside the project root and will be ignored: {0}',
-      base
-    )
-  )
+  window.showWarningMessage(l10n.t('aliasRoots path is outside the project root and will be ignored: {0}', base))
 }
 
 type SpiracssConfig = Record<string, unknown>
@@ -295,10 +288,7 @@ class LinkProvider implements DocumentLinkProvider {
       while ((match = regex.exec(content)) !== null) {
         try {
           const target = pattern.resolve(match, context)
-          const range = new Range(
-            document.positionAt(match.index),
-            document.positionAt(match.index + match[0].length)
-          )
+          const range = new Range(document.positionAt(match.index), document.positionAt(match.index + match[0].length))
           links.push({ range, target })
         } catch (error) {
           if (DEBUG) {

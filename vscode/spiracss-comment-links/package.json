@@ -42,25 +42,23 @@
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production && node -e \"require('fs').mkdirSync('build',{recursive:true})\" && pnpm exec vsce package --no-dependencies --out build/spiracss-comment-links-$(node -p \"require('./package.json').version\").vsix",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "oxlint src --quiet",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "test": "vscode-test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
+    "@types/node": "^24.12.4",
     "@types/vscode": "^1.99.0",
-    "@typescript-eslint/eslint-plugin": "^8.28.0",
-    "@typescript-eslint/parser": "^8.28.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.7.0",
     "esbuild": "^0.25.1",
-    "eslint": "^9.23.0",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
     "npm-run-all": "^4.1.5",
-    "prettier": "^3.5.3",
+    "oxfmt": "^0.50.0",
+    "oxlint": "^1.65.0",
     "typescript": "^5.8.2"
   },
-  "packageManager": "pnpm@10.29.2"
+  "packageManager": "pnpm@11.1.2"
 }

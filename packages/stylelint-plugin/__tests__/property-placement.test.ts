@@ -801,7 +801,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -815,7 +815,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -829,7 +829,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -843,7 +843,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -857,7 +857,7 @@ body {
         warnings: [
           {
             message:
-              '`gap` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `gap` on the parent Block selector. If the child should be the container, move `gap` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`gap` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `gap` on the parent Block selector. If the child should be the container, move `gap` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -871,7 +871,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-auto-flow` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-auto-flow` on the parent Block selector. If the child should be the container, move `grid-auto-flow` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`grid-auto-flow` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-auto-flow` on the parent Block selector. If the child should be the container, move `grid-auto-flow` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -885,7 +885,7 @@ body {
         warnings: [
           {
             message:
-              '`grid` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid` on the parent Block selector. If the child should be the container, move `grid` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`grid` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid` on the parent Block selector. If the child should be the container, move `grid` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -983,7 +983,7 @@ body {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`padding` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -997,7 +997,7 @@ body {
         warnings: [
           {
             message:
-              '`overflow` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`overflow` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1011,7 +1011,7 @@ body {
         warnings: [
           {
             message:
-              '`overflow-x` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-x` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-x`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`overflow-x` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-x` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-x`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1025,7 +1025,7 @@ body {
         warnings: [
           {
             message:
-              '`overflow-y` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-y` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-y`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`overflow-y` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `overflow-y` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-overflow-y`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1039,7 +1039,7 @@ body {
         warnings: [
           {
             message:
-              '`width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-width`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`width` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `width` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-width`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1053,7 +1053,7 @@ body {
         warnings: [
           {
             message:
-              '`height` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `height` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-height`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`height` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `height` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-height`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1067,7 +1067,7 @@ body {
         warnings: [
           {
             message:
-              '`max-width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-max-width`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`max-width` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-width` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-max-width`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1081,7 +1081,7 @@ body {
         warnings: [
           {
             message:
-              '`max-height` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-height` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-max-height`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`max-height` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `max-height` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-max-height`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1095,7 +1095,7 @@ body {
         warnings: [
           {
             message:
-              '`min-width` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `min-width` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-min-width`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`min-width` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `min-width` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-min-width`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1109,7 +1109,7 @@ body {
         warnings: [
           {
             message:
-              '`position: fixed` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. If you need `fixed`/`sticky`, define it in the child Block\'s own file. (spiracss/property-placement)'
+              "`position: fixed` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. If you need `fixed`/`sticky`, define it in the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1123,7 +1123,7 @@ body {
         warnings: [
           {
             message:
-              '`position: sticky` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. If you need `fixed`/`sticky`, define it in the child Block\'s own file. (spiracss/property-placement)'
+              "`position: sticky` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. If you need `fixed`/`sticky`, define it in the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1137,7 +1137,7 @@ body {
         warnings: [
           {
             message:
-              '`position: relative` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: relative` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: relative` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: relative` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1151,7 +1151,7 @@ body {
         warnings: [
           {
             message:
-              '`position: var(--pos)` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. Dynamic values are not allowed here. Use `static`, or use `relative`/`absolute` with offsets in the same wrapper context. If you need `fixed`/`sticky`, define it in the child Block\'s own file. (spiracss/property-placement)'
+              "`position: var(--pos)` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. Dynamic values are not allowed here. Use `static`, or use `relative`/`absolute` with offsets in the same wrapper context. If you need `fixed`/`sticky`, define it in the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1165,7 +1165,7 @@ body {
         warnings: [
           {
             message:
-              '`position: $pos` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. Dynamic values are not allowed here. Use `static`, or use `relative`/`absolute` with offsets in the same wrapper context. If you need `fixed`/`sticky`, define it in the child Block\'s own file. (spiracss/property-placement)'
+              "`position: $pos` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. Dynamic values are not allowed here. Use `static`, or use `relative`/`absolute` with offsets in the same wrapper context. If you need `fixed`/`sticky`, define it in the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1179,7 +1179,7 @@ body {
         warnings: [
           {
             message:
-              '`position: foo` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. Use `static`, or use `relative`/`absolute` with offsets in the same wrapper context. If you need `fixed`/`sticky`, define it in the child Block\'s own file. (spiracss/property-placement)'
+              "`position: foo` is not allowed on a child Block selector. Selector: `.block-name > .child-block`. Use `static`, or use `relative`/`absolute` with offsets in the same wrapper context. If you need `fixed`/`sticky`, define it in the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1193,7 +1193,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global(.foo) > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global(.foo) > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1207,7 +1207,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global .foo > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block, :global .foo > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1221,7 +1221,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name.block-alt > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name.block-alt > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1237,7 +1237,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1253,7 +1253,7 @@ body {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `none`) are also transparent, or move `position: absolute` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       },
@@ -1447,7 +1447,7 @@ main > section {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .a > .b > .c > .d > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`padding` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .a > .b > .c > .d > .child-block`. Move `padding` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1797,7 +1797,7 @@ body {
         warnings: [
           {
             message:
-              '`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .wrapper > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`display` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .wrapper > .child-block`. If the parent should be the container, apply `display` on the parent Block selector. If the child should be the container, move `display` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -1835,7 +1835,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-template-rows` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template-rows` on the parent Block selector. If the child should be the container, move `grid-template-rows` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`grid-template-rows` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template-rows` on the parent Block selector. If the child should be the container, move `grid-template-rows` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -1849,7 +1849,7 @@ body {
         warnings: [
           {
             message:
-              '`grid-template` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template` on the parent Block selector. If the child should be the container, move `grid-template` to the child Block\'s own stylesheet (the file where that Block is defined). (spiracss/property-placement)'
+              "`grid-template` is a container property (defines internal layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. If the parent should be the container, apply `grid-template` on the parent Block selector. If the child should be the container, move `grid-template` to the child Block's own stylesheet (the file where that Block is defined). (spiracss/property-placement)"
           }
         ]
       },
@@ -1863,7 +1863,7 @@ body {
         warnings: [
           {
             message:
-              '`padding-inline` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding-inline` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding-inline`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`padding-inline` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding-inline` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-padding-inline`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -1877,7 +1877,7 @@ body {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block + .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)'
+              "`padding` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block + .child-block`. Move `padding` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). State (`class`): use modifier classes (prefix: `-`, case: `kebab`; e.g., `&.-<modifier>`). (spiracss/property-placement)"
           }
         ]
       },
@@ -2078,7 +2078,7 @@ main > section {
         warnings: [
           {
             message:
-              '`padding` is an internal property (affects the Block\'s own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block\'s own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project\'s variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). State (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). (spiracss/property-placement)'
+              "`padding` is an internal property (affects the Block's own content/layout) and cannot be used on a child Block selector. Selector: `.block-name > .child-block`. Move `padding` to the child Block's own file. To control it from parent, expose a CSS variable (e.g., `--child-padding`) and consume it in the child Block, or use the project's variant mechanism. For size properties (width/height/min-*/max-*), set `sizeInternal: false` to skip this check. Variant (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). State (`class`): use modifier classes matching `naming.customPatterns.modifier` (current: `/^is-[a-z]+$/`). (spiracss/property-placement)"
           }
         ]
       }
@@ -2301,7 +2301,7 @@ main > section {
         warnings: [
           {
             message:
-              '`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `breakpoint-up`) are also transparent, or move `position: absolute` to the child Block\'s own file. (spiracss/property-placement)'
+              "`position: absolute` requires offset properties on a child Block selector. Selector: `.block-name > .child-block`. Add `top`/`right`/`bottom`/`left`/`inset`/`inset-block`/`inset-inline`/`inset-block-start`/`inset-block-end`/`inset-inline-start`/`inset-inline-end` in the same wrapper context. `@media`/`@supports`/`@container`/`@layer` are transparent (same context), `@scope` creates a new context boundary. `@include` in `responsiveMixins` (current: `breakpoint-up`) are also transparent, or move `position: absolute` to the child Block's own file. (spiracss/property-placement)"
           }
         ]
       }

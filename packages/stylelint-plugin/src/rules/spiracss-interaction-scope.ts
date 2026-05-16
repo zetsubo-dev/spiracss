@@ -8,12 +8,7 @@ import { findParentRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { safeTestPattern } from '../utils/section'
 import { createSelectorCacheWithErrorFlag } from '../utils/selector'
-import {
-  createPlugin,
-  createRule,
-  reportInvalidOption,
-  validateOptionsArrayFields
-} from '../utils/stylelint'
+import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { ruleName } from './spiracss-interaction-scope.constants'
 import { messages } from './spiracss-interaction-scope.messages'
@@ -64,8 +59,7 @@ const rule = createRule(
       }
     }
 
-    const rawOptions =
-      typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
+    const rawOptions = typeof primaryOption === 'object' && primaryOption !== null ? primaryOption : secondaryOption
 
     type RuleCache = {
       options: ReturnType<typeof normalizeOptions>
@@ -74,9 +68,7 @@ const rule = createRule(
       hasInvalidOptions: boolean
     }
     let cache: RuleCache | null = null
-    const getCache = (
-      reportInvalid?: (optionName: string, value: unknown, detail?: string) => void
-    ): RuleCache => {
+    const getCache = (reportInvalid?: (optionName: string, value: unknown, detail?: string) => void): RuleCache => {
       if (cache) return cache
       let hasInvalidOptions = false
       const handleInvalid = reportInvalid
@@ -134,8 +126,7 @@ const rule = createRule(
       )
       if (shouldValidate && hasInvalid) return
 
-      const { options, allowedPseudoSet, policySets, hasInvalidOptions } =
-        getCache(reportInvalid)
+      const { options, allowedPseudoSet, policySets, hasInvalidOptions } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
 
       const checkedTailTargets = new WeakSet<AtRule>()
@@ -153,15 +144,8 @@ const rule = createRule(
         // To avoid false positives inside @at-root blocks, anchor the search at atRootNode.
         const commentTarget = atRootNode || rule
         const comment = findCommentBefore(commentTarget)
-        const hasInteractionComment = Boolean(
-          comment && safeTestPattern(options.comments.interaction, comment)
-        )
-        const selectorAnalysis = analyzeSelector(
-          selector,
-          selectorCache,
-          allowedPseudoSet,
-          policySets
-        )
+        const hasInteractionComment = Boolean(comment && safeTestPattern(options.comments.interaction, comment))
+        const selectorAnalysis = analyzeSelector(selector, selectorCache, allowedPseudoSet, policySets)
         const hasStateSelector = selectorAnalysis.hasState
         const hasMixedStateVariant = selectorAnalysis.hasMixed
         const hasNest = startsWithNestingToken(selector, selectorCache)
@@ -169,8 +153,7 @@ const rule = createRule(
 
         const hasInteractionSelector = selectorAnalysis.hasAllowedPseudo || hasStateSelector
         const shouldCheckByComment = hasInteractionComment && (hasInteractionSelector || hasNest)
-        const shouldCheckBySelector =
-          !options.commentOnly && hasInteractionSelector
+        const shouldCheckBySelector = !options.commentOnly && hasInteractionSelector
         const reports: string[] = []
 
         if (hasMixedStateVariant) {
@@ -197,9 +180,7 @@ const rule = createRule(
 
         if (options.require.comment) {
           if (!hasInteractionComment) {
-            reports.push(
-              messages.needComment(options.comments.interaction)
-            )
+            reports.push(messages.needComment(options.comments.interaction))
           }
         }
 
@@ -229,9 +210,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(
-            ...selectorParseFailedArgs(selectorState.getErrorSelector())
-          ),
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
           severity: 'warning'
         })
       }

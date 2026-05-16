@@ -27,17 +27,10 @@ let globalWriteChoice: 'overwrite' | null = null
 const outputChannel = vscode.window.createOutputChannel('SpiraCSS HTML to SCSS')
 
 function isFileNameCase(value: string): value is FileNameCase {
-  return (
-    value === 'preserve' ||
-    value === 'kebab' ||
-    value === 'snake' ||
-    value === 'camel' ||
-    value === 'pascal'
-  )
+  return value === 'preserve' || value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 type FileCaseConfig = {
   root?: FileNameCase
@@ -82,10 +75,8 @@ const configWarningRoots = new Set<string>()
 function warnConfigLoadError(root: string, error: unknown): void {
   if (configWarningRoots.has(root)) return
   configWarningRoots.add(root)
-  const message = vscode.l10n.t(
-    'Failed to load spiracss.config.js. Settings might not be applied.'
-  )
-  const detail = error instanceof Error ? error.stack ?? error.message : String(error)
+  const message = vscode.l10n.t('Failed to load spiracss.config.js. Settings might not be applied.')
+  const detail = error instanceof Error ? (error.stack ?? error.message) : String(error)
   vscode.window.showWarningMessage(message)
   outputChannel.appendLine(`[WARN] ${message}`)
   outputChannel.appendLine(detail)
@@ -255,9 +246,7 @@ function loadHtmlFormatClassAttributeFromConfig(config?: SpiracssConfig): ClassA
 
 const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined
-  return value
-    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
-    .map((entry) => entry.trim())
+  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
 }
 
 function loadJsxClassBindingsFromConfig(config?: SpiracssConfig): JsxClassBindingsConfig | undefined {
@@ -394,11 +383,7 @@ async function mergeIndex(dir: string, entries: string[]): Promise<boolean> {
     if (isUseLine(line)) lastUseIndex = index
   })
   const insertAt = lastUseIndex >= 0 ? lastUseIndex + 1 : 0
-  const updatedLines = [
-    ...lines.slice(0, insertAt),
-    ...missingUses,
-    ...lines.slice(insertAt)
-  ]
+  const updatedLines = [...lines.slice(0, insertAt), ...missingUses, ...lines.slice(insertAt)]
   await fsp.writeFile(file, ensureTrailingNewline(updatedLines.join('\n')), 'utf8')
   return true
 }
@@ -446,18 +431,10 @@ function getLintRuleMessage(code: HtmlLintIssue['code']): string {
 
 function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolean): string[] {
   const location = issue.path.length > 0 ? issue.path.join(' > ') : vscode.l10n.t('(root)')
-  const baseLabel = issue.baseClass
-    ? vscode.l10n.t('Base: "{0}"', issue.baseClass)
-    : vscode.l10n.t('Base: (none)')
-  const lines = [
-    getLintRuleMessage(issue.code),
-    vscode.l10n.t('Target: {0}', location),
-    baseLabel
-  ]
+  const baseLabel = issue.baseClass ? vscode.l10n.t('Base: "{0}"', issue.baseClass) : vscode.l10n.t('Base: (none)')
+  const lines = [getLintRuleMessage(issue.code), vscode.l10n.t('Target: {0}', location), baseLabel]
   if (includeDetail) {
-    const detailLabel = issue.message
-      ? vscode.l10n.t('Detail: {0}', issue.message)
-      : vscode.l10n.t('Detail: (none)')
+    const detailLabel = issue.message ? vscode.l10n.t('Detail: {0}', issue.message) : vscode.l10n.t('Detail: (none)')
     lines.push(detailLabel)
   }
   return lines
@@ -465,19 +442,12 @@ function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolean): str
 
 async function reportLintIssues(issues: HtmlLintIssue[]): Promise<void> {
   if (issues.length === 0) return
-  const headline = vscode.l10n.t(
-    'SpiraCSS HTML structure errors found. Generation was canceled.'
-  )
-  const modalDetail = vscode.l10n.t(
-    'Check the notification for the first issue and the output panel for full details.'
-  )
+  const headline = vscode.l10n.t('SpiraCSS HTML structure errors found. Generation was canceled.')
+  const modalDetail = vscode.l10n.t('Check the notification for the first issue and the output panel for full details.')
   await vscode.window.showErrorMessage(headline, { modal: true, detail: modalDetail })
   const firstIssue = issues[0]
   const toastSummary = formatLintIssueLines(firstIssue, false).join(' | ')
-  const moreSuffix =
-    issues.length > 1
-      ? ` ${vscode.l10n.t('(and {0} more)', issues.length - 1)}`
-      : ''
+  const moreSuffix = issues.length > 1 ? ` ${vscode.l10n.t('(and {0} more)', issues.length - 1)}` : ''
   vscode.window.showErrorMessage(`[${firstIssue.code}] ${toastSummary}${moreSuffix}`)
   outputChannel.appendLine(`[ERROR] ${headline}`)
   issues.forEach((issue, index) => {
@@ -593,9 +563,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
       const result = await generateScss(html, docDir, isRoot, options)
       if (result.generatedCount === 0) {
         vscode.window.showWarningMessage(
-          vscode.l10n.t(
-            'No SCSS was generated. Check the root selection and SpiraCSS naming rules.'
-          )
+          vscode.l10n.t('No SCSS was generated. Check the root selection and SpiraCSS naming rules.')
         )
         return
       }
@@ -608,10 +576,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
       if (mergedRoots.length > 0) {
         reportMergedRoots(mergedRoots)
         const first = mergedRoots[0]
-        const suffix =
-          mergedRoots.length > 1
-            ? ` ${vscode.l10n.t('(and {0} more)', mergedRoots.length - 1)}`
-            : ''
+        const suffix = mergedRoots.length > 1 ? ` ${vscode.l10n.t('(and {0} more)', mergedRoots.length - 1)}` : ''
         vscode.window.showInformationMessage(
           vscode.l10n.t(
             'SCSS generated. Merged duplicate root blocks: {0} x{1}{2}',
@@ -634,59 +599,48 @@ export function activate(ctx: vscode.ExtensionContext): void {
     }
   }
 
+  ctx.subscriptions.push(vscode.commands.registerCommand('extension.generateSpiracssScssFromRoot', createHandler(true)))
   ctx.subscriptions.push(
-    vscode.commands.registerCommand(
-      'extension.generateSpiracssScssFromRoot',
-      createHandler(true)
-    )
-  )
-  ctx.subscriptions.push(
-    vscode.commands.registerCommand(
-      'extension.generateSpiracssScssFromSelection',
-      createHandler(false)
-    )
+    vscode.commands.registerCommand('extension.generateSpiracssScssFromSelection', createHandler(false))
   )
 
   // Placeholder insertion command
   ctx.subscriptions.push(
-    vscode.commands.registerCommand(
-      'extension.insertSracssPlaceholders',
-      async (): Promise<void> => {
-        const ed = vscode.window.activeTextEditor
-        if (!ed) return
-        const html = ed.document.getText(ed.selection).trim()
-        if (!html) {
-          vscode.window.showErrorMessage(vscode.l10n.t('No selection.'))
-          return
-        }
-        const config = await loadSpiracssConfig(ed.document.uri)
-        const naming = loadNamingFromConfig(config)
-        const classAttribute = loadHtmlFormatClassAttributeFromConfig(config)
-        const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
-        const result = insertPlaceholdersWithInfo(html, naming, classAttribute, {
-          jsxClassBindings
-        })
-
-        // If template syntax is detected, warn and skip
-        if (result.hasTemplateSyntax) {
-          vscode.window.showWarningMessage(
-            vscode.l10n.t(
-              'Template syntax (EJS, Nunjucks, JSX, etc.) was detected, so placeholder insertion was skipped. Use only static HTML fragments.'
-            )
-          )
-          return
-        }
-
-        if (result.changeCount === 0) {
-          vscode.window.showInformationMessage(vscode.l10n.t('No placeholders to insert.'))
-          return
-        }
-        await ed.edit((edit) => {
-          edit.replace(ed.selection, result.html)
-        })
-        vscode.window.showInformationMessage(vscode.l10n.t('SpiraCSS placeholders inserted.'))
+    vscode.commands.registerCommand('extension.insertSracssPlaceholders', async (): Promise<void> => {
+      const ed = vscode.window.activeTextEditor
+      if (!ed) return
+      const html = ed.document.getText(ed.selection).trim()
+      if (!html) {
+        vscode.window.showErrorMessage(vscode.l10n.t('No selection.'))
+        return
       }
-    )
+      const config = await loadSpiracssConfig(ed.document.uri)
+      const naming = loadNamingFromConfig(config)
+      const classAttribute = loadHtmlFormatClassAttributeFromConfig(config)
+      const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
+      const result = insertPlaceholdersWithInfo(html, naming, classAttribute, {
+        jsxClassBindings
+      })
+
+      // If template syntax is detected, warn and skip
+      if (result.hasTemplateSyntax) {
+        vscode.window.showWarningMessage(
+          vscode.l10n.t(
+            'Template syntax (EJS, Nunjucks, JSX, etc.) was detected, so placeholder insertion was skipped. Use only static HTML fragments.'
+          )
+        )
+        return
+      }
+
+      if (result.changeCount === 0) {
+        vscode.window.showInformationMessage(vscode.l10n.t('No placeholders to insert.'))
+        return
+      }
+      await ed.edit((edit) => {
+        edit.replace(ed.selection, result.html)
+      })
+      vscode.window.showInformationMessage(vscode.l10n.t('SpiraCSS placeholders inserted.'))
+    })
   )
 }
 

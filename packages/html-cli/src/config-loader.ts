@@ -4,8 +4,7 @@ import { pathToFileURL } from 'url'
 
 export type SpiracssConfig = Record<string, unknown>
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 const hasDefaultExport = (value: Record<string, unknown>): value is { default: unknown } =>
   Object.prototype.hasOwnProperty.call(value, 'default')
@@ -38,9 +37,7 @@ const canRequire = typeof require === 'function'
 let dynamicImport: ((specifier: string) => Promise<unknown>) | null = null
 
 const formatLoadError = (absolutePath: string, cause?: unknown): Error => {
-  const message =
-    `Failed to load spiracss.config.js: ${absolutePath}\n\n` +
-    `Ensure the config file format is valid.`
+  const message = `Failed to load spiracss.config.js: ${absolutePath}\n\n` + `Ensure the config file format is valid.`
   if (!cause) return new Error(message)
   const causeMessage = cause instanceof Error ? cause.message : String(cause)
   return new Error(`${message}\n\nCause: ${causeMessage}`)
@@ -51,26 +48,14 @@ const ensureConfigReadable = (absolutePath: string): boolean => {
     fs.accessSync(absolutePath, fs.constants.R_OK)
     const stats = fs.statSync(absolutePath)
     if (!stats.isFile()) {
-      throw new Error(
-        `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-          `Check permissions and path state.`
-      )
+      throw new Error(`Cannot access spiracss.config.js: ${absolutePath}\n\n` + `Check permissions and path state.`)
     }
     return true
   } catch (error) {
     const code = getErrorCode(error)
     if (code === 'ENOENT') return false
-    if (
-      code === 'EACCES' ||
-      code === 'EPERM' ||
-      code === 'ELOOP' ||
-      code === 'ENOTDIR' ||
-      code === 'EISDIR'
-    ) {
-      throw new Error(
-        `Cannot access spiracss.config.js: ${absolutePath}\n\n` +
-          `Check permissions and path state.`
-      )
+    if (code === 'EACCES' || code === 'EPERM' || code === 'ELOOP' || code === 'ENOTDIR' || code === 'EISDIR') {
+      throw new Error(`Cannot access spiracss.config.js: ${absolutePath}\n\n` + `Check permissions and path state.`)
     }
     throw error
   }
@@ -83,9 +68,7 @@ const loadConfigWithRequire = (absolutePath: string): SpiracssConfig | undefined
   return resolveConfigModule(config)
 }
 
-export const loadSpiracssConfig = async (
-  configPath: string
-): Promise<SpiracssConfig | undefined> => {
+export const loadSpiracssConfig = async (configPath: string): Promise<SpiracssConfig | undefined> => {
   const absolutePath = path.resolve(configPath)
   if (!ensureConfigReadable(absolutePath)) return undefined
 
@@ -124,10 +107,7 @@ export const loadSpiracssConfig = async (
 
   if (!dynamicImport) {
     try {
-      dynamicImport = new Function(
-        'specifier',
-        'return import(specifier)'
-      ) as (specifier: string) => Promise<unknown>
+      dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<unknown>
     } catch {
       throw new Error(
         `Failed to load spiracss.config.js: ${absolutePath}\n\n` +

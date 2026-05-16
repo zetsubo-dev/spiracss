@@ -545,7 +545,7 @@ describe('spiracss/interaction-properties - basics', () => {
               '`opacity` is transitioned for `.block-name`. Move its declarations into the interaction section (comment matching `comments.interaction`, current: `/--interaction/i`). (spiracss/interaction-properties)'
           }
         ]
-      },
+      }
     ]
   })
 })

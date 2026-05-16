@@ -5,7 +5,8 @@ import {
   normalizeBoolean,
   normalizeKeyList,
   normalizeString,
-  safeNormalizeSelectorPolicyBase} from '../utils/normalize'
+  safeNormalizeSelectorPolicyBase
+} from '../utils/normalize'
 import { normalizeCommonOptions, pickCommonDefaults } from '../utils/options'
 import { createDefaultSelectorPolicyBase } from '../utils/selector-policy'
 import type {
@@ -100,11 +101,7 @@ const normalizeValueNaming = (
     }
   }
   if (value.maxWords !== undefined) {
-    if (
-      typeof value.maxWords !== 'number' ||
-      !Number.isInteger(value.maxWords) ||
-      value.maxWords < 1
-    ) {
+    if (typeof value.maxWords !== 'number' || !Number.isInteger(value.maxWords) || value.maxWords < 1) {
       reportInvalid?.(
         `${fieldName}.maxWords`,
         value.maxWords,
@@ -117,10 +114,7 @@ const normalizeValueNaming = (
   return normalized
 }
 
-const normalizeSelectorPolicy = (
-  raw: unknown,
-  reportInvalid?: InvalidOptionReporter
-): NormalizedSelectorPolicy => {
+const normalizeSelectorPolicy = (raw: unknown, reportInvalid?: InvalidOptionReporter): NormalizedSelectorPolicy => {
   const defaults = {
     variant: {
       mode: defaultSelectorPolicy.variant.mode,
@@ -172,10 +166,7 @@ const normalizeSelectorPolicy = (
   }
 }
 
-export const normalizeOptions = (
-  raw: unknown,
-  reportInvalid?: InvalidOptionReporter
-): Options => {
+export const normalizeOptions = (raw: unknown, reportInvalid?: InvalidOptionReporter): Options => {
   if (!raw || typeof raw !== 'object') return { ...defaultOptions }
   const opt = raw as {
     elementDepth?: number
@@ -194,59 +185,27 @@ export const normalizeOptions = (
     selectorPolicy?: Options['selectorPolicy']
   }
   const selectorPolicy = opt.selectorPolicy
-  const safeNormalizeKeyList = (
-    value: unknown,
-    fallback: string[],
-    fieldName: string
-  ): string[] => normalizeKeyList(value, fallback, fieldName, reportInvalid)
-  const common = normalizeCommonOptions(
-    opt,
-    pickCommonDefaults(defaultOptions),
-    reportInvalid
-  )
+  const safeNormalizeKeyList = (value: unknown, fallback: string[], fieldName: string): string[] =>
+    normalizeKeyList(value, fallback, fieldName, reportInvalid)
+  const common = normalizeCommonOptions(opt, pickCommonDefaults(defaultOptions), reportInvalid)
 
   return {
     element: {
-      depth:
-        typeof opt.elementDepth === 'number'
-          ? opt.elementDepth
-          : defaultOptions.element.depth
+      depth: typeof opt.elementDepth === 'number' ? opt.elementDepth : defaultOptions.element.depth
     },
     child: {
-      combinator: normalizeBoolean(
-        opt.childCombinator,
-        defaultOptions.child.combinator
-      ),
-      nesting: normalizeBoolean(
-        opt.childNesting,
-        defaultOptions.child.nesting
-      )
+      combinator: normalizeBoolean(opt.childCombinator, defaultOptions.child.combinator),
+      nesting: normalizeBoolean(opt.childNesting, defaultOptions.child.nesting)
     },
     root: {
-      single: normalizeBoolean(
-        opt.rootSingle,
-        defaultOptions.root.single
-      ),
-      file: normalizeBoolean(
-        opt.rootFile,
-        defaultOptions.root.file
-      ),
+      single: normalizeBoolean(opt.rootSingle, defaultOptions.root.single),
+      file: normalizeBoolean(opt.rootFile, defaultOptions.root.file),
       case: normalizeFileNameCase(opt.rootCase, defaultOptions.root.case)
     },
     paths: {
-      childDir: normalizeString(
-        opt.childDir,
-        defaultOptions.paths.childDir
-      ),
-      components: safeNormalizeKeyList(
-        opt.componentsDirs,
-        defaultOptions.paths.components,
-        'componentsDirs'
-      ),
-      childFileCase: normalizeFileNameCase(
-        opt.childFileCase,
-        defaultOptions.paths.childFileCase
-      )
+      childDir: normalizeString(opt.childDir, defaultOptions.paths.childDir),
+      components: safeNormalizeKeyList(opt.componentsDirs, defaultOptions.paths.components, 'componentsDirs'),
+      childFileCase: normalizeFileNameCase(opt.childFileCase, defaultOptions.paths.childFileCase)
     },
     selectorPolicy: normalizeSelectorPolicy(selectorPolicy, reportInvalid),
     ...common

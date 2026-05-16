@@ -21,14 +21,11 @@ type ParsedArgs = {
   json: boolean
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined
-  return value
-    .filter((entry) => typeof entry === 'string' && entry.trim() !== '')
-    .map((entry) => entry.trim())
+  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -71,9 +68,7 @@ async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
     const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
     const selectorPolicy = config.selectorPolicy as Record<string, unknown> | undefined
     const resolvedSelectorPolicy =
-      selectorPolicy && typeof selectorPolicy === 'object'
-        ? (selectorPolicy as SelectorPolicy)
-        : undefined
+      selectorPolicy && typeof selectorPolicy === 'object' ? (selectorPolicy as SelectorPolicy) : undefined
     const baseNaming = base?.naming
     const classNaming = classConfig?.naming
     let resolvedNaming: NamingOptions = {}
@@ -125,19 +120,20 @@ async function run(): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
 
   if (!args.useStdin && !args.inputPath) {
-    console.error(
-      'Usage: spiracss-html-lint [--root | --selection] [--stdin | path/to/input.html] [--json]'
-    )
+    console.error('Usage: spiracss-html-lint [--root | --selection] [--stdin | path/to/input.html] [--json]')
     process.exitCode = 1
     return
   }
 
   const rootDir = process.cwd()
-  const { naming, namingSource, selectorPolicy, external, jsxClassBindings } =
-    await loadConfigFromConfig(rootDir)
-  warnInvalidCustomPatterns(naming, (message) => {
-    console.error(message)
-  }, namingSource)
+  const { naming, namingSource, selectorPolicy, external, jsxClassBindings } = await loadConfigFromConfig(rootDir)
+  warnInvalidCustomPatterns(
+    naming,
+    (message) => {
+      console.error(message)
+    },
+    namingSource
+  )
 
   let html: string
   let filePath: string | undefined

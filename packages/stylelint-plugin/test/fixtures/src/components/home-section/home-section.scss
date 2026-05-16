@@ -1,9 +1,9 @@
-@use "sass:meta";
+@use 'sass:meta';
 
 // @assets/css/home.scss
 
 .home-section {
-  @include meta.load-css("scss");
+  @include meta.load-css('scss');
 
   > .home-hero {
     // @rel/scss/home-hero.scss
@@ -13,4 +13,3 @@
     // @rel/scss/home-feature.scss
   }
 }
-

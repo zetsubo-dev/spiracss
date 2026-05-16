@@ -33,37 +33,14 @@ const normalizeCacheSize = (
   return fallback
 }
 
-export const normalizeCacheSizes = (
-  value: unknown,
-  reportInvalid?: InvalidOptionReporter
-): NormalizedCacheSizes => {
+export const normalizeCacheSizes = (value: unknown, reportInvalid?: InvalidOptionReporter): NormalizedCacheSizes => {
   if (!value || typeof value !== 'object') return { ...DEFAULT_CACHE_SIZES }
   const raw = value as CacheSizes
   return {
-    selector: normalizeCacheSize(
-      raw.selector,
-      DEFAULT_CACHE_SIZES.selector,
-      'cache.selector',
-      reportInvalid
-    ),
-    patterns: normalizeCacheSize(
-      raw.patterns,
-      DEFAULT_CACHE_SIZES.patterns,
-      'cache.patterns',
-      reportInvalid
-    ),
-    naming: normalizeCacheSize(
-      raw.naming,
-      DEFAULT_CACHE_SIZES.naming,
-      'cache.naming',
-      reportInvalid
-    ),
-    path: normalizeCacheSize(
-      raw.path,
-      DEFAULT_CACHE_SIZES.path,
-      'cache.path',
-      reportInvalid
-    )
+    selector: normalizeCacheSize(raw.selector, DEFAULT_CACHE_SIZES.selector, 'cache.selector', reportInvalid),
+    patterns: normalizeCacheSize(raw.patterns, DEFAULT_CACHE_SIZES.patterns, 'cache.patterns', reportInvalid),
+    naming: normalizeCacheSize(raw.naming, DEFAULT_CACHE_SIZES.naming, 'cache.naming', reportInvalid),
+    path: normalizeCacheSize(raw.path, DEFAULT_CACHE_SIZES.path, 'cache.path', reportInvalid)
   }
 }
 
@@ -113,10 +90,7 @@ export const createSharedCacheAccessor = <K, V>(): ((maxSize: number) => LruCach
   return (maxSize: number) => getSharedLruCache(caches, maxSize)
 }
 
-export const getSharedLruCache = <K, V>(
-  caches: Map<number, LruCache<K, V>>,
-  maxSize: number
-): LruCache<K, V> => {
+export const getSharedLruCache = <K, V>(caches: Map<number, LruCache<K, V>>, maxSize: number): LruCache<K, V> => {
   const cached = caches.get(maxSize)
   if (cached) {
     caches.delete(maxSize)

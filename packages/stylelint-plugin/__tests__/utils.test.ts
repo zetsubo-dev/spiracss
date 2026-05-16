@@ -6,22 +6,11 @@ import type { Rule } from 'postcss'
 import scss from 'postcss-scss'
 import type { PostcssResult } from 'stylelint'
 
-import {
-  resolveAliasCandidates,
-  resolvePathCandidates
-} from '../dist/esm/rules/spiracss-rel-comments.alias.js'
+import { resolveAliasCandidates, resolvePathCandidates } from '../dist/esm/rules/spiracss-rel-comments.alias.js'
 import { createLruCache } from '../dist/esm/utils/cache.js'
-import {
-  formatCode,
-  formatList,
-  formatPattern
-} from '../dist/esm/utils/messages.js'
+import { formatCode, formatList, formatPattern } from '../dist/esm/utils/messages.js'
 import { buildBlockPattern, normalizeCustomPattern } from '../dist/esm/utils/naming.js'
-import {
-  normalizeBoolean,
-  normalizeCommentPattern,
-  normalizeKeyList
-} from '../dist/esm/utils/normalize.js'
+import { normalizeBoolean, normalizeCommentPattern, normalizeKeyList } from '../dist/esm/utils/normalize.js'
 import { isRuleInRootScope, markSectionRules } from '../dist/esm/utils/section.js'
 import {
   collectCompoundNodes,
@@ -141,10 +130,7 @@ describe('utils/naming', () => {
     const result = normalizeCustomPattern(custom, 'naming.customPatterns.block', (_name, value, detail) => {
       called = true
       assert.strictEqual(value, custom)
-      assert.strictEqual(
-        detail,
-        'RegExp flags "g" and "y" are not allowed for customPatterns.'
-      )
+      assert.strictEqual(detail, 'RegExp flags "g" and "y" are not allowed for customPatterns.')
     })
     assert.strictEqual(result, undefined)
     assert.strictEqual(called, true)
@@ -214,16 +200,11 @@ describe('utils/normalize', () => {
     const dangerous = [/^(a+)+$/, /^(a|a?)+$/, /^(a*)*$/]
     dangerous.forEach((pattern) => {
       let called = false
-      const result = normalizeCommentPattern(
-        pattern,
-        fallback,
-        'comments.shared',
-        (name, value) => {
-          called = true
-          assert.strictEqual(name, 'comments.shared')
-          assert.strictEqual(value, pattern)
-        }
-      )
+      const result = normalizeCommentPattern(pattern, fallback, 'comments.shared', (name, value) => {
+        called = true
+        assert.strictEqual(name, 'comments.shared')
+        assert.strictEqual(value, pattern)
+      })
       assert.strictEqual(result, fallback)
       assert.strictEqual(called, true)
     })
@@ -231,10 +212,7 @@ describe('utils/normalize', () => {
 
   it('normalizes key lists and rejects invalid items', () => {
     const fallback = ['data-variant']
-    assert.deepStrictEqual(normalizeKeyList([' data-foo ', 'data-bar'], fallback, 'keys'), [
-      'data-foo',
-      'data-bar'
-    ])
+    assert.deepStrictEqual(normalizeKeyList([' data-foo ', 'data-bar'], fallback, 'keys'), ['data-foo', 'data-bar'])
     let called = false
     const emptyArrayResult = normalizeKeyList([], fallback, 'keys', (name, value, detail) => {
       called = true
@@ -283,10 +261,7 @@ describe('utils/messages', () => {
   })
 
   it('trims long lists with an ellipsis', () => {
-    assert.strictEqual(
-      formatList(['a', 'b', 'c', 'd'], { maxItems: 2 }),
-      '`a`, `b`, `... (+2 more)`'
-    )
+    assert.strictEqual(formatList(['a', 'b', 'c', 'd'], { maxItems: 2 }), '`a`, `b`, `... (+2 more)`')
   })
 
   it('keeps the remaining count when maxChars is small', () => {

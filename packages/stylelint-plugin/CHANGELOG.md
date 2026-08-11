@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.4
+
+### Changed
+
+- Make selector parse failures errors by default while preserving explicit severity overrides.
+
 ## 0.4.3-beta
 
 ### Added

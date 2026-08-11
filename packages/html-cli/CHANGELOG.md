@@ -2,6 +2,16 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.4
+
+### Added
+
+- Add configurable classless HTML tag allowlists and structured diagnostics for AI-assisted lint fixes.
+
+### Changed
+
+- Share configuration and diagnostic handling across HTML lint, generation, formatting, and the VS Code integration.
+
 ## 0.4.3-beta
 
 ### Changed

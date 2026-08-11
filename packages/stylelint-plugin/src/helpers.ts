@@ -324,6 +324,37 @@ const ensureConfigSections = (spiracss: SpiracssConfig, configSource: string): v
     )
   }
 
+  const stylelint = isPlainObject(spiracss.stylelint) ? (spiracss.stylelint as Record<string, unknown>) : undefined
+  const objectSections = [
+    'base',
+    'class',
+    'pageLayer',
+    'placement',
+    'interactionScope',
+    'interactionProps',
+    'keyframes',
+    'pseudo',
+    'rel'
+  ]
+  objectSections.forEach((sectionName) => {
+    const section = stylelint?.[sectionName]
+    if (section !== undefined && !isPlainObject(section)) {
+      throw new Error(
+        `Invalid stylelint.${sectionName} section in spiracss.config.js: ${configSource}\n` +
+          `stylelint.${sectionName} must be an object when provided.\n` +
+          `See https://spiracss.jp/configuration/ for details.`
+      )
+    }
+  })
+
+  if (spiracss.selectorPolicy !== undefined && !isPlainObject(spiracss.selectorPolicy)) {
+    throw new Error(
+      `Invalid selectorPolicy section in spiracss.config.js: ${configSource}\n` +
+        `selectorPolicy must be an object when provided.\n` +
+        `See https://spiracss.jp/configuration/ for details.`
+    )
+  }
+
   if (spiracss.aliasRoots === undefined) {
     throw new Error(
       `Missing aliasRoots section in spiracss.config.js: ${configSource}\n\n` +

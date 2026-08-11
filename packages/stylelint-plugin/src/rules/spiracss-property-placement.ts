@@ -748,8 +748,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
-          severity: 'warning'
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
         })
       }
       if (selectorExplosion.example) {
@@ -758,8 +757,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorResolutionSkipped(selectorExplosion.limit, selectorExplosion.example),
-          severity: 'warning'
+          message: messages.selectorResolutionSkipped(selectorExplosion.limit, selectorExplosion.example)
         })
       }
     }

@@ -4,6 +4,8 @@
 
 import { type CheerioAPI, load } from 'cheerio'
 import type { AnyNode, Element } from 'domhandler'
+import { lstatSync, readdirSync, realpathSync } from 'fs'
+import * as path from 'path'
 
 import { type JsxClassBindingOptions, replaceJsxClassBindings, stripJsxClassBindings } from './jsx-class-bindings'
 
@@ -59,6 +61,104 @@ const VOID_TAGS = new Set([
 ])
 
 const TAG_RE = /<\/?([A-Za-z][\w:-]*)(?:\s[^<>]*?)?>/g
+
+const P_IMPLICIT_END_TAG_TRIGGERS = [
+  'address',
+  'article',
+  'aside',
+  'blockquote',
+  'body',
+  'details',
+  'div',
+  'dl',
+  'fieldset',
+  'figcaption',
+  'figure',
+  'footer',
+  'form',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'header',
+  'hgroup',
+  'hr',
+  'main',
+  'menu',
+  'nav',
+  'ol',
+  'p',
+  'pre',
+  'search',
+  'section',
+  'table',
+  'ul'
+]
+
+const IMPLIED_END_TAGS_ON_START = new Map<string, Set<string>>([
+  ['li', new Set(['li'])],
+  ['dt', new Set(['dt', 'dd'])],
+  ['dd', new Set(['dt', 'dd'])],
+  ['p', new Set(['p'])],
+  ['rt', new Set(['rt', 'rp'])],
+  ['rp', new Set(['rt', 'rp'])],
+  ['option', new Set(['option'])],
+  ['optgroup', new Set(['option', 'optgroup'])],
+  ['thead', new Set(['thead', 'tbody', 'tfoot'])],
+  ['tbody', new Set(['thead', 'tbody', 'tfoot'])],
+  ['tfoot', new Set(['thead', 'tbody', 'tfoot'])],
+  ['tr', new Set(['tr'])],
+  ['td', new Set(['td', 'th'])],
+  ['th', new Set(['td', 'th'])]
+])
+
+P_IMPLICIT_END_TAG_TRIGGERS.forEach((tag) => {
+  IMPLIED_END_TAGS_ON_START.set(tag, new Set(['p']))
+})
+
+const IMPLIED_END_TAGS_ON_END = new Map<string, Set<string>>([
+  ['ul', new Set(['li'])],
+  ['ol', new Set(['li'])],
+  ['dl', new Set(['dt', 'dd'])],
+  ['select', new Set(['option', 'optgroup'])],
+  ['optgroup', new Set(['option'])],
+  ['table', new Set(['caption', 'colgroup', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th'])],
+  ['thead', new Set(['tr'])],
+  ['tbody', new Set(['tr'])],
+  ['tfoot', new Set(['tr'])],
+  ['tr', new Set(['td', 'th'])]
+])
+
+P_IMPLICIT_END_TAG_TRIGGERS.forEach((tag) => {
+  if (tag === 'p') return
+  const current = IMPLIED_END_TAGS_ON_END.get(tag) ?? new Set<string>()
+  current.add('p')
+  IMPLIED_END_TAGS_ON_END.set(tag, current)
+})
+
+const OPTIONAL_END_TAGS = new Set([
+  'li',
+  'dt',
+  'dd',
+  'p',
+  'rt',
+  'rp',
+  'optgroup',
+  'option',
+  'colgroup',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'td',
+  'th'
+])
+
+// `wrapper` is synthetic and only exists around selection fragments. Its closing
+// tag must apply the same optional-end-tag rules as an end-of-document boundary.
+IMPLIED_END_TAGS_ON_END.set('wrapper', OPTIONAL_END_TAGS)
 
 const detectExplicitRoot = (html: string): 'html' | 'body' | null => {
   const cleaned = stripForRootScan(html)
@@ -136,6 +236,8 @@ const DYNAMIC_CLASS_TOKEN_RE = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\
 const DYNAMIC_UNQUOTED_CLASS_RE =
   /\bclass\s*=\s*(?:\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\{[\s\S]*?\}|\{[^}]*\})/gi
 const JSX_SPREAD_RE = /\{\.\.\.[^}]+\}/g
+const JSX_TAG_WITH_SPREAD_RE = /<[A-Za-z][\w.-]*(?:[^<>]|"[^"]*"|'[^']*')*\{\.\.\.[^}]+\}(?:[^<>]|"[^"]*"|'[^']*")*>/g
+const VUE_CLASS_BINDING_RE = /\s+(?::class|v-bind:class)\s*=\s*("[^"]*"|'[^']*')/gi
 
 /** Patterns removed at the attribute level. */
 const REMOVE_PATTERNS: RegExp[] = [
@@ -350,6 +452,120 @@ export type GeneratedFile = {
   content: string
 }
 
+function isMissingPathError(error: unknown): boolean {
+  return Boolean(
+    error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'ENOENT'
+  )
+}
+
+function resolvePathWithExistingSymlinks(targetPath: string): string {
+  const missingSuffix: string[] = []
+  let current = path.resolve(targetPath)
+
+  while (true) {
+    try {
+      lstatSync(current)
+    } catch (error) {
+      if (!isMissingPathError(error)) throw error
+      const parent = path.dirname(current)
+      if (parent === current) return path.resolve(current, ...missingSuffix)
+      missingSuffix.unshift(path.basename(current))
+      current = parent
+      continue
+    }
+
+    // realpathSync also resolves the current entry when it is a symlink. A dangling
+    // symlink is deliberately rejected instead of being treated as a new path.
+    const resolved = realpathSync.native(current)
+    return path.resolve(resolved, ...missingSuffix)
+  }
+}
+
+function swapAsciiCase(value: string): string {
+  return value.replace(/[A-Za-z]/g, (character) =>
+    character === character.toUpperCase() ? character.toLowerCase() : character.toUpperCase()
+  )
+}
+
+function isCaseInsensitiveDirectory(directory: string): boolean {
+  let current = path.resolve(directory)
+  while (true) {
+    try {
+      const entries = readdirSync(current)
+      for (const entry of entries) {
+        const swapped = swapAsciiCase(entry)
+        if (swapped === entry) continue
+        try {
+          const originalPath = realpathSync.native(path.join(current, entry))
+          const swappedPath = realpathSync.native(path.join(current, swapped))
+          if (originalPath === swappedPath) return true
+        } catch {
+          // A missing case-swapped entry is expected on case-sensitive filesystems.
+        }
+      }
+    } catch {
+      // Continue with the nearest existing parent when the directory is not readable.
+    }
+    const parent = path.dirname(current)
+    if (parent === current) return false
+    current = parent
+  }
+}
+
+function generatedPathCollisionKey(realPath: string, caseInsensitive: boolean): string {
+  return caseInsensitive ? realPath.toLowerCase() : realPath
+}
+
+function normalizeGeneratedPath(filePath: string): string {
+  return path.posix.normalize(filePath.replace(/\\/g, '/'))
+}
+
+export function isGeneratedIndexFile(filePath: string, childScssDir: string): boolean {
+  return normalizeGeneratedPath(filePath) === normalizeGeneratedPath(`${childScssDir}/index.scss`)
+}
+
+export function assertGeneratedFilesWithinDirectory(
+  files: GeneratedFile[],
+  docDir: string,
+  childScssDir?: string
+): void {
+  const root = path.resolve(docDir)
+  const rootPrefix = root.endsWith(path.sep) ? root : `${root}${path.sep}`
+  const realRoot = resolvePathWithExistingSymlinks(root)
+  const realRootPrefix = realRoot.endsWith(path.sep) ? realRoot : `${realRoot}${path.sep}`
+  const caseInsensitive = isCaseInsensitiveDirectory(realRoot)
+  const seenPaths = new Map<string, string>()
+  const aggregateIndexPath = childScssDir
+    ? path.resolve(root, normalizeGeneratedPath(`${childScssDir}/index.scss`).replace(/\//g, path.sep))
+    : undefined
+
+  for (const file of files) {
+    if (file.path.includes('\0') || path.posix.isAbsolute(file.path) || path.win32.isAbsolute(file.path)) {
+      throw new Error(`Generated file path escapes the document directory: ${file.path}`)
+    }
+    const normalizedPath = normalizeGeneratedPath(file.path).replace(/\//g, path.sep)
+    const resolved = path.resolve(root, normalizedPath)
+    if (resolved !== root && !resolved.startsWith(rootPrefix)) {
+      throw new Error(`Generated file path escapes the document directory: ${file.path}`)
+    }
+
+    const realResolved = resolvePathWithExistingSymlinks(resolved)
+    if (realResolved !== realRoot && !realResolved.startsWith(realRootPrefix)) {
+      throw new Error(`Generated file path escapes the document directory through a symbolic link: ${file.path}`)
+    }
+    const collisionKey = generatedPathCollisionKey(realResolved, caseInsensitive)
+    const previous = seenPaths.get(collisionKey)
+    if (previous) {
+      const reason =
+        aggregateIndexPath && path.resolve(root, normalizedPath) === aggregateIndexPath
+          ? 'Generated aggregate index path collision'
+          : 'Generated file path collision'
+      throw new Error(`${reason}: ${previous} and ${file.path}`)
+    }
+    seenPaths.set(collisionKey, file.path)
+  }
+}
+
 export type RootBlockSummary = {
   baseClass: string
   count: number
@@ -477,6 +693,8 @@ export function sanitizeHtml(raw: string, jsxOptions?: JsxClassBindingsConfig): 
     .replace(CDATA_RE, '')
 
   html = preserveDynamicClassAttributes(html)
+  html = preserveVueClassBindings(html)
+  html = mergeClassAttributes(html)
   html = preserveDynamicClassBindings(html)
 
   // Remove <script> / <style> tags (exclude inline JS/CSS)
@@ -516,11 +734,62 @@ function preserveDynamicClassAttributes(html: string): string {
 }
 
 function preserveDynamicClassBindings(html: string): string {
-  const withUnquotedClassMarkers = html.replace(DYNAMIC_UNQUOTED_CLASS_RE, 'data-spiracss-dynamic-class="true"')
-  return withUnquotedClassMarkers.replace(JSX_SPREAD_RE, ' data-spiracss-dynamic-class="true"')
+  return html
+    .replace(JSX_TAG_WITH_SPREAD_RE, (tag) => {
+      const spreadMatches = [...tag.matchAll(JSX_SPREAD_RE)]
+      if (spreadMatches.length === 0) return tag
+      const lastSpreadIndex = spreadMatches[spreadMatches.length - 1].index ?? -1
+      const trailing = tag.slice(lastSpreadIndex + spreadMatches[spreadMatches.length - 1][0].length)
+      const hasStaticClassAfterSpread = /\b(?:class|className)\s*=\s*(?:"[^"]*"|'[^']*'|\{`[^`]*`\})/i.test(trailing)
+      const marker = hasStaticClassAfterSpread ? '' : ' data-spiracss-dynamic-class="true"'
+      const withoutSpread = tag.replace(JSX_SPREAD_RE, '')
+      return marker ? withoutSpread.replace(/\s*(\/?>)$/, `${marker}$1`) : withoutSpread
+    })
+    .replace(DYNAMIC_UNQUOTED_CLASS_RE, 'data-spiracss-dynamic-class="true"')
+}
+
+function preserveVueClassBindings(html: string): string {
+  return html.replace(VUE_CLASS_BINDING_RE, (_match, quotedValue: string) => {
+    const value = quotedValue.slice(1, -1).trim()
+    const literal = value.match(/^(?:"([^"]*)"|'([^']*)')$/)
+    if (literal) {
+      const staticClass = (literal[1] ?? literal[2] ?? '').trim()
+      return staticClass ? ` class="${staticClass}"` : ''
+    }
+    return ' data-spiracss-dynamic-class="true"'
+  })
+}
+
+function mergeClassAttributes(html: string): string {
+  return html.replace(/<[A-Za-z][^<>]*>/g, (tag) => {
+    const matches = [...tag.matchAll(/\s+class\s*=\s*("[^"]*"|'[^']*')/gi)]
+    if (matches.length < 2) return tag
+
+    const classes = matches
+      .map((match) => match[1].slice(1, -1).trim())
+      .filter(Boolean)
+      .join(' ')
+    const first = matches[0]
+    const firstStart = first.index ?? 0
+    const firstEnd = firstStart + first[0].length
+    let result = `${tag.slice(0, firstStart)} class="${classes}"`
+    let cursor = firstEnd
+    for (const match of matches.slice(1)) {
+      const start = match.index ?? cursor
+      result += tag.slice(cursor, start)
+      cursor = start + match[0].length
+    }
+    return result + tag.slice(cursor)
+  })
 }
 
 /* ---------- ComponentStructure & Tree Logic ---------- */
+export type HtmlTargetPath = Array<{
+  tagName: string
+  siblingIndex: number
+  className?: string
+}>
+
 export interface ComponentStructure {
   baseClass: string
   isIndependent: boolean
@@ -533,6 +802,7 @@ export interface ComponentStructure {
   elementTag: string
   isRoot?: boolean
   viaDeep?: boolean
+  targetPath?: HtmlTargetPath
 }
 
 export type HtmlLintMode = 'root' | 'selection'
@@ -559,6 +829,7 @@ export type HtmlLintIssueCode =
   | 'INVALID_STATE_VALUE'
   | 'DYNAMIC_CLASS_UNRESOLVED'
   | 'CLASSLESS_TAG_NOT_ALLOWED'
+  | 'MAX_DEPTH_EXCEEDED'
 
 export type HtmlLintIssue = {
   code: HtmlLintIssueCode
@@ -569,11 +840,15 @@ export type HtmlLintIssue = {
     tagName: string
     siblingIndex: number
   }
-  targetPath?: Array<{
-    tagName: string
-    siblingIndex: number
-    className?: string
-  }>
+  targetPath?: HtmlTargetPath
+  position?: {
+    offset: number
+    line: number
+    column: number
+    endOffset: number
+    endLine: number
+    endColumn: number
+  }
 }
 
 type UnbalancedTags = {
@@ -586,7 +861,16 @@ type NormalizedHtmlLintOptions = {
   classlessTagAllowlist: Set<string>
 }
 
-const DEFAULT_CLASSLESS_TAG_ALLOWLIST = ['picture', 'source', 'img', 'track', 'map', 'area', 'br', 'wbr']
+export const DEFAULT_CLASSLESS_TAG_ALLOWLIST = [
+  'picture',
+  'source',
+  'img',
+  'track',
+  'map',
+  'area',
+  'br',
+  'wbr'
+] as const
 
 const DOCUMENT_SHELL_TAGS = new Set(['html', 'head', 'body'])
 const DOCUMENT_METADATA_TAGS = new Set(['title', 'base', 'link', 'meta', 'style', 'script', 'xmp', 'listing'])
@@ -595,6 +879,17 @@ const NATIVE_CONTROL_INTERNAL_TAGS = new Set(['datalist', 'optgroup', 'option', 
 const TABLE_STRUCTURE_TAGS = new Set(['tbody', 'thead', 'tfoot', 'colgroup'])
 
 function normalizeHtmlLintOptions(raw?: HtmlLintOptions): NormalizedHtmlLintOptions {
+  if (raw?.classlessTagCheck !== undefined && typeof raw.classlessTagCheck !== 'boolean') {
+    throw new Error('htmlLint.classlessTagCheck must be a boolean.')
+  }
+  if (raw?.classlessTagAllowlist !== undefined) {
+    if (
+      !Array.isArray(raw.classlessTagAllowlist) ||
+      raw.classlessTagAllowlist.some((tag) => typeof tag !== 'string' || tag.trim() === '')
+    ) {
+      throw new Error('htmlLint.classlessTagAllowlist must be an array of non-empty strings.')
+    }
+  }
   const configured = Array.isArray(raw?.classlessTagAllowlist)
     ? raw.classlessTagAllowlist
         .filter((tag): tag is string => typeof tag === 'string' && tag.trim() !== '')
@@ -632,6 +927,10 @@ function findUnbalancedTags(html: string): UnbalancedTags | null {
     const isSelfClosing = full.endsWith('/>')
 
     if (!isClosing) {
+      const implicitlyClosed = IMPLIED_END_TAGS_ON_START.get(tag)
+      while (stack.length > 0 && implicitlyClosed?.has(stack[stack.length - 1])) {
+        stack.pop()
+      }
       if (isSelfClosing || VOID_TAGS.has(tag)) continue
       stack.push(tag)
       continue
@@ -641,6 +940,11 @@ function findUnbalancedTags(html: string): UnbalancedTags | null {
       if (tag === 'html' || tag === 'body' || tag === 'head') continue
       unexpected.push(tag)
       continue
+    }
+
+    const implicitlyClosed = IMPLIED_END_TAGS_ON_END.get(tag)
+    while (stack.length > 0 && implicitlyClosed?.has(stack[stack.length - 1])) {
+      stack.pop()
     }
 
     const last = stack[stack.length - 1]
@@ -660,6 +964,9 @@ function findUnbalancedTags(html: string): UnbalancedTags | null {
     stack.length = idx
   }
 
+  while (stack.length > 0 && OPTIONAL_END_TAGS.has(stack[stack.length - 1])) {
+    stack.pop()
+  }
   if (stack.length > 0) {
     missing.push(...stack.reverse())
   }
@@ -1042,6 +1349,10 @@ function dedup(arr: ComponentStructure[]): ComponentStructure[] {
 }
 
 const MAX_DEPTH = 256
+const MAX_DIAGNOSTIC_PATH_DEPTH = 32
+
+const diagnosticTargetPath = (targetPath?: HtmlTargetPath): HtmlTargetPath | undefined =>
+  targetPath && targetPath.length <= MAX_DIAGNOSTIC_PATH_DEPTH ? targetPath : undefined
 
 function logicalChildElements($: CheerioAPI, elem: Element): Element[] {
   if (elem.tagName.toLowerCase() !== 'template') {
@@ -1060,6 +1371,58 @@ function logicalChildElements($: CheerioAPI, elem: Element): Element[] {
   }
   elem.children.forEach(visit)
   return result
+}
+
+type DepthExceeded = {
+  depth: number
+  targetPath: HtmlTargetPath
+}
+
+function findDepthExceeded($: CheerioAPI, roots: Element[]): DepthExceeded | undefined {
+  const stack = roots.map((root, index) => ({
+    node: root,
+    depth: 0,
+    targetPath: [targetPathSegment(root, index + 1)]
+  }))
+  while (stack.length > 0) {
+    const current = stack.pop()!
+    if (current.depth > MAX_DEPTH) return { depth: current.depth, targetPath: current.targetPath }
+    logicalChildElements($, current.node).forEach((child, index) => {
+      stack.push({
+        node: child,
+        depth: current.depth + 1,
+        targetPath: [...current.targetPath, targetPathSegment(child, index + 1)]
+      })
+    })
+  }
+  return undefined
+}
+
+function findTargetPath($: CheerioAPI, roots: Element[], target: Element): HtmlTargetPath | undefined {
+  const visit = (elem: Element, targetPath: HtmlTargetPath): HtmlTargetPath | undefined => {
+    if (elem === target) return targetPath
+    if (targetPath.length > MAX_DEPTH) return undefined
+    for (const [index, child] of logicalChildElements($, elem).entries()) {
+      const result = visit(child, [...targetPath, targetPathSegment(child, index + 1)])
+      if (result) return result
+    }
+    return undefined
+  }
+
+  for (const [index, root] of roots.entries()) {
+    const result = visit(root, [targetPathSegment(root, index + 1)])
+    if (result) return result
+  }
+  return undefined
+}
+
+function targetPathSegment(elem: Element, siblingIndex: number): HtmlTargetPath[number] {
+  const className = firstClassToken(elem)
+  return {
+    tagName: elem.tagName,
+    siblingIndex,
+    ...(className ? { className } : {})
+  }
 }
 
 function collectClassedDescendantRoots($: CheerioAPI, roots: Element[]): Element[] {
@@ -1082,17 +1445,19 @@ function collectDeep(
   naming: NamingOptions,
   policy: NormalizedSelectorPolicy,
   external: NormalizedExternalOptions,
-  depth = 0
+  depth = 0,
+  targetPath: HtmlTargetPath = []
 ): ComponentStructure[] {
   if (depth > MAX_DEPTH) return []
   const list: ComponentStructure[] = []
-  logicalChildElements($, node).forEach((ch) => {
-    const comp = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1) : null
+  logicalChildElements($, node).forEach((ch, index) => {
+    const childTargetPath = [...targetPath, targetPathSegment(ch, index + 1)]
+    const comp = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1, childTargetPath) : null
     if (comp) {
       comp.viaDeep = true
       list.push(comp)
     } else {
-      list.push(...collectDeep($, ch, naming, policy, external, depth + 1))
+      list.push(...collectDeep($, ch, naming, policy, external, depth + 1, childTargetPath))
     }
   })
   return list
@@ -1104,7 +1469,8 @@ function buildTreeInternal(
   naming: NamingOptions,
   policy: NormalizedSelectorPolicy,
   external: NormalizedExternalOptions,
-  depth = 0
+  depth = 0,
+  targetPath: HtmlTargetPath = []
 ): ComponentStructure | null {
   if (depth > MAX_DEPTH) return null
   const [base, ...mods] = elem.attribs.class?.split(/\s+/) ?? []
@@ -1122,12 +1488,14 @@ function buildTreeInternal(
     nestedChildren: [],
     independentChildren: [],
     orderedChildren: [],
-    elementTag: elem.tagName
+    elementTag: elem.tagName,
+    targetPath
   }
 
-  logicalChildElements($, elem).forEach((ch) => {
-    const direct = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1) : null
-    const comps = direct ? [direct] : collectDeep($, ch, naming, policy, external, depth + 1)
+  logicalChildElements($, elem).forEach((ch, index) => {
+    const childTargetPath = [...targetPath, targetPathSegment(ch, index + 1)]
+    const direct = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1, childTargetPath) : null
+    const comps = direct ? [direct] : collectDeep($, ch, naming, policy, external, depth + 1, childTargetPath)
     comps.forEach((c) => {
       const tgt = c.isIndependent ? node.independentChildren : node.nestedChildren
       const oth = c.isIndependent ? node.nestedChildren : node.independentChildren
@@ -1230,6 +1598,7 @@ function lintNodeStructure(
   isRootMode: boolean,
   issues: HtmlLintIssue[]
 ): void {
+  const issueStart = issues.length
   const base = node.baseClass
   const fullClasses = [base, ...node.modifiers]
   const modifierPattern = buildModifierPattern(naming)
@@ -1412,6 +1781,10 @@ function lintNodeStructure(
   for (const child of children) {
     lintNodeStructure(child, node, nextAncestorBlock, naming, policy, external, path, false, isRootMode, issues)
   }
+
+  for (let index = issueStart; index < issues.length; index += 1) {
+    issues[index].targetPath ??= diagnosticTargetPath(node.targetPath)
+  }
 }
 
 type HtmlTraversalMode = 'html' | 'svg' | 'math'
@@ -1435,7 +1808,8 @@ function traversalModeForElement(elem: Element, fallback: HtmlTraversalMode): Ht
 }
 
 function firstClassToken(elem: Element): string | undefined {
-  return elem.attribs?.class?.split(/\s+/).find((token) => token.length > 0)
+  const classAttribute = elem.attribs?.class ?? elem.attribs?.className ?? elem.attribs?.classname
+  return classAttribute?.split(/\s+/).find((token) => token.length > 0)
 }
 
 function classlessTagIssue(
@@ -1450,7 +1824,7 @@ function classlessTagIssue(
     baseClass: tag,
     path,
     target: { tagName: tag, siblingIndex },
-    targetPath
+    targetPath: diagnosticTargetPath(targetPath)
   }
 }
 
@@ -1467,7 +1841,7 @@ function dynamicClassIssue(
     baseClass: className ?? tag,
     path,
     target: { tagName: tag, siblingIndex },
-    targetPath
+    targetPath: diagnosticTargetPath(targetPath)
   }
 }
 
@@ -1583,6 +1957,107 @@ function lintClasslessTags(
   roots.forEach((root, index) => walk(root, [], 'html', 0, index + 1))
 }
 
+type SourceIndexedElement = Element & {
+  startIndex?: number
+  endIndex?: number
+  sourceCodeLocation?: {
+    startTag?: { endOffset?: number }
+  }
+}
+
+type SourceLookup = {
+  $: CheerioAPI
+  roots: Element[]
+  wrapperLength: number
+}
+
+function createSourceLookup(sourceHtml: string, isRootMode: boolean): SourceLookup {
+  const source = isRootMode ? sourceHtml : `<wrapper>${sourceHtml}</wrapper>`
+  const explicitRoot = detectExplicitRoot(source)
+  const loadWithSourceIndices = load as unknown as (
+    content: string,
+    options: Record<string, unknown>,
+    isDocument?: boolean
+  ) => CheerioAPI
+  const $: CheerioAPI = explicitRoot
+    ? loadWithSourceIndices(source, { scriptingEnabled: false, sourceCodeLocationInfo: true })
+    : loadWithSourceIndices(source, { scriptingEnabled: false, sourceCodeLocationInfo: true }, false)
+  const roots = isRootMode
+    ? [findExplicitRoot($, explicitRoot) ?? findFirstElement($)].filter((root): root is Element => Boolean(root))
+    : $('wrapper').children().get().filter(isTagElement)
+  return { $, roots, wrapperLength: isRootMode ? 0 : '<wrapper>'.length }
+}
+
+function findSourceElementByPath(
+  sourceLookup: SourceLookup,
+  targetPath: NonNullable<HtmlLintIssue['targetPath']>
+): SourceIndexedElement | undefined {
+  if (targetPath.length === 0) return undefined
+  const { $, roots: initialRoots } = sourceLookup
+
+  let current: Element | undefined
+  for (const target of targetPath) {
+    const candidates = current ? logicalChildElements($, current) : initialRoots
+    current = candidates.find((candidate, index) => {
+      if (index + 1 !== target.siblingIndex) return false
+      if (candidate.tagName.toLowerCase() !== target.tagName.toLowerCase()) return false
+      if (target.className && firstClassToken(candidate) !== target.className) return false
+      return true
+    })
+    if (!current) return undefined
+  }
+  return current as SourceIndexedElement | undefined
+}
+
+function sourcePositionForRange(
+  sourceHtml: string,
+  offset: number,
+  endOffset: number
+): NonNullable<HtmlLintIssue['position']> {
+  const boundedOffset = Math.max(0, Math.min(offset, sourceHtml.length))
+  const boundedEndOffset = Math.max(boundedOffset, Math.min(endOffset, sourceHtml.length))
+  const before = sourceHtml.slice(0, boundedOffset)
+  const beforeEnd = sourceHtml.slice(0, boundedEndOffset)
+  const line = before.split('\n').length
+  const endLine = beforeEnd.split('\n').length
+  const lastLineBreak = before.lastIndexOf('\n')
+  const endLastLineBreak = beforeEnd.lastIndexOf('\n')
+  return {
+    offset: boundedOffset,
+    line,
+    column: boundedOffset - lastLineBreak,
+    endOffset: boundedEndOffset,
+    endLine,
+    endColumn: boundedEndOffset - endLastLineBreak
+  }
+}
+
+function attachSourcePositions(issues: HtmlLintIssue[], sourceHtml: string, isRootMode: boolean): void {
+  const sourceLookup = issues.some((issue) => issue.targetPath && issue.targetPath.length > 0)
+    ? createSourceLookup(sourceHtml, isRootMode)
+    : undefined
+
+  issues.forEach((issue) => {
+    if (!sourceLookup || !issue.targetPath || issue.targetPath.length === 0) return
+    const sourceElement = findSourceElementByPath(sourceLookup, issue.targetPath)
+    const startIndex = sourceElement?.startIndex
+    if (typeof startIndex !== 'number') return
+    const endIndex = sourceElement?.sourceCodeLocation?.startTag?.endOffset ?? sourceElement?.endIndex ?? startIndex + 1
+    const wrapperLength = isRootMode ? 0 : '<wrapper>'.length
+    issue.position = sourcePositionForRange(sourceHtml, startIndex - wrapperLength, endIndex - wrapperLength)
+  })
+}
+
+function depthExceededIssue(depth: number, targetPath?: HtmlTargetPath): HtmlLintIssue {
+  return {
+    code: 'MAX_DEPTH_EXCEEDED',
+    message: `HTML traversal exceeded the safety limit of ${MAX_DEPTH} nested elements (observed depth: ${depth}). Simplify the generated DOM or split the input before linting or generating SCSS.`,
+    baseClass: '',
+    path: [],
+    targetPath: diagnosticTargetPath(targetPath)
+  }
+}
+
 export function lintHtmlStructure(
   rawHtml: string,
   isRootMode: boolean,
@@ -1622,7 +2097,8 @@ export function lintHtmlStructure(
           code: 'MULTIPLE_ROOT_ELEMENTS',
           message: 'Multiple root elements found. Root mode expects a single root element.',
           baseClass: '',
-          path: []
+          path: [],
+          targetPath: [targetPathSegment(rootElements[0], 1)]
         })
       }
     }
@@ -1635,28 +2111,36 @@ export function lintHtmlStructure(
         baseClass: '',
         path: []
       })
+      attachSourcePositions(issues, rawHtml, isRootMode)
       return issues
     }
     classlessRoots = [node]
+    const nodeTargetPath = [targetPathSegment(node, 1)]
+    const exceededDepth = findDepthExceeded($, [node])
+    if (exceededDepth !== undefined) issues.push(depthExceededIssue(exceededDepth.depth, exceededDepth.targetPath))
     if (!hasClassAttribute(node)) {
       issues.push({
         code: 'INVALID_BASE_CLASS',
         message: 'Root element does not have a class attribute.',
         baseClass: '',
-        path: []
+        path: [],
+        targetPath: nodeTargetPath
       })
       const descendantRoots = collectClassedDescendantRoots($, [node])
       for (const rootEl of descendantRoots) {
-        const tree = buildTree($, rootEl, naming, policy, external)
+        const tree = buildTreeInternal($, rootEl, naming, policy, external, 0, findTargetPath($, [node], rootEl))
         if (!tree) continue
         lintNodeStructure(tree, null, null, naming, policy, external, [], false, false, issues)
       }
       lintClasslessTags($, classlessRoots, htmlLint, issues)
+      attachSourcePositions(issues, rawHtml, isRootMode)
       return issues
     }
     roots = [node]
   } else {
     classlessRoots = $('wrapper').children().get().filter(isTagElement)
+    const exceededDepth = findDepthExceeded($, classlessRoots)
+    if (exceededDepth !== undefined) issues.push(depthExceededIssue(exceededDepth.depth, exceededDepth.targetPath))
     roots = collectClassedDescendantRoots($, classlessRoots)
   }
   if (roots.length === 0) {
@@ -1669,16 +2153,18 @@ export function lintHtmlStructure(
       baseClass: '',
       path: []
     })
+    attachSourcePositions(issues, rawHtml, isRootMode)
     return issues
   }
 
   for (const rootEl of roots) {
-    const tree = buildTree($, rootEl, naming, policy, external)
+    const tree = buildTreeInternal($, rootEl, naming, policy, external, 0, findTargetPath($, classlessRoots, rootEl))
     if (!tree) continue
     lintNodeStructure(tree, null, null, naming, policy, external, [], true, isRootMode, issues)
   }
 
   lintClasslessTags($, classlessRoots, htmlLint, issues)
+  attachSourcePositions(issues, rawHtml, isRootMode)
 
   return issues
 }
@@ -1904,6 +2390,11 @@ export function generateFromHtml(
     }
   }
 
+  const exceededDepth = findDepthExceeded($, roots)
+  if (exceededDepth !== undefined) {
+    throw new Error(depthExceededIssue(exceededDepth.depth, exceededDepth.targetPath).message)
+  }
+
   const results: GeneratedFile[] = []
   const uses = new Set<string>()
   const childDir = opts.childScssDir
@@ -1977,6 +2468,7 @@ export function generateFromHtml(
   }
 
   // Result paths are relative to docDir (caller joins).
+  assertGeneratedFilesWithinDirectory(results, docDir, opts.childScssDir)
   return results
 }
 

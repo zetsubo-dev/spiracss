@@ -1,55 +1,11 @@
 import { promises as fsp } from 'fs'
 import * as path from 'path'
 
-import { loadSpiracssConfig } from './config-loader'
 import { warnInvalidCustomPatterns } from './config-warnings'
-import {
-  type ExternalOptions,
-  type HtmlLintOptions,
-  type HtmlLintIssue,
-  type JsxClassBindingsConfig,
-  lintHtmlStructure,
-  type NamingOptions,
-  type SelectorPolicy
-} from './generator-core'
-
-type Mode = 'root' | 'selection'
-
-type ParsedArgs = {
-  mode: Mode
-  useStdin: boolean
-  allowProvisional: boolean
-  inputPath?: string
-  json: boolean
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
-
-function formatIssueLocation(issue: HtmlLintIssue): string {
-  const sibling = issue.target && issue.target.siblingIndex > 1 ? ` (sibling #${issue.target.siblingIndex})` : ''
-  const targetPath =
-    issue.targetPath && issue.targetPath.length > 0
-      ? ` [DOM: ${issue.targetPath.map((target) => `<${target.tagName}>#${target.siblingIndex}${target.className ? `.${target.className}` : ''}`).join(' > ')}]`
-      : ''
-  return `${issue.path.join(' > ') || '(root)'}${sibling}${targetPath}`
-}
-
-const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
-}
-
-function parseArgs(argv: string[]): ParsedArgs {
-  const mode: Mode = argv.includes('--selection') ? 'selection' : 'root'
-  const useStdin = argv.includes('--stdin')
-  const allowProvisional = argv.includes('--allow-provisional')
-  const json = argv.includes('--json')
-
-  const positional = argv.filter((arg) => !arg.startsWith('--'))
-  const inputPath = useStdin ? undefined : positional[0]
-
-  return { mode, useStdin, allowProvisional, inputPath, json }
-}
+import { parseCliArgs } from './cli-args'
+import { loadProjectOptions } from './config-options'
+import { findMaxDepthIssue, formatIssueLocation, validationStatusFor } from './diagnostics'
+import { type HtmlLintIssue, lintHtmlStructure } from './generator-core'
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -63,99 +19,8 @@ async function readStdin(): Promise<string> {
   })
 }
 
-type LintConfig = {
-  naming: NamingOptions
-  selectorPolicy?: SelectorPolicy
-  external?: ExternalOptions
-  jsxClassBindings?: JsxClassBindingsConfig
-  htmlLint?: HtmlLintOptions
-  namingSource: string
-  configStatus: 'missing' | 'loaded' | 'error'
-  configPath: string
-  configError?: string
-}
-
-async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
-  const configPath = path.join(rootDir, 'spiracss.config.js')
-  let config: Awaited<ReturnType<typeof loadSpiracssConfig>>
-  try {
-    config = await loadSpiracssConfig(configPath)
-  } catch (error) {
-    return {
-      naming: {},
-      namingSource: 'stylelint.base.naming.customPatterns',
-      selectorPolicy: undefined,
-      configStatus: 'error',
-      configPath,
-      configError: error instanceof Error ? error.message : String(error)
-    }
-  }
-  if (config && typeof config === 'object') {
-    const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-    const base = stylelintCfg?.base as Record<string, unknown> | undefined
-    const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
-    const selectorPolicy = config.selectorPolicy as Record<string, unknown> | undefined
-    const htmlLintConfig = config.htmlLint
-    const resolvedSelectorPolicy =
-      selectorPolicy && typeof selectorPolicy === 'object' ? (selectorPolicy as SelectorPolicy) : undefined
-    const baseNaming = base?.naming
-    const classNaming = classConfig?.naming
-    let resolvedNaming: NamingOptions = {}
-    let namingSource = 'stylelint.base.naming.customPatterns'
-    if (isRecord(baseNaming)) {
-      resolvedNaming = baseNaming as NamingOptions
-      namingSource = 'stylelint.base.naming.customPatterns'
-    } else if (isRecord(classNaming)) {
-      resolvedNaming = classNaming as NamingOptions
-      namingSource = 'stylelint.class.naming.customPatterns'
-    }
-    const baseExternal = base?.external
-    const classExternal = classConfig?.external
-    const external = {
-      ...(isRecord(baseExternal) ? baseExternal : {}),
-      ...(isRecord(classExternal) ? classExternal : {})
-    }
-    const classes = Array.isArray(external.classes)
-      ? external.classes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
-      : undefined
-    const prefixes = Array.isArray(external.prefixes)
-      ? external.prefixes.filter((item: unknown) => typeof item === 'string' && item.trim() !== '')
-      : undefined
-    const jsxBindingsConfig = (config as Record<string, unknown>).jsxClassBindings as
-      | Record<string, unknown>
-      | undefined
-    let jsxClassBindings: JsxClassBindingsConfig | undefined
-    if (jsxBindingsConfig && typeof jsxBindingsConfig === 'object') {
-      const allowlist = normalizeMemberAccessAllowlist(jsxBindingsConfig.memberAccessAllowlist)
-      if (allowlist !== undefined) {
-        jsxClassBindings = { memberAccessAllowlist: allowlist }
-      }
-    }
-    return {
-      naming: resolvedNaming,
-      namingSource,
-      selectorPolicy: resolvedSelectorPolicy,
-      external: {
-        classes,
-        prefixes
-      },
-      jsxClassBindings,
-      htmlLint: isRecord(htmlLintConfig) ? (htmlLintConfig as HtmlLintOptions) : undefined,
-      configStatus: 'loaded',
-      configPath
-    }
-  }
-  return {
-    naming: {},
-    namingSource: 'stylelint.base.naming.customPatterns',
-    selectorPolicy: undefined,
-    configStatus: 'missing',
-    configPath
-  }
-}
-
 async function run(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2))
+  const args = parseCliArgs(process.argv.slice(2), 'lint')
 
   if (!args.useStdin && !args.inputPath) {
     console.error(
@@ -166,6 +31,7 @@ async function run(): Promise<void> {
   }
 
   const rootDir = process.cwd()
+  const options = await loadProjectOptions(rootDir)
   const {
     naming,
     namingSource,
@@ -176,7 +42,7 @@ async function run(): Promise<void> {
     configStatus,
     configPath,
     configError
-  } = await loadConfigFromConfig(rootDir)
+  } = options
   if (configStatus === 'missing') {
     console.error(`WARN: ${configPath} was not found; default SpiraCSS settings are provisional.`)
   }
@@ -210,6 +76,7 @@ async function run(): Promise<void> {
             file: filePath ?? null,
             mode: args.mode,
             ok: false,
+            status: 'blocked',
             config: { status: configStatus, path: configPath },
             provisional: isMissing,
             blocked,
@@ -238,6 +105,37 @@ async function run(): Promise<void> {
     jsxClassBindings,
     htmlLint
   )
+  const maxDepthIssue = findMaxDepthIssue(issues)
+  if (maxDepthIssue) {
+    const blocked = { code: maxDepthIssue.code, message: maxDepthIssue.message }
+    if (args.json) {
+      console.log(
+        JSON.stringify(
+          {
+            file: filePath ?? null,
+            mode: args.mode,
+            ok: false,
+            status: 'blocked',
+            config: { status: configStatus, path: configPath },
+            provisional: configStatus === 'missing',
+            blocked,
+            errors: issues
+          },
+          null,
+          2
+        )
+      )
+    } else {
+      console.error(`ERROR [${blocked.code}]: ${blocked.message}`)
+    }
+    process.exitCode = 1
+    return
+  }
+  const status = validationStatusFor({
+    configStatus,
+    hasIssues: issues.length > 0,
+    allowProvisional: args.allowProvisional
+  })
 
   if (args.json) {
     console.log(
@@ -245,7 +143,8 @@ async function run(): Promise<void> {
         {
           file: filePath ?? null,
           mode: args.mode,
-          ok: issues.length === 0,
+          ok: status === 'pass',
+          status,
           config: { status: configStatus, path: configPath },
           provisional: configStatus === 'missing',
           errors: issues
@@ -265,7 +164,7 @@ async function run(): Promise<void> {
     }
   }
 
-  if (issues.length > 0) {
+  if (status !== 'pass') {
     process.exitCode = 1
   }
 }

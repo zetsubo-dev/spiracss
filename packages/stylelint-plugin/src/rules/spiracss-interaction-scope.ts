@@ -210,8 +210,7 @@ const rule = createRule(
           ruleName,
           result,
           node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector())),
-          severity: 'warning'
+          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
         })
       }
     }

@@ -3,77 +3,30 @@
  * ========================================================= */
 
 import {
-  type ExternalOptions,
-  type FileNameCase,
   generateFromHtml,
   type GeneratorOptions,
-  type HtmlLintOptions,
   type HtmlLintIssue,
+  isGeneratedIndexFile,
   insertPlaceholdersWithInfo,
-  type JsxClassBindingsConfig,
+  loadProjectOptions,
+  type LoadedProjectOptions,
   lintHtmlStructure,
-  type NamingOptions,
   type RootBlockSummary,
-  type SelectorPolicy,
   summarizeRootBlocks
 } from '@spiracss/html-cli'
-import { existsSync, promises as fsp, readFileSync, statSync } from 'fs'
-import { createRequire } from 'module'
+import { promises as fsp } from 'fs'
 import * as path from 'path'
-import { pathToFileURL } from 'url'
 import * as vscode from 'vscode'
 
 /* ---------- global overwrite choice / output channel ---------- */
 let globalWriteChoice: 'overwrite' | null = null
 const outputChannel = vscode.window.createOutputChannel('SpiraCSS HTML to SCSS')
 
-function isFileNameCase(value: string): value is FileNameCase {
-  return value === 'preserve' || value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
-
-type FileCaseConfig = {
-  root?: FileNameCase
-  child?: FileNameCase
-}
-
-const resolveFileCaseConfig = (value: unknown): FileCaseConfig => {
-  if (typeof value === 'string' && isFileNameCase(value)) {
-    return { root: value, child: value }
-  }
-  if (!isRecord(value)) return {}
-  const root = value.root
-  const child = value.child
-  return {
-    root: typeof root === 'string' && isFileNameCase(root) ? root : undefined,
-    child: typeof child === 'string' && isFileNameCase(child) ? child : undefined
-  }
-}
-
 /* ---------- workspace / config loading ---------- */
-const isModuleWorkspace = (root: string): boolean => {
-  const pkgPath = path.join(root, 'package.json')
-  if (!existsSync(pkgPath)) return false
-  try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { type?: string }
-    return pkg.type === 'module'
-  } catch {
-    return false
-  }
-}
-
 function getWorkspaceRoot(uri: vscode.Uri): string | undefined {
   const folder = vscode.workspace.getWorkspaceFolder(uri)
   return folder?.uri.fsPath
 }
-
-type SpiracssConfig = Record<string, unknown>
-type ClassAttribute = 'class' | 'className'
-type ConfigLoadResult =
-  | { status: 'missing'; config: undefined }
-  | { status: 'loaded'; config: SpiracssConfig }
-  | { status: 'error'; config: undefined }
 
 const configWarningRoots = new Set<string>()
 const configMissingWarningRoots = new Set<string>()
@@ -116,223 +69,15 @@ export function isProvisionalContinuationConfirmed(choice: string | undefined, c
   return choice === continueLabel
 }
 
-const normalizeConfigModule = (moduleValue: unknown): SpiracssConfig | undefined => {
-  if (!moduleValue || typeof moduleValue !== 'object') return undefined
-  if ('default' in moduleValue) {
-    const maybeDefault = (moduleValue as { default?: unknown }).default
-    if (maybeDefault && typeof maybeDefault === 'object') {
-      return maybeDefault as SpiracssConfig
-    }
+async function loadProjectOptionsForUri(uri: vscode.Uri): Promise<LoadedProjectOptions | undefined> {
+  const root = getWorkspaceRoot(uri) ?? path.dirname(uri.fsPath)
+  const options = await loadProjectOptions(root)
+  if (options.configStatus === 'error') {
+    warnConfigLoadError(root, options.configError)
+    return undefined
   }
-  return moduleValue as SpiracssConfig
-}
-
-async function loadSpiracssConfig(uri: vscode.Uri): Promise<ConfigLoadResult> {
-  const root = getWorkspaceRoot(uri)
-  if (!root) return { status: 'missing', config: undefined }
-  const configPath = path.join(root, 'spiracss.config.js')
-  if (!existsSync(configPath)) return { status: 'missing', config: undefined }
-
-  if (!isModuleWorkspace(root)) {
-    try {
-      const require = createRequire(__filename)
-      const resolved = require.resolve(configPath)
-      delete require.cache[resolved]
-      const config = require(resolved)
-      const normalized = normalizeConfigModule(config)
-      if (!normalized) {
-        throw new Error('spiracss.config.js must export an object.')
-      }
-      return { status: 'loaded', config: normalized }
-    } catch (error) {
-      warnConfigLoadError(root, error)
-      return { status: 'error', config: undefined }
-    }
-  }
-
-  // Load via ESM (disable cache with cacheBuster)
-  try {
-    let cacheBuster = ''
-    try {
-      const stat = statSync(configPath)
-      cacheBuster = String(stat.mtimeMs)
-    } catch {
-      cacheBuster = String(Date.now())
-    }
-    const moduleUrl = cacheBuster
-      ? `${pathToFileURL(configPath).href}?t=${cacheBuster}`
-      : pathToFileURL(configPath).href
-    const config = await import(moduleUrl)
-    const normalized = normalizeConfigModule(config)
-    if (!normalized) {
-      throw new Error('spiracss.config.js must export an object.')
-    }
-    return { status: 'loaded', config: normalized }
-  } catch (error) {
-    warnConfigLoadError(root, error)
-    return { status: 'error', config: undefined }
-  }
-}
-
-function loadGlobalScssModuleFromConfig(config?: SpiracssConfig): string {
-  const fallback = '@styles/partials/global'
-  if (!config) return fallback
-  const generator = config.generator as Record<string, unknown> | undefined
-  const entry = generator?.globalScssModule
-  if (typeof entry === 'string' && entry.trim() !== '') {
-    return entry
-  }
-  return fallback
-}
-
-function loadPageEntryPrefixFromConfig(config?: SpiracssConfig): string {
-  const defaultAlias = 'assets'
-  const defaultSubdir = 'css'
-  if (!config) return `@${defaultAlias}/${defaultSubdir}`
-  const generator = config.generator as Record<string, unknown> | undefined
-  const alias = (generator?.pageEntryAlias as string | undefined) ?? defaultAlias
-  const subdir = (generator?.pageEntrySubdir as string | undefined) ?? defaultSubdir
-  if (subdir && subdir.trim() !== '') {
-    return `@${alias}/${subdir}`
-  }
-  return `@${alias}`
-}
-
-function loadLayoutMixinsFromConfig(config?: SpiracssConfig): string[] {
-  // Default to no layout mixins to avoid generating SCSS that won't compile
-  // unless the project defines the expected mixin(s).
-  const fallback: string[] = []
-  if (!config) return fallback
-  const generator = config.generator as Record<string, unknown> | undefined
-  const raw = generator?.layoutMixins
-  if (Array.isArray(raw)) {
-    const list = raw.filter((v) => typeof v === 'string' && v.trim() !== '')
-    if (list.length > 0) {
-      return list
-    }
-    return []
-  }
-  return fallback
-}
-
-function loadChildScssDirFromConfig(config?: SpiracssConfig): string {
-  const fallback = 'scss'
-  if (!config) return fallback
-  const generator = config.generator as Record<string, unknown> | undefined
-  const dir = (generator?.childScssDir as string | undefined) ?? fallback
-  if (dir && dir.trim() !== '') {
-    return dir
-  }
-  return fallback
-}
-
-function loadRootFileCaseFromConfig(config?: SpiracssConfig): FileNameCase {
-  const fallback: FileNameCase = 'preserve'
-  if (!config) return fallback
-  const globalFileCase = resolveFileCaseConfig(config.fileCase)
-  const generator = config.generator as Record<string, unknown> | undefined
-  const fileCase = generator?.rootFileCase as string | undefined
-  if (typeof fileCase === 'string' && isFileNameCase(fileCase)) {
-    return fileCase
-  }
-  if (globalFileCase.root) {
-    return globalFileCase.root
-  }
-  return fallback
-}
-
-function loadChildFileCaseFromConfig(config?: SpiracssConfig): FileNameCase {
-  const fallback: FileNameCase = 'preserve'
-  if (!config) return fallback
-  const globalFileCase = resolveFileCaseConfig(config.fileCase)
-  const generator = config.generator as Record<string, unknown> | undefined
-  const fileCase = generator?.childFileCase as string | undefined
-  if (typeof fileCase === 'string' && isFileNameCase(fileCase)) {
-    return fileCase
-  }
-  if (globalFileCase.child) {
-    return globalFileCase.child
-  }
-  return fallback
-}
-
-function loadNamingFromConfig(config?: SpiracssConfig): NamingOptions {
-  if (!config) return {}
-  const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-  const base = stylelintCfg?.base as Record<string, unknown> | undefined
-  const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
-  const baseNaming = base?.naming
-  if (isRecord(baseNaming)) {
-    return baseNaming as NamingOptions
-  }
-  const classNaming = classConfig?.naming
-  if (isRecord(classNaming)) {
-    return classNaming as NamingOptions
-  }
-  return {}
-}
-
-function loadHtmlFormatClassAttributeFromConfig(config?: SpiracssConfig): ClassAttribute {
-  const fallback: ClassAttribute = 'class'
-  if (!config) return fallback
-  const htmlFormat = config.htmlFormat as Record<string, unknown> | undefined
-  if (htmlFormat && typeof htmlFormat === 'object') {
-    const value = htmlFormat.classAttribute
-    if (value === 'class' || value === 'className') {
-      return value
-    }
-  }
-  return fallback
-}
-
-const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
-}
-
-function loadJsxClassBindingsFromConfig(config?: SpiracssConfig): JsxClassBindingsConfig | undefined {
-  if (!config) return undefined
-  const jsxBindings = config.jsxClassBindings as Record<string, unknown> | undefined
-  if (!jsxBindings || typeof jsxBindings !== 'object') return undefined
-  const allowlist = normalizeMemberAccessAllowlist(jsxBindings.memberAccessAllowlist)
-  if (allowlist === undefined) return undefined
-  return { memberAccessAllowlist: allowlist }
-}
-
-function loadExternalOptionsFromConfig(config?: SpiracssConfig): ExternalOptions {
-  if (!config) {
-    return { classes: [], prefixes: [] }
-  }
-  const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
-  const base = stylelintCfg?.base as Record<string, unknown> | undefined
-  const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
-  const baseExternal = base?.external
-  const classExternal = classConfig?.external
-  const external = {
-    ...(isRecord(baseExternal) ? baseExternal : {}),
-    ...(isRecord(classExternal) ? classExternal : {})
-  }
-  const classes = Array.isArray(external.classes)
-    ? external.classes.filter((item) => typeof item === 'string' && item.trim() !== '')
-    : []
-  const prefixes = Array.isArray(external.prefixes)
-    ? external.prefixes.filter((item) => typeof item === 'string' && item.trim() !== '')
-    : []
-  return { classes, prefixes }
-}
-
-function loadSelectorPolicyFromConfig(config?: SpiracssConfig): SelectorPolicy | undefined {
-  if (!config) return undefined
-  const selectorPolicyConfig = config.selectorPolicy
-  if (selectorPolicyConfig && typeof selectorPolicyConfig === 'object') {
-    return selectorPolicyConfig as SelectorPolicy
-  }
-  return undefined
-}
-
-function loadHtmlLintOptionsFromConfig(config?: SpiracssConfig): HtmlLintOptions | undefined {
-  if (!config || !isRecord(config.htmlLint)) return undefined
-  return config.htmlLint as HtmlLintOptions
+  if (options.configStatus === 'missing' && !(await confirmProvisionalConfig(uri))) return undefined
+  return options
 }
 
 /* ---------- File Helpers ---------- */
@@ -440,7 +185,7 @@ type GenerateScssResult = {
   wroteCount: number
 }
 
-function getLintRuleMessage(code: HtmlLintIssue['code']): string {
+export function getLintRuleMessage(code: HtmlLintIssue['code']): string {
   switch (code) {
     case 'INVALID_BASE_CLASS':
       return vscode.l10n.t('Rule: Base class must be a valid Block or Element.')
@@ -474,12 +219,14 @@ function getLintRuleMessage(code: HtmlLintIssue['code']): string {
       return vscode.l10n.t('Rule: Dynamic class values cannot be verified statically.')
     case 'CLASSLESS_TAG_NOT_ALLOWED':
       return vscode.l10n.t('Rule: HTML tags must have a SpiraCSS Block or Element class.')
+    case 'MAX_DEPTH_EXCEEDED':
+      return vscode.l10n.t('Rule: HTML traversal exceeded the safety limit; simplify or split the input.')
     default:
       return vscode.l10n.t('Rule: Unknown lint rule.')
   }
 }
 
-function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolean): string[] {
+export function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolean): string[] {
   const sibling =
     issue.target && issue.target.siblingIndex > 1 ? vscode.l10n.t(' (sibling #{0})', issue.target.siblingIndex) : ''
   const targetPath =
@@ -488,12 +235,73 @@ function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolean): str
       : ''
   const location = `${issue.path.length > 0 ? issue.path.join(' > ') : vscode.l10n.t('(root)')}${sibling}${targetPath}`
   const baseLabel = issue.baseClass ? vscode.l10n.t('Base: "{0}"', issue.baseClass) : vscode.l10n.t('Base: (none)')
-  const lines = [getLintRuleMessage(issue.code), vscode.l10n.t('Target: {0}', location), baseLabel]
+  const sourceLabel = issue.position
+    ? vscode.l10n.t('Source: line {0}, column {1}', issue.position.line, issue.position.column)
+    : undefined
+  const lines = [getLintRuleMessage(issue.code), sourceLabel, vscode.l10n.t('Target: {0}', location), baseLabel].filter(
+    (line): line is string => line !== undefined
+  )
   if (includeDetail) {
     const detailLabel = issue.message ? vscode.l10n.t('Detail: {0}', issue.message) : vscode.l10n.t('Detail: (none)')
     lines.push(detailLabel)
   }
   return lines
+}
+
+type SourceStartPosition = { line: number; character: number }
+
+function documentPositionForSelectedOffset(
+  selectedSource: string,
+  leadingTrimLength: number,
+  relativeOffset: number,
+  selectionStart: SourceStartPosition,
+  selectionStartOffset: number
+): { offset: number; line: number; column: number } {
+  const prefix = selectedSource.slice(0, leadingTrimLength + relativeOffset)
+  const lineBreaks = prefix.match(/\r\n|\r|\n/g)?.length ?? 0
+  const lastNewline = Math.max(prefix.lastIndexOf('\n'), prefix.lastIndexOf('\r'))
+  const columnOffset = lastNewline === -1 ? selectionStart.character + prefix.length : prefix.length - lastNewline - 1
+  return {
+    offset: selectionStartOffset + leadingTrimLength + relativeOffset,
+    line: selectionStart.line + lineBreaks + 1,
+    column: columnOffset + 1
+  }
+}
+
+export function adjustLintIssuePositions(
+  issues: HtmlLintIssue[],
+  selectedSource: string,
+  selectionStart: SourceStartPosition,
+  selectionStartOffset: number
+): HtmlLintIssue[] {
+  const leadingTrimLength = selectedSource.length - selectedSource.trimStart().length
+  return issues.map((issue) => {
+    if (!issue.position) return issue
+    const start = documentPositionForSelectedOffset(
+      selectedSource,
+      leadingTrimLength,
+      issue.position.offset,
+      selectionStart,
+      selectionStartOffset
+    )
+    const end = documentPositionForSelectedOffset(
+      selectedSource,
+      leadingTrimLength,
+      issue.position.endOffset,
+      selectionStart,
+      selectionStartOffset
+    )
+    return {
+      ...issue,
+      position: {
+        ...issue.position,
+        ...start,
+        endOffset: end.offset,
+        endLine: end.line,
+        endColumn: end.column
+      }
+    }
+  })
 }
 
 async function reportLintIssues(issues: HtmlLintIssue[]): Promise<void> {
@@ -532,16 +340,15 @@ async function generateScss(
   options: GeneratorOptions
 ): Promise<GenerateScssResult> {
   const { childScssDir } = options
+  const generated = generateFromHtml(html, docDir, isRootMode, options)
   const childDir = path.join(docDir, childScssDir)
   await fsp.mkdir(childDir, { recursive: true })
-
-  const generated = generateFromHtml(html, docDir, isRootMode, options)
   const indexUses: string[] = []
   let wroteCount = 0
 
   for (const file of generated) {
     // index.scss is merged with existing files, so only extract @use lines
-    if (file.path.endsWith('/index.scss') || file.path === `${childScssDir}/index.scss`) {
+    if (isGeneratedIndexFile(file.path, childScssDir)) {
       const lines = extractUseLines(file.content.split('\n'))
       indexUses.push(...lines)
       continue
@@ -568,42 +375,16 @@ export function activate(ctx: vscode.ExtensionContext): void {
     const ed = vscode.window.activeTextEditor
     if (!ed) return
 
-    const html = ed.document.getText(ed.selection).trim()
+    const selectedSource = ed.document.getText(ed.selection)
+    const html = selectedSource.trim()
     if (!html) {
       vscode.window.showErrorMessage(vscode.l10n.t('No selection.'))
       return
     }
 
     const docDir = path.dirname(ed.document.uri.fsPath)
-    const configResult = await loadSpiracssConfig(ed.document.uri)
-    if (configResult.status === 'error') return
-    if (configResult.status === 'missing' && !(await confirmProvisionalConfig(ed.document.uri))) return
-    const config = configResult.config
-    const globalScssModule = loadGlobalScssModuleFromConfig(config)
-    const pageEntryPrefix = loadPageEntryPrefixFromConfig(config)
-    const layoutMixins = loadLayoutMixinsFromConfig(config)
-    const naming = loadNamingFromConfig(config)
-    const selectorPolicy = loadSelectorPolicyFromConfig(config)
-    const external = loadExternalOptionsFromConfig(config)
-    const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
-    const htmlLint = loadHtmlLintOptionsFromConfig(config)
-    const childScssDir = loadChildScssDirFromConfig(config)
-    const rootFileCase = loadRootFileCaseFromConfig(config)
-    const childFileCase = loadChildFileCaseFromConfig(config)
-
-    const options: GeneratorOptions = {
-      globalScssModule,
-      pageEntryPrefix,
-      childScssDir,
-      layoutMixins,
-      naming,
-      rootFileCase,
-      childFileCase,
-      selectorPolicy,
-      external,
-      jsxClassBindings,
-      htmlLint
-    }
+    const options = await loadProjectOptionsForUri(ed.document.uri)
+    if (!options) return
 
     globalWriteChoice = null
     try {
@@ -617,7 +398,14 @@ export function activate(ctx: vscode.ExtensionContext): void {
         options.htmlLint
       )
       if (lintIssues.length > 0) {
-        await reportLintIssues(lintIssues)
+        await reportLintIssues(
+          adjustLintIssuePositions(
+            lintIssues,
+            selectedSource,
+            ed.selection.start,
+            ed.document.offsetAt(ed.selection.start)
+          )
+        )
         return
       }
       const rootSummary = isRoot ? [] : summarizeRootBlocks(html, false, options)
@@ -676,16 +464,21 @@ export function activate(ctx: vscode.ExtensionContext): void {
         vscode.window.showErrorMessage(vscode.l10n.t('No selection.'))
         return
       }
-      const configResult = await loadSpiracssConfig(ed.document.uri)
-      if (configResult.status === 'error') return
-      if (configResult.status === 'missing' && !(await confirmProvisionalConfig(ed.document.uri))) return
-      const config = configResult.config
-      const naming = loadNamingFromConfig(config)
-      const classAttribute = loadHtmlFormatClassAttributeFromConfig(config)
-      const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
-      const result = insertPlaceholdersWithInfo(html, naming, classAttribute, {
-        jsxClassBindings
+      const options = await loadProjectOptionsForUri(ed.document.uri)
+      if (!options) return
+      const result = insertPlaceholdersWithInfo(html, options.naming, options.htmlFormat.classAttribute, {
+        jsxClassBindings: options.jsxClassBindings
       })
+
+      if (result.errorCode === 'MAX_DEPTH_EXCEEDED') {
+        const message = vscode.l10n.t(
+          'HTML traversal exceeded the safety limit. Simplify or split the input before inserting placeholders.'
+        )
+        vscode.window.showErrorMessage(message)
+        outputChannel.appendLine(`[ERROR] ${message}`)
+        outputChannel.show(true)
+        return
+      }
 
       // If template syntax is detected, warn and skip
       if (result.hasTemplateSyntax) {

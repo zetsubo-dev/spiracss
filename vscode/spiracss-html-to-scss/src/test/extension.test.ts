@@ -2,7 +2,12 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
-import { isProvisionalContinuationConfirmed } from '../extension'
+import {
+  adjustLintIssuePositions,
+  formatLintIssueLines,
+  getLintRuleMessage,
+  isProvisionalContinuationConfirmed
+} from '../extension'
 
 suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
   vscode.window.showInformationMessage('Start all tests.')
@@ -161,6 +166,44 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       isProvisionalContinuationConfirmed('Continue with provisional settings', 'Continue with provisional settings'),
       true
     )
+  })
+
+  test('MAX_DEPTH_EXCEEDED has an actionable diagnostic message', () => {
+    assert.match(getLintRuleMessage('MAX_DEPTH_EXCEEDED'), /safety limit/i)
+  })
+
+  test('lint output includes the source position when available', () => {
+    const lines = formatLintIssueLines(
+      {
+        code: 'CLASSLESS_TAG_NOT_ALLOWED',
+        message: 'Add a class.',
+        baseClass: '',
+        path: ['hero'],
+        position: { offset: 10, line: 4, column: 2, endOffset: 20, endLine: 4, endColumn: 10 }
+      },
+      true
+    )
+    assert.ok(lines.some((line) => /line 4/.test(line) && /column 2/.test(line)))
+  })
+
+  test('lint positions are adjusted from a trimmed selection to document coordinates', () => {
+    const adjusted = adjustLintIssuePositions(
+      [
+        {
+          code: 'CLASSLESS_TAG_NOT_ALLOWED',
+          message: 'Add a class.',
+          baseClass: '',
+          path: [],
+          position: { offset: 0, line: 1, column: 1, endOffset: 5, endLine: 1, endColumn: 6 }
+        }
+      ],
+      ' \n  <div></div>\n',
+      new vscode.Position(4, 3),
+      100
+    )
+    assert.strictEqual(adjusted[0]?.position?.offset, 104)
+    assert.strictEqual(adjusted[0]?.position?.line, 6)
+    assert.strictEqual(adjusted[0]?.position?.column, 3)
   })
 
   test('Extension should activate', async () => {
@@ -453,9 +496,26 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
         rootScss.includes("@use '@styles/esm-global' as *;"),
         'globalScssModule from ESM config should be reflected'
       )
+
+      removePath(rootFile)
+      removePath(childDir)
+      const reloadedChildDir = path.join(docDir, 'scss-esm-reloaded')
+      removePath(reloadedChildDir)
+      writeConfig(esmConfigContent.replace('esm-global', 'esm-reloaded').replace('scss-esm', 'scss-esm-reloaded'))
+
+      await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
+
+      assert.ok(fs.existsSync(reloadedChildDir), 'Updated ESM childScssDir should be applied in the same session')
+      assert.ok(!fs.existsSync(childDir), 'Stale ESM childScssDir should not be reused')
+      const reloadedRootScss = fs.readFileSync(rootFile, 'utf8')
+      assert.ok(
+        reloadedRootScss.includes("@use '@styles/esm-reloaded' as *;"),
+        'Updated ESM globalScssModule should be applied in the same session'
+      )
     } finally {
       removePath(rootFile)
       removePath(childDir)
+      removePath(path.join(docDir, 'scss-esm-reloaded'))
       writeConfig(cjsConfigContent)
       writePackageJson(null)
     }

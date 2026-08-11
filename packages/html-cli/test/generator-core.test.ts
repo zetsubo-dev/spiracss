@@ -1,11 +1,13 @@
 import assert from 'assert'
 import { promises as fsp } from 'fs'
+import * as os from 'os'
 import * as path from 'path'
 
 import {
   classifyBaseClass,
   generateFromHtml,
   type GeneratorOptions,
+  assertGeneratedFilesWithinDirectory,
   isBlockClass,
   lintHtmlStructure,
   sanitizeHtml
@@ -74,6 +76,16 @@ describe('generator-core', () => {
     assert.ok(sanitized.includes('class="hero-section"'))
     assert.ok(sanitized.includes('class="title"'))
     assert.ok(!sanitized.includes('className='))
+  })
+
+  it('merges static Vue class bindings with a normal class attribute in either order', () => {
+    const normalFirst = sanitizeHtml('<div class="hero-section" :class="\'active\'"></div>')
+    const bindingFirst = sanitizeHtml('<div :class="\'active\'" class="hero-section"></div>')
+
+    assert.ok(normalFirst.includes('class="hero-section active"'))
+    assert.ok(bindingFirst.includes('class="active hero-section"'))
+    assert.strictEqual((normalFirst.match(/\bclass\s*=/g) ?? []).length, 1)
+    assert.strictEqual((bindingFirst.match(/\bclass\s*=/g) ?? []).length, 1)
   })
 
   it('sanitizes JSX className template literals (static parts only)', () => {
@@ -489,6 +501,32 @@ describe('generator-core', () => {
       { classlessTagCheck: false }
     )
     assert.ok(spreadIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'))
+
+    const explicitAfterSpreadIssues = lintHtmlStructure(
+      '<div class="hero-section"><p {...props} className="title">Text</p></div>',
+      true,
+      { blockCase: 'kebab' }
+    )
+    assert.strictEqual(explicitAfterSpreadIssues.length, 0, 'A later static className resolves an earlier JSX spread.')
+
+    const explicitBeforeSpreadIssues = lintHtmlStructure(
+      '<div class="hero-section"><p className="title" {...props}>Text</p></div>',
+      true,
+      { blockCase: 'kebab' }
+    )
+    assert.ok(explicitBeforeSpreadIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'))
+
+    const staticVueIssues = lintHtmlStructure('<div class="hero-section"><p :class="\'title\'">Text</p></div>', true, {
+      blockCase: 'kebab'
+    })
+    assert.strictEqual(staticVueIssues.length, 0, 'A static Vue class binding is a resolvable class.')
+
+    const dynamicVueIssues = lintHtmlStructure(
+      '<div class="hero-section"><p :class="{ title: enabled }">Text</p></div>',
+      true,
+      { blockCase: 'kebab' }
+    )
+    assert.ok(dynamicVueIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'))
   })
 
   it('HTML lint includes sibling identity for repeated classless tags', () => {
@@ -501,6 +539,14 @@ describe('generator-core', () => {
       issues.map((i) => i.target?.siblingIndex),
       [1, 2]
     )
+    assert.deepStrictEqual(issues[0].position, {
+      offset: 26,
+      line: 1,
+      column: 27,
+      endOffset: 29,
+      endLine: 1,
+      endColumn: 30
+    })
   })
 
   it('HTML lint includes ancestor identity for repeated class paths', () => {
@@ -517,6 +563,44 @@ describe('generator-core', () => {
         [1, 2, 1]
       ]
     )
+  })
+
+  it('HTML lint attaches source positions to structural issues', () => {
+    const issues = lintHtmlStructure('<div class="title"></div>', true, { blockCase: 'kebab' })
+    const issue = issues.find((candidate) => candidate.code === 'ROOT_NOT_BLOCK')
+
+    assert.ok(issue)
+    assert.deepStrictEqual(
+      issue.targetPath?.map((target) => target.siblingIndex),
+      [1]
+    )
+    assert.strictEqual(issue.position?.offset, 0)
+    assert.strictEqual(issue.position?.line, 1)
+    assert.ok((issue.position?.endOffset ?? 0) > 0)
+  })
+
+  it('HTML lint keeps JSX className source paths aligned for nested structural issues', () => {
+    const html = '<div class="root-block"><section className="card"><div class="root-block"></div></section></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    const issue = issues.find((candidate) => candidate.code === 'ELEMENT_PARENT_OF_BLOCK')
+    const innerRootOffset = html.lastIndexOf('<div class="root-block"')
+
+    assert.ok(issue)
+    assert.deepStrictEqual(
+      issue.targetPath?.map((target) => target.siblingIndex),
+      [1, 1, 1]
+    )
+    assert.strictEqual(issue.position?.offset, innerRootOffset)
+  })
+
+  it('HTML lint reports pathological depth as a safety issue, not a structure rule', () => {
+    const openingTags = Array.from({ length: 260 }, (_, index) => `<div class="level-${index}">`).join('')
+    const closingTags = '</div>'.repeat(260)
+    const issues = lintHtmlStructure(`${openingTags}<span>Text</span>${closingTags}`, true, {
+      blockCase: 'kebab'
+    })
+
+    assert.ok(issues.some((issue) => issue.code === 'MAX_DEPTH_EXCEEDED'))
   })
 
   it('HTML lint allows built-in classless structural tags', () => {
@@ -1226,10 +1310,9 @@ describe('generator-core', () => {
     }
     html += '</div>'
 
-    // Ensure no exception even with MAX_DEPTH=256
-    assert.doesNotThrow(() => {
+    assert.throws(() => {
       generateFromHtml(html, fixturesDir, true, baseOptions)
-    }, 'Should not throw on deeply nested DOM')
+    }, /MAX_DEPTH|safety limit/i)
   })
 
   // Additional test: empty class
@@ -1628,12 +1711,124 @@ describe('generator-core', () => {
     )
   })
 
+  it('HTML lint accepts valid HTML with omitted optional end tags', () => {
+    const html = '<ul><li class="item">First<li class="item">Second</ul>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.ok(
+      !issues.some((issue) => issue.code === 'UNBALANCED_HTML'),
+      `Optional end tags should be accepted: ${JSON.stringify(issues)}`
+    )
+  })
+
+  it('HTML lint accepts omitted optional end tags at selection boundaries', () => {
+    const selectionIssues = lintHtmlStructure('<p class="note-block">Text', false, { blockCase: 'kebab' })
+    assert.ok(
+      !selectionIssues.some((issue) => issue.code === 'UNBALANCED_HTML'),
+      `Selection boundary should close optional tags: ${JSON.stringify(selectionIssues)}`
+    )
+
+    const documentIssues = lintHtmlStructure('<body><p class="note-block">Text</body>', true, {
+      blockCase: 'kebab'
+    })
+    assert.ok(
+      !documentIssues.some((issue) => issue.code === 'UNBALANCED_HTML'),
+      `Document boundary should close optional tags: ${JSON.stringify(documentIssues)}`
+    )
+  })
+
+  it('rejects generated paths that collide with the aggregate index', () => {
+    assert.throws(
+      () =>
+        assertGeneratedFilesWithinDirectory(
+          [
+            { path: 'scss/index.scss', content: '' },
+            { path: 'scss/./index.scss', content: '' }
+          ],
+          fixturesDir,
+          'scss'
+        ),
+      /aggregate index path collision/
+    )
+  })
+
+  it('detects generated paths that differ only by case on case-insensitive filesystems', async () => {
+    const tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'spiracss-case-collision-'))
+    const docDir = path.join(tempRoot, 'document')
+    await fsp.mkdir(docDir, { recursive: true })
+    const probePath = path.join(docDir, 'CaseProbe')
+    await fsp.writeFile(probePath, '', 'utf8')
+
+    try {
+      let caseInsensitive = true
+      try {
+        await fsp.access(path.join(docDir, 'caseprobe'))
+      } catch {
+        caseInsensitive = false
+      }
+      const files = [
+        { path: 'scss/Foo.scss', content: '' },
+        { path: 'scss/foo.scss', content: '' }
+      ]
+      if (caseInsensitive) {
+        assert.throws(() => assertGeneratedFilesWithinDirectory(files, docDir), /file path collision/)
+      } else {
+        assert.doesNotThrow(() => assertGeneratedFilesWithinDirectory(files, docDir))
+      }
+    } finally {
+      await fsp.rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects generated paths that escape through a symbolic link', async () => {
+    const tempRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'spiracss-generator-'))
+    const docDir = path.join(tempRoot, 'document')
+    const outsideDir = path.join(tempRoot, 'outside')
+    await fsp.mkdir(docDir, { recursive: true })
+    await fsp.mkdir(outsideDir, { recursive: true })
+    await fsp.symlink(outsideDir, path.join(docDir, 'scss'), 'dir')
+
+    try {
+      assert.throws(
+        () =>
+          generateFromHtml(
+            '<div class="feature-card"><div class="child-block"></div></div>',
+            docDir,
+            true,
+            baseOptions
+          ),
+        /symbolic link/
+      )
+    } finally {
+      await fsp.rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
   it('HTML lint detects multiple root elements in root mode', () => {
     const html = '<div class="alpha-box"></div><div class="beta-box"></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.ok(
       issues.some((i) => i.code === 'MULTIPLE_ROOT_ELEMENTS'),
       'Should detect multiple root elements'
+    )
+  })
+
+  it('bounds target paths for dynamic-class diagnostics in deep HTML', () => {
+    const depth = 40
+    const html = `<div class="root-block">${'<div class="item">'.repeat(depth - 1)}<div class="item-{{ value }}"></div>${'</div>'.repeat(depth)}</div>`
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    const dynamicIssues = issues.filter((issue) => issue.code === 'DYNAMIC_CLASS_UNRESOLVED')
+    assert.ok(dynamicIssues.length > 0, 'Expected dynamic class diagnostics')
+    assert.ok(dynamicIssues.every((issue) => !issue.targetPath || issue.targetPath.length <= 32))
+  })
+
+  it('rejects generated paths outside the document directory', () => {
+    assert.throws(
+      () =>
+        generateFromHtml('<div class="card-item"><span class="title"></span></div>', fixturesDir, false, {
+          ...baseOptions,
+          childScssDir: '../outside'
+        }),
+      /escapes the document directory/
     )
   })
 

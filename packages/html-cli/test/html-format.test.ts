@@ -32,6 +32,15 @@ describe('html-format: insertPlaceholders', () => {
       assert.ok(result.html.includes('className="hero-section"'))
       assert.ok(result.html.includes('className="element"'))
     })
+
+    it('fails closed when the formatting safety depth is exceeded', () => {
+      const html = `${'<div>'.repeat(258)}${'</div>'.repeat(258)}`
+      const result = insertPlaceholdersWithInfo(html, defaultNaming)
+      assert.strictEqual(result.errorCode, 'MAX_DEPTH_EXCEEDED')
+      assert.strictEqual(result.html, html)
+      assert.strictEqual(result.changeCount, 0)
+      assert.throws(() => insertPlaceholders(html, defaultNaming), /MAX_DEPTH_EXCEEDED|safety limit/i)
+    })
   })
 
   describe('Recursive descendant processing', () => {

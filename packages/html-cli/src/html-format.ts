@@ -5,9 +5,8 @@
 import { type Cheerio, type CheerioAPI, load } from 'cheerio'
 import type { Element } from 'domhandler'
 import { existsSync, promises as fsp } from 'fs'
-import * as path from 'path'
 
-import { loadSpiracssConfig } from './config-loader'
+import { loadProjectOptions } from './config-options'
 import { warnInvalidCustomPatterns } from './config-warnings'
 import { classifyBaseClass, type JsxClassBindingsConfig, type NamingOptions } from './generator-core'
 import { replaceJsxClassBindings } from './jsx-class-bindings'
@@ -106,11 +105,6 @@ function normalizeClassAttributes(html: string, classAttribute: ClassAttribute):
   return { html: out, attributeChanged }
 }
 
-const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined
-  return value.filter((entry) => typeof entry === 'string' && entry.trim() !== '').map((entry) => entry.trim())
-}
-
 /* ---------- config loading ---------- */
 
 type HtmlFormatOptions = {
@@ -120,47 +114,17 @@ type HtmlFormatOptions = {
   jsxClassBindings?: JsxClassBindingsConfig
 }
 
-function resolveClassAttribute(value: unknown): ClassAttribute {
-  return value === 'className' || value === 'class' ? value : 'class'
-}
-
 async function loadHtmlFormatOptionsFromConfig(baseDir: string): Promise<HtmlFormatOptions> {
-  const configPath = path.join(baseDir, 'spiracss.config.js')
-  const config = await loadSpiracssConfig(configPath)
-  const naming: NamingOptions = {}
-  let namingSource = 'stylelint.base.naming.customPatterns'
-  let classAttribute: ClassAttribute = 'class'
-  let jsxClassBindings: JsxClassBindingsConfig | undefined
-  if (config && typeof config === 'object') {
-    const stylelintCfg = (config as Record<string, unknown>).stylelint as Record<string, unknown> | undefined
-    const base = stylelintCfg?.base as Record<string, unknown> | undefined
-    const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
-    const baseNaming = base?.naming
-    const classNaming = classConfig?.naming
-    if (baseNaming && typeof baseNaming === 'object') {
-      Object.assign(naming, baseNaming)
-      namingSource = 'stylelint.base.naming.customPatterns'
-    } else if (classNaming && typeof classNaming === 'object') {
-      Object.assign(naming, classNaming)
-      namingSource = 'stylelint.class.naming.customPatterns'
-    }
-
-    const htmlFormat = (config as Record<string, unknown>).htmlFormat as Record<string, unknown> | undefined
-    if (htmlFormat && typeof htmlFormat === 'object') {
-      classAttribute = resolveClassAttribute(htmlFormat.classAttribute)
-    }
-
-    const jsxBindingsConfig = (config as Record<string, unknown>).jsxClassBindings as
-      | Record<string, unknown>
-      | undefined
-    if (jsxBindingsConfig && typeof jsxBindingsConfig === 'object') {
-      const allowlist = normalizeMemberAccessAllowlist(jsxBindingsConfig.memberAccessAllowlist)
-      if (allowlist !== undefined) {
-        jsxClassBindings = { memberAccessAllowlist: allowlist }
-      }
-    }
+  const options = await loadProjectOptions(baseDir)
+  if (options.configStatus === 'error') {
+    throw new Error(options.configError ?? `Failed to load spiracss.config.js at ${options.configPath}.`)
   }
-  return { naming, classAttribute, namingSource, jsxClassBindings }
+  return {
+    naming: options.naming,
+    classAttribute: options.htmlFormat.classAttribute,
+    namingSource: options.namingSource,
+    jsxClassBindings: options.jsxClassBindings
+  }
 }
 
 /* ---------- placeholder insertion ---------- */
@@ -271,7 +235,7 @@ function elementToBlock(elementName: string, naming: NamingOptions): string {
 /**
  * Type holding a change counter.
  */
-type ChangeTracker = { count: number }
+type ChangeTracker = { count: number; depthExceeded: boolean }
 
 /**
  * Move the placeholder class to the front.
@@ -310,7 +274,10 @@ function processDescendants(
   depth: number,
   tracker: ChangeTracker
 ): void {
-  if (depth > MAX_DEPTH) return
+  if (depth > MAX_DEPTH) {
+    tracker.depthExceeded = true
+    return
+  }
 
   $parent.children().each((_, childEl) => {
     if (childEl.type !== 'tag') return
@@ -361,6 +328,7 @@ export type InsertPlaceholdersResult = {
   html: string
   hasTemplateSyntax: boolean
   changeCount: number
+  errorCode?: 'MAX_DEPTH_EXCEEDED'
 }
 
 export type InsertPlaceholdersOptions = {
@@ -373,7 +341,13 @@ export function insertPlaceholders(
   classAttribute: ClassAttribute = 'class',
   options: InsertPlaceholdersOptions = {}
 ): string {
-  return insertPlaceholdersWithInfo(html, naming, classAttribute, options).html
+  const result = insertPlaceholdersWithInfo(html, naming, classAttribute, options)
+  if (result.errorCode === 'MAX_DEPTH_EXCEEDED') {
+    throw new Error(
+      'MAX_DEPTH_EXCEEDED: HTML traversal exceeded the safety limit. Simplify or split the input before formatting.'
+    )
+  }
+  return result.html
 }
 
 /**
@@ -410,7 +384,7 @@ export function insertPlaceholdersWithInfo(
   if (roots.length === 0) return { html, hasTemplateSyntax: false, changeCount: 0 }
 
   // Track whether changes occurred
-  const tracker: ChangeTracker = { count: 0 }
+  const tracker: ChangeTracker = { count: 0, depthExceeded: false }
 
   roots.each((_, rootEl) => {
     const $root = $(rootEl)
@@ -431,6 +405,11 @@ export function insertPlaceholdersWithInfo(
     // Recursively process descendants
     processDescendants($, $root, naming, classAttribute, 1, tracker)
   })
+
+  // Do not return or write partial output when the safety guard was reached.
+  if (tracker.depthExceeded) {
+    return { html, hasTemplateSyntax: false, changeCount: 0, errorCode: 'MAX_DEPTH_EXCEEDED' }
+  }
 
   // If no changes, return original HTML (avoid cheerio serialization diffs)
   if (tracker.count === 0 && !normalized.attributeChanged) {
@@ -527,6 +506,14 @@ Examples:
     namingSource
   )
   const result = insertPlaceholdersWithInfo(html, naming, classAttribute, { jsxClassBindings })
+
+  if (result.errorCode) {
+    console.error(
+      'Error [MAX_DEPTH_EXCEEDED]: HTML traversal exceeded the safety limit. Simplify or split the input before formatting.'
+    )
+    process.exitCode = 1
+    return
+  }
 
   // If template syntax is detected, warn and skip writing files
   if (result.hasTemplateSyntax) {

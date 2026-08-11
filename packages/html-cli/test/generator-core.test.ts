@@ -363,6 +363,230 @@ describe('generator-core', () => {
     assert.strictEqual(issues.length, 0, `Expected no issues, got: ${JSON.stringify(issues)}`)
   })
 
+  it('HTML lint rejects classless non-structural tags', () => {
+    const html = '<div class="hero-section"><p>Text</p></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.ok(
+      issues.some((i) => i.code === 'CLASSLESS_TAG_NOT_ALLOWED' && i.baseClass === 'p'),
+      'Should require a class on a classless paragraph'
+    )
+  })
+
+  it('HTML lint explains how to fix a classless tag', () => {
+    const html = '<div class="reason-intro"><p>Text</p></div>'
+    const issue = lintHtmlStructure(html, true, { blockCase: 'kebab' }).find(
+      (item) => item.code === 'CLASSLESS_TAG_NOT_ALLOWED'
+    )
+
+    assert.ok(issue)
+    assert.match(issue.message, /<p>.*no class attribute/i)
+    assert.match(issue.message, /Element.*configured naming rules/i)
+    assert.match(issue.message, /Do not add a tag selector in SCSS/i)
+    assert.match(issue.message, /htmlLint\.classlessTagAllowlist/i)
+  })
+
+  it('HTML lint reports classless selection roots', () => {
+    const html = '<p>Orphan</p><div class="hero-section"></div>'
+    const issues = lintHtmlStructure(html, false, { blockCase: 'kebab' })
+    assert.ok(issues.some((i) => i.code === 'CLASSLESS_TAG_NOT_ALLOWED' && i.baseClass === 'p'))
+  })
+
+  it('HTML lint checks classed descendants below classless selection roots', () => {
+    const html = '<div><span class="bad_block"></span></div>'
+    const issues = lintHtmlStructure(html, false, { blockCase: 'kebab' })
+    assert.ok(issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.baseClass === 'bad_block'))
+    assert.ok(
+      issues.every((i) => !i.message.includes('No element with class attribute found')),
+      'A classed descendant should count as a structure lint root'
+    )
+  })
+
+  it('HTML lint checks classed descendants below a classless root-mode root', () => {
+    const html = '<div><span class="bad_block"></span></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.ok(issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.baseClass === 'bad_block'))
+  })
+
+  it('HTML lint keeps structure checks through classless table wrappers', () => {
+    const html =
+      '<div class="hero-section"><table class="data-table"><tbody><tr class="bad_block"><td class="bodyText">Text</td></tr></tbody></table></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.ok(
+      issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.baseClass === 'bad_block'),
+      'Should inspect classed descendants through tbody'
+    )
+    assert.ok(
+      issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.baseClass === 'bodyText'),
+      'Should inspect nested classed descendants through tbody and tr'
+    )
+  })
+
+  it('HTML lint checks template and noscript contents', () => {
+    const html =
+      '<div class="hero-section"><template><p>Template text</p><div class="bad_block"></div></template><noscript><p>Noscript text</p><div class="other_block"></div></noscript></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.ok(
+      issues.filter((i) => i.code === 'CLASSLESS_TAG_NOT_ALLOWED' && i.baseClass === 'p').length >= 2,
+      'Should inspect classless tags inside template and noscript'
+    )
+    assert.ok(
+      issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.baseClass === 'bad_block') &&
+        issues.some((i) => i.code === 'INVALID_BASE_CLASS' && i.baseClass === 'other_block'),
+      'Should inspect classed tags inside template and noscript'
+    )
+  })
+
+  it('HTML lint reports unresolved dynamic class values separately', () => {
+    const html = '<div class="hero-section"><p class="{{ kind }}">Text</p></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.ok(issues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED' && i.baseClass === 'p'))
+    assert.ok(
+      issues.every((i) => i.code !== 'CLASSLESS_TAG_NOT_ALLOWED'),
+      'Dynamic classes should not be reported as statically classless'
+    )
+
+    const disabledClasslessIssues = lintHtmlStructure(
+      html,
+      true,
+      { blockCase: 'kebab' },
+      undefined,
+      undefined,
+      undefined,
+      {
+        classlessTagCheck: false
+      }
+    )
+    assert.ok(
+      disabledClasslessIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'),
+      'Disabling classless checks should not hide unresolved dynamic classes'
+    )
+
+    const jsxIssues = lintHtmlStructure(
+      '<div class="hero-section"><p className={getClassName()}>Text</p></div>',
+      true,
+      { blockCase: 'kebab' }
+    )
+    assert.ok(jsxIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'))
+
+    const unquotedNunjucksIssues = lintHtmlStructure(
+      '<div class="hero-section"><p class={{ kind }}>Text</p></div>',
+      true,
+      { blockCase: 'kebab' },
+      undefined,
+      undefined,
+      undefined,
+      { classlessTagCheck: false }
+    )
+    assert.ok(unquotedNunjucksIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'))
+
+    const spreadIssues = lintHtmlStructure(
+      '<div class="hero-section"><p {...props}>Text</p></div>',
+      true,
+      { blockCase: 'kebab' },
+      undefined,
+      undefined,
+      undefined,
+      { classlessTagCheck: false }
+    )
+    assert.ok(spreadIssues.some((i) => i.code === 'DYNAMIC_CLASS_UNRESOLVED'))
+  })
+
+  it('HTML lint includes sibling identity for repeated classless tags', () => {
+    const html = '<div class="hero-section"><p>First</p><p>Second</p></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }).filter(
+      (i) => i.code === 'CLASSLESS_TAG_NOT_ALLOWED'
+    )
+    assert.strictEqual(issues.length, 2)
+    assert.deepStrictEqual(
+      issues.map((i) => i.target?.siblingIndex),
+      [1, 2]
+    )
+  })
+
+  it('HTML lint includes ancestor identity for repeated class paths', () => {
+    const html =
+      '<div class="root-block"><section class="card-block"><p>A</p></section><section class="card-block"><p>B</p></section></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }).filter(
+      (i) => i.code === 'CLASSLESS_TAG_NOT_ALLOWED'
+    )
+    assert.strictEqual(issues.length, 2)
+    assert.deepStrictEqual(
+      issues.map((i) => i.targetPath?.map((target) => target.siblingIndex)),
+      [
+        [1, 1, 1],
+        [1, 2, 1]
+      ]
+    )
+  })
+
+  it('HTML lint allows built-in classless structural tags', () => {
+    const html =
+      '<div class="hero-section"><picture><source srcset="hero.avif"><img src="hero.jpg" alt="Hero"></picture><track src="captions.vtt"><map name="hero-map"><area href="/hero" shape="rect"></map><br><wbr></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.strictEqual(issues.length, 0, `Expected no issues, got: ${JSON.stringify(issues)}`)
+  })
+
+  it('HTML lint adds configured classless tags to the built-in allowlist', () => {
+    const html = '<div class="hero-section"><p>Text</p></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }, undefined, undefined, undefined, {
+      classlessTagAllowlist: ['p']
+    })
+    assert.strictEqual(issues.length, 0, `Expected no issues, got: ${JSON.stringify(issues)}`)
+  })
+
+  it('HTML lint can disable only the classless tag check', () => {
+    const html = '<div class="hero-section"><p>Text</p></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }, undefined, undefined, undefined, {
+      classlessTagCheck: false
+    })
+    assert.ok(
+      issues.every((i) => i.code !== 'CLASSLESS_TAG_NOT_ALLOWED'),
+      'Should disable only classless tag errors'
+    )
+
+    const svgIssues = lintHtmlStructure(
+      '<div class="hero-section"><svg><path d="M0 0"></path></svg></div>',
+      true,
+      { blockCase: 'kebab' },
+      undefined,
+      undefined,
+      undefined,
+      { classlessTagCheck: false }
+    )
+    assert.ok(svgIssues.every((i) => i.code !== 'CLASSLESS_TAG_NOT_ALLOWED'))
+  })
+
+  it('HTML lint requires a class on SVG roots but ignores SVG drawing internals', () => {
+    const classlessSvg = '<div class="hero-section"><svg><path d="M0 0"></path></svg></div>'
+    const classlessIssues = lintHtmlStructure(classlessSvg, true, { blockCase: 'kebab' })
+    assert.ok(classlessIssues.some((i) => i.code === 'CLASSLESS_TAG_NOT_ALLOWED' && i.baseClass === 'svg'))
+    assert.ok(
+      classlessIssues.every((i) => i.baseClass !== 'path'),
+      'SVG drawing internals should not be reported'
+    )
+
+    const classedSvg = '<div class="hero-section"><svg class="icon"><path d="M0 0"></path></svg></div>'
+    const classedIssues = lintHtmlStructure(classedSvg, true, { blockCase: 'kebab' })
+    assert.strictEqual(classedIssues.length, 0, `Expected no issues, got: ${JSON.stringify(classedIssues)}`)
+  })
+
+  it('HTML lint follows SVG and MathML namespace integration points', () => {
+    const html =
+      '<div class="hero-section"><svg class="icon"><title><span>Title</span></title><desc><span>Description</span></desc><foreignObject><p>Foreign object</p></foreignObject><path d="M0 0"></path></svg><math class="formula"><mtext><span>Math text</span></mtext><annotation-xml encoding="application/xml"><mi><span>XML text</span></mi></annotation-xml><annotation-xml encoding="text/html"><p>HTML annotation</p></annotation-xml></math></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    const classlessTags = issues
+      .filter((issue) => issue.code === 'CLASSLESS_TAG_NOT_ALLOWED')
+      .map((issue) => issue.baseClass)
+    assert.deepStrictEqual(classlessTags.sort(), ['p', 'p', 'span', 'span', 'span', 'span'].sort())
+  })
+
+  it('HTML lint ignores native control internals and hidden inputs', () => {
+    const html =
+      '<div class="hero-section"><select class="select"><option>One</option><optgroup label="More"><option>Two</option></optgroup></select><datalist id="values"><option value="One"></option></datalist><input type="hidden" value="token"></div>'
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
+    assert.strictEqual(issues.length, 0, `Expected no issues, got: ${JSON.stringify(issues)}`)
+  })
+
   it('HTML lint detects orphan element', () => {
     const html = '<div class="title">Orphan element</div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
@@ -1136,20 +1360,20 @@ describe('generator-core', () => {
   })
 
   it('HTML lint ignores html/body inside iframe srcdoc attributes', () => {
-    const html = '<div class="hero-section"><iframe srcdoc="<html>"></iframe></div>'
+    const html = '<div class="hero-section"><iframe class="frame" srcdoc="<html>"></iframe></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.strictEqual(issues.length, 0, 'Should ignore srcdoc attributes')
   })
 
   it('HTML lint ignores html/body inside svg foreignObject', () => {
-    const html = '<div class="hero-section"><svg><foreignObject><body></body></foreignObject></svg></div>'
+    const html = '<div class="hero-section"><svg class="icon"><foreignObject><body></body></foreignObject></svg></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.strictEqual(issues.length, 0, 'Should ignore foreignObject content')
   })
 
   it('HTML lint ignores html/body inside MathML annotation-xml', () => {
     const html =
-      '<div class="hero-section"><math><annotation-xml encoding="text/html"><body></body></annotation-xml></math></div>'
+      '<div class="hero-section"><math class="formula"><annotation-xml encoding="text/html"><body></body></annotation-xml></math></div>'
     const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' })
     assert.strictEqual(issues.length, 0, 'Should ignore MathML annotation content')
   })

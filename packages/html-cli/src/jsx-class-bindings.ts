@@ -583,6 +583,9 @@ export function replaceJsxClassBindings(html: string, options: JsxClassBindingOp
     const isEmptyStatic = classList.length === 0 && !extraction.hadUnsupported && extraction.tokens.length === 0
     if (classList.length > 0) {
       output += `${name}="${classList.join(' ')}"`
+      if (extraction.hadUnsupported) {
+        output += ' data-spiracss-dynamic-class="true"'
+      }
     } else if (isEmptyStatic) {
       output += `${name}=""`
     } else {
@@ -632,6 +635,7 @@ export function stripJsxClassBindings(html: string): string {
       continue
     }
 
+    output += 'data-spiracss-dynamic-class="true"'
     cursor = braced.endIndex
   }
 

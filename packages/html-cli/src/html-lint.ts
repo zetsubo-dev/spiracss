@@ -5,6 +5,7 @@ import { loadSpiracssConfig } from './config-loader'
 import { warnInvalidCustomPatterns } from './config-warnings'
 import {
   type ExternalOptions,
+  type HtmlLintOptions,
   type HtmlLintIssue,
   type JsxClassBindingsConfig,
   lintHtmlStructure,
@@ -17,11 +18,21 @@ type Mode = 'root' | 'selection'
 type ParsedArgs = {
   mode: Mode
   useStdin: boolean
+  allowProvisional: boolean
   inputPath?: string
   json: boolean
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+function formatIssueLocation(issue: HtmlLintIssue): string {
+  const sibling = issue.target && issue.target.siblingIndex > 1 ? ` (sibling #${issue.target.siblingIndex})` : ''
+  const targetPath =
+    issue.targetPath && issue.targetPath.length > 0
+      ? ` [DOM: ${issue.targetPath.map((target) => `<${target.tagName}>#${target.siblingIndex}${target.className ? `.${target.className}` : ''}`).join(' > ')}]`
+      : ''
+  return `${issue.path.join(' > ') || '(root)'}${sibling}${targetPath}`
+}
 
 const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) return undefined
@@ -31,12 +42,13 @@ const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined =>
 function parseArgs(argv: string[]): ParsedArgs {
   const mode: Mode = argv.includes('--selection') ? 'selection' : 'root'
   const useStdin = argv.includes('--stdin')
+  const allowProvisional = argv.includes('--allow-provisional')
   const json = argv.includes('--json')
 
   const positional = argv.filter((arg) => !arg.startsWith('--'))
   const inputPath = useStdin ? undefined : positional[0]
 
-  return { mode, useStdin, inputPath, json }
+  return { mode, useStdin, allowProvisional, inputPath, json }
 }
 
 async function readStdin(): Promise<string> {
@@ -56,17 +68,34 @@ type LintConfig = {
   selectorPolicy?: SelectorPolicy
   external?: ExternalOptions
   jsxClassBindings?: JsxClassBindingsConfig
+  htmlLint?: HtmlLintOptions
   namingSource: string
+  configStatus: 'missing' | 'loaded' | 'error'
+  configPath: string
+  configError?: string
 }
 
 async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
   const configPath = path.join(rootDir, 'spiracss.config.js')
-  const config = await loadSpiracssConfig(configPath)
+  let config: Awaited<ReturnType<typeof loadSpiracssConfig>>
+  try {
+    config = await loadSpiracssConfig(configPath)
+  } catch (error) {
+    return {
+      naming: {},
+      namingSource: 'stylelint.base.naming.customPatterns',
+      selectorPolicy: undefined,
+      configStatus: 'error',
+      configPath,
+      configError: error instanceof Error ? error.message : String(error)
+    }
+  }
   if (config && typeof config === 'object') {
     const stylelintCfg = config.stylelint as Record<string, unknown> | undefined
     const base = stylelintCfg?.base as Record<string, unknown> | undefined
     const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
     const selectorPolicy = config.selectorPolicy as Record<string, unknown> | undefined
+    const htmlLintConfig = config.htmlLint
     const resolvedSelectorPolicy =
       selectorPolicy && typeof selectorPolicy === 'object' ? (selectorPolicy as SelectorPolicy) : undefined
     const baseNaming = base?.naming
@@ -110,23 +139,47 @@ async function loadConfigFromConfig(rootDir: string): Promise<LintConfig> {
         classes,
         prefixes
       },
-      jsxClassBindings
+      jsxClassBindings,
+      htmlLint: isRecord(htmlLintConfig) ? (htmlLintConfig as HtmlLintOptions) : undefined,
+      configStatus: 'loaded',
+      configPath
     }
   }
-  return { naming: {}, namingSource: 'stylelint.base.naming.customPatterns', selectorPolicy: undefined }
+  return {
+    naming: {},
+    namingSource: 'stylelint.base.naming.customPatterns',
+    selectorPolicy: undefined,
+    configStatus: 'missing',
+    configPath
+  }
 }
 
 async function run(): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
 
   if (!args.useStdin && !args.inputPath) {
-    console.error('Usage: spiracss-html-lint [--root | --selection] [--stdin | path/to/input.html] [--json]')
+    console.error(
+      'Usage: spiracss-html-lint [--root | --selection] [--stdin | path/to/input.html] [--json] [--allow-provisional]'
+    )
     process.exitCode = 1
     return
   }
 
   const rootDir = process.cwd()
-  const { naming, namingSource, selectorPolicy, external, jsxClassBindings } = await loadConfigFromConfig(rootDir)
+  const {
+    naming,
+    namingSource,
+    selectorPolicy,
+    external,
+    jsxClassBindings,
+    htmlLint,
+    configStatus,
+    configPath,
+    configError
+  } = await loadConfigFromConfig(rootDir)
+  if (configStatus === 'missing') {
+    console.error(`WARN: ${configPath} was not found; default SpiraCSS settings are provisional.`)
+  }
   warnInvalidCustomPatterns(
     naming,
     (message) => {
@@ -138,12 +191,42 @@ async function run(): Promise<void> {
   let html: string
   let filePath: string | undefined
 
-  if (args.useStdin) {
-    html = await readStdin()
-  } else {
+  if (!args.useStdin) {
     filePath = path.resolve(args.inputPath as string)
-    html = await fsp.readFile(filePath, 'utf8')
   }
+
+  if (configStatus === 'error' || (configStatus === 'missing' && !args.allowProvisional)) {
+    const isMissing = configStatus === 'missing'
+    const blocked = {
+      code: isMissing ? 'CONFIG_MISSING' : 'CONFIG_LOAD_ERROR',
+      message: isMissing
+        ? `spiracss.config.js was not found at ${configPath}. Add the project config or rerun with --allow-provisional after explicitly accepting default settings.`
+        : (configError ?? `Failed to load spiracss.config.js at ${configPath}.`)
+    }
+    if (args.json) {
+      console.log(
+        JSON.stringify(
+          {
+            file: filePath ?? null,
+            mode: args.mode,
+            ok: false,
+            config: { status: configStatus, path: configPath },
+            provisional: isMissing,
+            blocked,
+            errors: []
+          },
+          null,
+          2
+        )
+      )
+    } else {
+      console.error(`ERROR [${blocked.code}]: ${blocked.message}`)
+    }
+    process.exitCode = 1
+    return
+  }
+
+  html = args.useStdin ? await readStdin() : await fsp.readFile(filePath as string, 'utf8')
 
   const isRootMode = args.mode === 'root'
   const issues: HtmlLintIssue[] = lintHtmlStructure(
@@ -152,7 +235,8 @@ async function run(): Promise<void> {
     naming,
     selectorPolicy,
     external,
-    jsxClassBindings
+    jsxClassBindings,
+    htmlLint
   )
 
   if (args.json) {
@@ -162,6 +246,8 @@ async function run(): Promise<void> {
           file: filePath ?? null,
           mode: args.mode,
           ok: issues.length === 0,
+          config: { status: configStatus, path: configPath },
+          provisional: configStatus === 'missing',
           errors: issues
         },
         null,
@@ -173,7 +259,7 @@ async function run(): Promise<void> {
       console.log('No SpiraCSS HTML structure errors.')
     } else {
       for (const issue of issues) {
-        const loc = issue.path.join(' > ') || '(root)'
+        const loc = formatIssueLocation(issue)
         console.error(`ERROR [${issue.code}] at ${loc}: ${issue.message}`)
       }
     }

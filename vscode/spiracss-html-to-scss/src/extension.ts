@@ -7,6 +7,7 @@ import {
   type FileNameCase,
   generateFromHtml,
   type GeneratorOptions,
+  type HtmlLintOptions,
   type HtmlLintIssue,
   insertPlaceholdersWithInfo,
   type JsxClassBindingsConfig,
@@ -69,8 +70,13 @@ function getWorkspaceRoot(uri: vscode.Uri): string | undefined {
 
 type SpiracssConfig = Record<string, unknown>
 type ClassAttribute = 'class' | 'className'
+type ConfigLoadResult =
+  | { status: 'missing'; config: undefined }
+  | { status: 'loaded'; config: SpiracssConfig }
+  | { status: 'error'; config: undefined }
 
 const configWarningRoots = new Set<string>()
+const configMissingWarningRoots = new Set<string>()
 
 function warnConfigLoadError(root: string, error: unknown): void {
   if (configWarningRoots.has(root)) return
@@ -81,6 +87,33 @@ function warnConfigLoadError(root: string, error: unknown): void {
   outputChannel.appendLine(`[WARN] ${message}`)
   outputChannel.appendLine(detail)
   outputChannel.show(true)
+}
+
+async function confirmProvisionalConfig(uri: vscode.Uri): Promise<boolean> {
+  const root = getWorkspaceRoot(uri) ?? path.dirname(uri.fsPath)
+  const message = vscode.l10n.t('spiracss.config.js was not found. Default settings are provisional.')
+  if (!configMissingWarningRoots.has(root)) {
+    configMissingWarningRoots.add(root)
+    vscode.window.showWarningMessage(message)
+    outputChannel.appendLine(`[WARN] ${message}`)
+    outputChannel.show(true)
+  }
+  const continueLabel = vscode.l10n.t('Continue with provisional settings')
+  const choice = await vscode.window.showWarningMessage(
+    message,
+    { modal: true, detail: vscode.l10n.t('Create spiracss.config.js before relying on generated output.') },
+    continueLabel
+  )
+  if (!isProvisionalContinuationConfirmed(choice, continueLabel)) return false
+  outputChannel.appendLine(
+    vscode.l10n.t('Generation continued only after explicit confirmation with provisional settings.')
+  )
+  outputChannel.show(true)
+  return true
+}
+
+export function isProvisionalContinuationConfirmed(choice: string | undefined, continueLabel: string): boolean {
+  return choice === continueLabel
 }
 
 const normalizeConfigModule = (moduleValue: unknown): SpiracssConfig | undefined => {
@@ -94,11 +127,11 @@ const normalizeConfigModule = (moduleValue: unknown): SpiracssConfig | undefined
   return moduleValue as SpiracssConfig
 }
 
-async function loadSpiracssConfig(uri: vscode.Uri): Promise<SpiracssConfig | undefined> {
+async function loadSpiracssConfig(uri: vscode.Uri): Promise<ConfigLoadResult> {
   const root = getWorkspaceRoot(uri)
-  if (!root) return undefined
+  if (!root) return { status: 'missing', config: undefined }
   const configPath = path.join(root, 'spiracss.config.js')
-  if (!existsSync(configPath)) return undefined
+  if (!existsSync(configPath)) return { status: 'missing', config: undefined }
 
   if (!isModuleWorkspace(root)) {
     try {
@@ -106,10 +139,14 @@ async function loadSpiracssConfig(uri: vscode.Uri): Promise<SpiracssConfig | und
       const resolved = require.resolve(configPath)
       delete require.cache[resolved]
       const config = require(resolved)
-      return normalizeConfigModule(config)
+      const normalized = normalizeConfigModule(config)
+      if (!normalized) {
+        throw new Error('spiracss.config.js must export an object.')
+      }
+      return { status: 'loaded', config: normalized }
     } catch (error) {
       warnConfigLoadError(root, error)
-      return undefined
+      return { status: 'error', config: undefined }
     }
   }
 
@@ -126,10 +163,14 @@ async function loadSpiracssConfig(uri: vscode.Uri): Promise<SpiracssConfig | und
       ? `${pathToFileURL(configPath).href}?t=${cacheBuster}`
       : pathToFileURL(configPath).href
     const config = await import(moduleUrl)
-    return normalizeConfigModule(config)
+    const normalized = normalizeConfigModule(config)
+    if (!normalized) {
+      throw new Error('spiracss.config.js must export an object.')
+    }
+    return { status: 'loaded', config: normalized }
   } catch (error) {
     warnConfigLoadError(root, error)
-    return undefined
+    return { status: 'error', config: undefined }
   }
 }
 
@@ -289,6 +330,11 @@ function loadSelectorPolicyFromConfig(config?: SpiracssConfig): SelectorPolicy |
   return undefined
 }
 
+function loadHtmlLintOptionsFromConfig(config?: SpiracssConfig): HtmlLintOptions | undefined {
+  if (!config || !isRecord(config.htmlLint)) return undefined
+  return config.htmlLint as HtmlLintOptions
+}
+
 /* ---------- File Helpers ---------- */
 async function fileExists(file: string): Promise<boolean> {
   try {
@@ -424,13 +470,23 @@ function getLintRuleMessage(code: HtmlLintIssue['code']): string {
       return vscode.l10n.t('Rule: Invalid variant value.')
     case 'INVALID_STATE_VALUE':
       return vscode.l10n.t('Rule: Invalid state value.')
+    case 'DYNAMIC_CLASS_UNRESOLVED':
+      return vscode.l10n.t('Rule: Dynamic class values cannot be verified statically.')
+    case 'CLASSLESS_TAG_NOT_ALLOWED':
+      return vscode.l10n.t('Rule: HTML tags must have a SpiraCSS Block or Element class.')
     default:
       return vscode.l10n.t('Rule: Unknown lint rule.')
   }
 }
 
 function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolean): string[] {
-  const location = issue.path.length > 0 ? issue.path.join(' > ') : vscode.l10n.t('(root)')
+  const sibling =
+    issue.target && issue.target.siblingIndex > 1 ? vscode.l10n.t(' (sibling #{0})', issue.target.siblingIndex) : ''
+  const targetPath =
+    issue.targetPath && issue.targetPath.length > 0
+      ? ` [DOM: ${issue.targetPath.map((target) => `<${target.tagName}>#${target.siblingIndex}${target.className ? `.${target.className}` : ''}`).join(' > ')}]`
+      : ''
+  const location = `${issue.path.length > 0 ? issue.path.join(' > ') : vscode.l10n.t('(root)')}${sibling}${targetPath}`
   const baseLabel = issue.baseClass ? vscode.l10n.t('Base: "{0}"', issue.baseClass) : vscode.l10n.t('Base: (none)')
   const lines = [getLintRuleMessage(issue.code), vscode.l10n.t('Target: {0}', location), baseLabel]
   if (includeDetail) {
@@ -519,7 +575,10 @@ export function activate(ctx: vscode.ExtensionContext): void {
     }
 
     const docDir = path.dirname(ed.document.uri.fsPath)
-    const config = await loadSpiracssConfig(ed.document.uri)
+    const configResult = await loadSpiracssConfig(ed.document.uri)
+    if (configResult.status === 'error') return
+    if (configResult.status === 'missing' && !(await confirmProvisionalConfig(ed.document.uri))) return
+    const config = configResult.config
     const globalScssModule = loadGlobalScssModuleFromConfig(config)
     const pageEntryPrefix = loadPageEntryPrefixFromConfig(config)
     const layoutMixins = loadLayoutMixinsFromConfig(config)
@@ -527,6 +586,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
     const selectorPolicy = loadSelectorPolicyFromConfig(config)
     const external = loadExternalOptionsFromConfig(config)
     const jsxClassBindings = loadJsxClassBindingsFromConfig(config)
+    const htmlLint = loadHtmlLintOptionsFromConfig(config)
     const childScssDir = loadChildScssDirFromConfig(config)
     const rootFileCase = loadRootFileCaseFromConfig(config)
     const childFileCase = loadChildFileCaseFromConfig(config)
@@ -541,7 +601,8 @@ export function activate(ctx: vscode.ExtensionContext): void {
       childFileCase,
       selectorPolicy,
       external,
-      jsxClassBindings
+      jsxClassBindings,
+      htmlLint
     }
 
     globalWriteChoice = null
@@ -552,7 +613,8 @@ export function activate(ctx: vscode.ExtensionContext): void {
         options.naming,
         options.selectorPolicy,
         options.external,
-        options.jsxClassBindings
+        options.jsxClassBindings,
+        options.htmlLint
       )
       if (lintIssues.length > 0) {
         await reportLintIssues(lintIssues)
@@ -614,7 +676,10 @@ export function activate(ctx: vscode.ExtensionContext): void {
         vscode.window.showErrorMessage(vscode.l10n.t('No selection.'))
         return
       }
-      const config = await loadSpiracssConfig(ed.document.uri)
+      const configResult = await loadSpiracssConfig(ed.document.uri)
+      if (configResult.status === 'error') return
+      if (configResult.status === 'missing' && !(await confirmProvisionalConfig(ed.document.uri))) return
+      const config = configResult.config
       const naming = loadNamingFromConfig(config)
       const classAttribute = loadHtmlFormatClassAttributeFromConfig(config)
       const jsxClassBindings = loadJsxClassBindingsFromConfig(config)

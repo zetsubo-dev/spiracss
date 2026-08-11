@@ -7,6 +7,7 @@ import {
   type FileNameCase,
   generateFromHtml,
   type GeneratorOptions,
+  type HtmlLintOptions,
   type JsxClassBindingsConfig,
   lintHtmlStructure,
   type NamingOptions,
@@ -18,6 +19,7 @@ type Mode = 'root' | 'selection'
 type ParsedArgs = {
   mode: Mode
   useStdin: boolean
+  allowProvisional: boolean
   baseDir?: string
   inputPath?: string
   ignoreStructureErrors: boolean
@@ -26,6 +28,19 @@ type ParsedArgs = {
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+function formatIssueLocation(issue: {
+  path: string[]
+  target?: { siblingIndex: number }
+  targetPath?: Array<{ tagName: string; siblingIndex: number; className?: string }>
+}): string {
+  const sibling = issue.target && issue.target.siblingIndex > 1 ? ` (sibling #${issue.target.siblingIndex})` : ''
+  const targetPath =
+    issue.targetPath && issue.targetPath.length > 0
+      ? ` [DOM: ${issue.targetPath.map((target) => `<${target.tagName}>#${target.siblingIndex}${target.className ? `.${target.className}` : ''}`).join(' > ')}]`
+      : ''
+  return `${issue.path.join(' > ') || '(root)'}${sibling}${targetPath}`
+}
 
 function isFileNameCase(value: string): value is FileNameCase {
   return value === 'preserve' || value === 'kebab' || value === 'snake' || value === 'camel' || value === 'pascal'
@@ -57,6 +72,7 @@ const normalizeMemberAccessAllowlist = (value: unknown): string[] | undefined =>
 function parseArgs(argv: string[]): ParsedArgs {
   const mode: Mode = argv.includes('--selection') ? 'selection' : 'root'
   const useStdin = argv.includes('--stdin')
+  const allowProvisional = argv.includes('--allow-provisional')
   const dryRun = argv.includes('--dry-run')
   const json = argv.includes('--json')
   const ignoreStructureErrors = argv.includes('--ignore-structure-errors')
@@ -76,7 +92,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 
   const inputPath = positional[0]
 
-  return { mode, useStdin, baseDir, inputPath, ignoreStructureErrors, dryRun, json }
+  return { mode, useStdin, allowProvisional, baseDir, inputPath, ignoreStructureErrors, dryRun, json }
 }
 
 async function readStdin(): Promise<string> {
@@ -91,7 +107,14 @@ async function readStdin(): Promise<string> {
   })
 }
 
-async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions & { namingSource: string }> {
+async function loadGeneratorOptions(rootDir: string): Promise<
+  GeneratorOptions & {
+    namingSource: string
+    configStatus: 'missing' | 'loaded' | 'error'
+    configPath: string
+    configError?: string
+  }
+> {
   const defaultGlobalScssModule = '@styles/partials/global'
   const defaultPageAlias = 'assets'
   const defaultPageSubdir = 'css'
@@ -114,9 +137,20 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions &
   let externalClasses: string[] = []
   let externalPrefixes: string[] = []
   let jsxClassBindings: JsxClassBindingsConfig | undefined
+  let htmlLint: HtmlLintOptions | undefined
 
   const configPath = path.join(rootDir, 'spiracss.config.js')
-  const config = await loadSpiracssConfig(configPath)
+  let config: Awaited<ReturnType<typeof loadSpiracssConfig>>
+  let configStatus: 'missing' | 'loaded' | 'error'
+  let configError: string | undefined
+  try {
+    config = await loadSpiracssConfig(configPath)
+    configStatus = config ? 'loaded' : 'missing'
+  } catch (error) {
+    config = undefined
+    configStatus = 'error'
+    configError = error instanceof Error ? error.message : String(error)
+  }
   if (config && typeof config === 'object') {
     const fileCaseConfig = resolveFileCaseConfig((config as Record<string, unknown>).fileCase)
     const generator = config.generator as Record<string, unknown> | undefined
@@ -124,6 +158,7 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions &
     const base = stylelintCfg?.base as Record<string, unknown> | undefined
     const classConfig = stylelintCfg?.class as Record<string, unknown> | undefined
     const selectorPolicyConfig = config.selectorPolicy as Record<string, unknown> | undefined
+    const htmlLintConfig = config.htmlLint
 
     const entry = generator?.globalScssModule
     if (typeof entry === 'string' && entry.trim() !== '') {
@@ -195,6 +230,10 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions &
         jsxClassBindings = { memberAccessAllowlist: allowlist }
       }
     }
+
+    if (isRecord(htmlLintConfig)) {
+      htmlLint = htmlLintConfig as HtmlLintOptions
+    }
   }
 
   warnInvalidCustomPatterns(
@@ -219,7 +258,11 @@ async function loadGeneratorOptions(rootDir: string): Promise<GeneratorOptions &
       prefixes: externalPrefixes
     },
     jsxClassBindings,
-    namingSource
+    htmlLint,
+    namingSource,
+    configStatus,
+    configPath,
+    configError
   }
 }
 
@@ -242,7 +285,7 @@ async function run(): Promise<void> {
 
   if (!args.useStdin && !args.inputPath) {
     console.error(
-      'Usage: spiracss-html-to-scss [--root | --selection] [--stdin | path/to/input.html] [--base-dir dir] [--dry-run] [--json]'
+      'Usage: spiracss-html-to-scss [--root | --selection] [--stdin | path/to/input.html] [--base-dir dir] [--dry-run] [--json] [--allow-provisional]'
     )
     process.exitCode = 1
     return
@@ -250,18 +293,55 @@ async function run(): Promise<void> {
 
   const rootDir = process.cwd()
   const options = await loadGeneratorOptions(rootDir)
+  if (options.configStatus === 'missing') {
+    console.error(`WARN: ${options.configPath} was not found; default SpiraCSS settings are provisional.`)
+  }
 
   let html: string
   let docDir: string
+  let inputPath: string | null = null
 
   if (args.useStdin) {
-    html = await readStdin()
     docDir = args.baseDir ? path.resolve(args.baseDir) : rootDir
   } else {
-    const inputPath = path.resolve(args.inputPath as string)
-    html = await fsp.readFile(inputPath, 'utf8')
+    inputPath = path.resolve(args.inputPath as string)
     docDir = args.baseDir ? path.resolve(args.baseDir) : path.dirname(inputPath)
   }
+
+  if (options.configStatus === 'error' || (options.configStatus === 'missing' && !args.allowProvisional)) {
+    const isMissing = options.configStatus === 'missing'
+    const blocked = {
+      code: isMissing ? 'CONFIG_MISSING' : 'CONFIG_LOAD_ERROR',
+      message: isMissing
+        ? `spiracss.config.js was not found at ${options.configPath}. Add the project config or rerun with --allow-provisional after explicitly accepting default settings.`
+        : (options.configError ?? `Failed to load spiracss.config.js at ${options.configPath}.`)
+    }
+    if (args.json) {
+      console.log(
+        JSON.stringify(
+          {
+            ok: false,
+            mode: args.mode,
+            file: inputPath,
+            docDir,
+            config: { status: options.configStatus, path: options.configPath },
+            provisional: isMissing,
+            blocked,
+            errors: [],
+            files: []
+          },
+          null,
+          2
+        )
+      )
+    } else {
+      console.error(`ERROR [${blocked.code}]: ${blocked.message}`)
+    }
+    process.exitCode = 1
+    return
+  }
+
+  html = args.useStdin ? await readStdin() : await fsp.readFile(inputPath as string, 'utf8')
 
   const isRootMode = args.mode === 'root'
   const structureIssues = lintHtmlStructure(
@@ -270,18 +350,39 @@ async function run(): Promise<void> {
     options.naming,
     options.selectorPolicy,
     options.external,
-    options.jsxClassBindings
+    options.jsxClassBindings,
+    options.htmlLint
   )
 
   if (structureIssues.length > 0) {
     if (args.ignoreStructureErrors) {
       for (const issue of structureIssues) {
-        const loc = issue.path.join(' > ') || '(root)'
+        const loc = formatIssueLocation(issue)
         console.error(`WARN [${issue.code}] at ${loc}: ${issue.message} (ignored)`)
       }
     } else {
+      if (args.json) {
+        console.log(
+          JSON.stringify(
+            {
+              ok: false,
+              mode: args.mode,
+              file: inputPath,
+              docDir,
+              config: { status: options.configStatus, path: options.configPath },
+              provisional: options.configStatus === 'missing',
+              errors: structureIssues,
+              files: []
+            },
+            null,
+            2
+          )
+        )
+        process.exitCode = 1
+        return
+      }
       for (const issue of structureIssues) {
-        const loc = issue.path.join(' > ') || '(root)'
+        const loc = formatIssueLocation(issue)
         console.error(`ERROR [${issue.code}] at ${loc}: ${issue.message}`)
       }
       process.exitCode = 1
@@ -295,8 +396,13 @@ async function run(): Promise<void> {
     console.log(
       JSON.stringify(
         {
+          ok: structureIssues.length === 0,
           mode: args.mode,
+          file: inputPath,
           docDir,
+          config: { status: options.configStatus, path: options.configPath },
+          provisional: options.configStatus === 'missing',
+          errors: args.ignoreStructureErrors ? structureIssues : [],
           files: generated
         },
         null,

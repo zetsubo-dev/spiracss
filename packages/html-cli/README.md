@@ -57,9 +57,11 @@ cat file.html | pnpm exec spiracss-html-format --stdin
 
 Note: If you use npm, replace `pnpm exec` with `npx` or `npm exec`.
 
+HTML lint and HTML-to-SCSS require `spiracss.config.js` by default. If the project config is intentionally unavailable, pass `--allow-provisional` explicitly; the result uses fallback defaults and must not be treated as final project validation. Without that flag, the commands fail with `CONFIG_MISSING` (including JSON mode).
+
 ## Configuration
 
-SpiraCSS tools share a common configuration file at the project root: `spiracss.config.js` (htmlFormat, selectorPolicy, generator options, naming).
+SpiraCSS tools share a common configuration file at the project root: `spiracss.config.js` (htmlFormat, htmlLint, selectorPolicy, generator options, naming).
 See the config guide for full options (EN/JA links below).
 
 Minimal example:
@@ -67,6 +69,11 @@ Minimal example:
 ```js
 export default {
   htmlFormat: { classAttribute: 'class' },
+  htmlLint: {
+    classlessTagCheck: true,
+    // Built-in baseline; append project-specific structural tags when needed.
+    classlessTagAllowlist: ['picture', 'source', 'img', 'track', 'map', 'area', 'br', 'wbr']
+  },
   jsxClassBindings: { memberAccessAllowlist: ['styles', 'classes'] },
   generator: {
     globalScssModule: '@styles/partials/global',
@@ -74,6 +81,12 @@ export default {
   }
 }
 ```
+
+HTML structure lint requires a class on HTML elements by default. Built-in classless structural tags are `picture`, `source`, `img`, `track`, `map`, `area`, `br`, and `wbr`. SVG/MathML root elements still require a class; their internal drawing elements are checked by context. `htmlLint.classlessTagAllowlist` adds project-specific tags to the built-in list.
+
+Set `htmlLint.classlessTagCheck` to `false` to disable only the classless-tag check while keeping the other HTML structure checks enabled.
+
+When a class value is dynamic and cannot be verified statically, lint reports `DYNAMIC_CLASS_UNRESOLVED` instead of treating the tag as classless. Resolve the template binding before applying a classless-tag fix. JSON lint results include `target.siblingIndex` and `targetPath` when repeated tags or ancestors share the same structural path.
 
 Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use `module.exports = { ... }` instead of `export default`.
 

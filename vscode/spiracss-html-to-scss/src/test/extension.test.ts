@@ -2,6 +2,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
+import { isProvisionalContinuationConfirmed } from '../extension'
 
 suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
   vscode.window.showInformationMessage('Start all tests.')
@@ -151,6 +152,15 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
 
   test('Extension should be present', () => {
     assert.ok(vscode.extensions.getExtension('spiracss.spiracss-html-to-scss'))
+  })
+
+  test('Provisional continuation is recorded only after confirmation', () => {
+    assert.strictEqual(isProvisionalContinuationConfirmed(undefined, 'Continue with provisional settings'), false)
+    assert.strictEqual(isProvisionalContinuationConfirmed('Cancel', 'Continue with provisional settings'), false)
+    assert.strictEqual(
+      isProvisionalContinuationConfirmed('Continue with provisional settings', 'Continue with provisional settings'),
+      true
+    )
   })
 
   test('Extension should activate', async () => {

@@ -131,6 +131,12 @@ const RX = {
   TRIM_ATTR: /=\s*"([^"]*?)"/g
 } as const
 
+const DYNAMIC_CLASS_VALUE_RE = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\{[\s\S]*?\}/
+const DYNAMIC_CLASS_TOKEN_RE = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\{[\s\S]*?\}/g
+const DYNAMIC_UNQUOTED_CLASS_RE =
+  /\bclass\s*=\s*(?:\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\{[\s\S]*?\}|\{[^}]*\})/gi
+const JSX_SPREAD_RE = /\{\.\.\.[^}]+\}/g
+
 /** Patterns removed at the attribute level. */
 const REMOVE_PATTERNS: RegExp[] = [
   RX.SPREAD,
@@ -324,6 +330,7 @@ export type GeneratorOptions = {
   selectorPolicy?: SelectorPolicy
   external?: ExternalOptions
   jsxClassBindings?: JsxClassBindingsConfig
+  htmlLint?: HtmlLintOptions
 }
 
 export type ExternalOptions = {
@@ -459,13 +466,18 @@ function normalizeSelectorPolicy(raw?: SelectorPolicy): NormalizedSelectorPolicy
 /* ---------- sanitizeHtml ---------- */
 export function sanitizeHtml(raw: string, jsxOptions?: JsxClassBindingsConfig): string {
   const jsxProcessed = replaceJsxClassBindings(raw, {
-    memberAccessAllowlist: jsxOptions?.memberAccessAllowlist
+    memberAccessAllowlist: jsxOptions?.memberAccessAllowlist,
+    markUnsupportedOnEmpty: true,
+    strict: true
   })
   let html = stripJsxClassBindings(jsxProcessed.html)
     .replace(RX.CLASSNAME_TEMPLATE, (_m, inner) => `class="${inner}"`)
     .replace(RX.CLASS_TEMPLATE, (_m, inner) => `class="${inner}"`)
     .replace(RX.ASTRO_FRONTMATTER, '')
     .replace(CDATA_RE, '')
+
+  html = preserveDynamicClassAttributes(html)
+  html = preserveDynamicClassBindings(html)
 
   // Remove <script> / <style> tags (exclude inline JS/CSS)
   html = html.replace(SCRIPT_STYLE_RE, '')
@@ -493,6 +505,21 @@ export function sanitizeHtml(raw: string, jsxOptions?: JsxClassBindingsConfig): 
   return html
 }
 
+function preserveDynamicClassAttributes(html: string): string {
+  return html.replace(/\bclass\s*=\s*(["'])([\s\S]*?)\1/gi, (_match, _quote, value: string) => {
+    if (!DYNAMIC_CLASS_VALUE_RE.test(value)) return _match
+    const staticValue = value.replace(DYNAMIC_CLASS_TOKEN_RE, ' ').replace(/\s+/g, ' ').trim()
+    return staticValue
+      ? `class="${staticValue}" data-spiracss-dynamic-class="true"`
+      : 'data-spiracss-dynamic-class="true"'
+  })
+}
+
+function preserveDynamicClassBindings(html: string): string {
+  const withUnquotedClassMarkers = html.replace(DYNAMIC_UNQUOTED_CLASS_RE, 'data-spiracss-dynamic-class="true"')
+  return withUnquotedClassMarkers.replace(JSX_SPREAD_RE, ' data-spiracss-dynamic-class="true"')
+}
+
 /* ---------- ComponentStructure & Tree Logic ---------- */
 export interface ComponentStructure {
   baseClass: string
@@ -510,6 +537,11 @@ export interface ComponentStructure {
 
 export type HtmlLintMode = 'root' | 'selection'
 
+export type HtmlLintOptions = {
+  classlessTagCheck?: boolean
+  classlessTagAllowlist?: string[]
+}
+
 export type HtmlLintIssueCode =
   | 'INVALID_BASE_CLASS'
   | 'UNBALANCED_HTML'
@@ -525,17 +557,53 @@ export type HtmlLintIssueCode =
   | 'DISALLOWED_STATE_ATTRIBUTE'
   | 'INVALID_VARIANT_VALUE'
   | 'INVALID_STATE_VALUE'
+  | 'DYNAMIC_CLASS_UNRESOLVED'
+  | 'CLASSLESS_TAG_NOT_ALLOWED'
 
 export type HtmlLintIssue = {
   code: HtmlLintIssueCode
   message: string
   baseClass: string
   path: string[]
+  target?: {
+    tagName: string
+    siblingIndex: number
+  }
+  targetPath?: Array<{
+    tagName: string
+    siblingIndex: number
+    className?: string
+  }>
 }
 
 type UnbalancedTags = {
   missing: string[]
   unexpected: string[]
+}
+
+type NormalizedHtmlLintOptions = {
+  classlessTagCheck: boolean
+  classlessTagAllowlist: Set<string>
+}
+
+const DEFAULT_CLASSLESS_TAG_ALLOWLIST = ['picture', 'source', 'img', 'track', 'map', 'area', 'br', 'wbr']
+
+const DOCUMENT_SHELL_TAGS = new Set(['html', 'head', 'body'])
+const DOCUMENT_METADATA_TAGS = new Set(['title', 'base', 'link', 'meta', 'style', 'script', 'xmp', 'listing'])
+const CONDITIONAL_CONTAINER_TAGS = new Set(['template', 'slot', 'noscript'])
+const NATIVE_CONTROL_INTERNAL_TAGS = new Set(['datalist', 'optgroup', 'option', 'selectedcontent'])
+const TABLE_STRUCTURE_TAGS = new Set(['tbody', 'thead', 'tfoot', 'colgroup'])
+
+function normalizeHtmlLintOptions(raw?: HtmlLintOptions): NormalizedHtmlLintOptions {
+  const configured = Array.isArray(raw?.classlessTagAllowlist)
+    ? raw.classlessTagAllowlist
+        .filter((tag): tag is string => typeof tag === 'string' && tag.trim() !== '')
+        .map((tag) => tag.trim().toLowerCase())
+    : []
+  return {
+    classlessTagCheck: raw?.classlessTagCheck !== false,
+    classlessTagAllowlist: new Set([...DEFAULT_CLASSLESS_TAG_ALLOWLIST, ...configured])
+  }
 }
 
 function uniqueStrings(values: string[]): string[] {
@@ -975,9 +1043,42 @@ function dedup(arr: ComponentStructure[]): ComponentStructure[] {
 
 const MAX_DEPTH = 256
 
+function logicalChildElements($: CheerioAPI, elem: Element): Element[] {
+  if (elem.tagName.toLowerCase() !== 'template') {
+    return $(elem).children().get().filter(isTagElement)
+  }
+
+  const result: Element[] = []
+  const visit = (node: AnyNode): void => {
+    if (isTagElement(node)) {
+      result.push(node)
+      return
+    }
+    if (node.type === 'root') {
+      node.children.forEach(visit)
+    }
+  }
+  elem.children.forEach(visit)
+  return result
+}
+
+function collectClassedDescendantRoots($: CheerioAPI, roots: Element[]): Element[] {
+  const result: Element[] = []
+  const visit = (elem: Element, depth: number): void => {
+    if (depth > MAX_DEPTH) return
+    if (isElement(elem)) {
+      result.push(elem)
+      return
+    }
+    logicalChildElements($, elem).forEach((child) => visit(child, depth + 1))
+  }
+  roots.forEach((root) => visit(root, 0))
+  return result
+}
+
 function collectDeep(
   $: CheerioAPI,
-  node: AnyNode,
+  node: Element,
   naming: NamingOptions,
   policy: NormalizedSelectorPolicy,
   external: NormalizedExternalOptions,
@@ -985,18 +1086,15 @@ function collectDeep(
 ): ComponentStructure[] {
   if (depth > MAX_DEPTH) return []
   const list: ComponentStructure[] = []
-  $(node)
-    .children()
-    .each((_, ch) => {
-      if (!isElement(ch)) return
-      const comp = buildTreeInternal($, ch, naming, policy, external, depth + 1)
-      if (comp) {
-        comp.viaDeep = true
-        list.push(comp)
-      } else {
-        list.push(...collectDeep($, ch, naming, policy, external, depth + 1))
-      }
-    })
+  logicalChildElements($, node).forEach((ch) => {
+    const comp = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1) : null
+    if (comp) {
+      comp.viaDeep = true
+      list.push(comp)
+    } else {
+      list.push(...collectDeep($, ch, naming, policy, external, depth + 1))
+    }
+  })
   return list
 }
 
@@ -1027,41 +1125,38 @@ function buildTreeInternal(
     elementTag: elem.tagName
   }
 
-  $(elem)
-    .children()
-    .each((_, ch) => {
-      if (!isElement(ch)) return
-      const direct = buildTreeInternal($, ch, naming, policy, external, depth + 1)
-      const comps = direct ? [direct] : collectDeep($, ch, naming, policy, external, depth + 1)
-      comps.forEach((c) => {
-        const tgt = c.isIndependent ? node.independentChildren : node.nestedChildren
-        const oth = c.isIndependent ? node.nestedChildren : node.independentChildren
-        const dup = tgt.find((x) => x.baseClass === c.baseClass)
-        const swp = oth.find((x) => x.baseClass === c.baseClass)
-        if (swp) {
-          oth.splice(oth.indexOf(swp), 1)
-          tgt.push(swp)
-        }
-        if (dup) {
-          dup.modifiers.push(...c.modifiers.filter((m) => !dup.modifiers.includes(m)))
-          dup.variantAttributes = dedupAttributeSelectors([...dup.variantAttributes, ...c.variantAttributes])
-          dup.stateAttributes = dedupAttributeSelectors([...dup.stateAttributes, ...c.stateAttributes])
-          dup.nestedChildren.push(...c.nestedChildren)
-          dup.independentChildren.push(...c.independentChildren)
-          c.orderedChildren.forEach((child) => {
-            if (!dup.orderedChildren.some((x) => x.baseClass === child.baseClass)) {
-              dup.orderedChildren.push(child)
-            }
-          })
-          dup.viaDeep = dup.viaDeep && c.viaDeep!
-        } else {
-          tgt.push(c)
-        }
-        if (!node.orderedChildren.some((x) => x.baseClass === c.baseClass)) {
-          node.orderedChildren.push(c)
-        }
-      })
+  logicalChildElements($, elem).forEach((ch) => {
+    const direct = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1) : null
+    const comps = direct ? [direct] : collectDeep($, ch, naming, policy, external, depth + 1)
+    comps.forEach((c) => {
+      const tgt = c.isIndependent ? node.independentChildren : node.nestedChildren
+      const oth = c.isIndependent ? node.nestedChildren : node.independentChildren
+      const dup = tgt.find((x) => x.baseClass === c.baseClass)
+      const swp = oth.find((x) => x.baseClass === c.baseClass)
+      if (swp) {
+        oth.splice(oth.indexOf(swp), 1)
+        tgt.push(swp)
+      }
+      if (dup) {
+        dup.modifiers.push(...c.modifiers.filter((m) => !dup.modifiers.includes(m)))
+        dup.variantAttributes = dedupAttributeSelectors([...dup.variantAttributes, ...c.variantAttributes])
+        dup.stateAttributes = dedupAttributeSelectors([...dup.stateAttributes, ...c.stateAttributes])
+        dup.nestedChildren.push(...c.nestedChildren)
+        dup.independentChildren.push(...c.independentChildren)
+        c.orderedChildren.forEach((child) => {
+          if (!dup.orderedChildren.some((x) => x.baseClass === child.baseClass)) {
+            dup.orderedChildren.push(child)
+          }
+        })
+        dup.viaDeep = dup.viaDeep && c.viaDeep!
+      } else {
+        tgt.push(c)
+      }
+      if (!node.orderedChildren.some((x) => x.baseClass === c.baseClass)) {
+        node.orderedChildren.push(c)
+      }
     })
+  })
 
   node.nestedChildren = dedup(node.nestedChildren)
   node.independentChildren = dedup(node.independentChildren)
@@ -1319,20 +1414,193 @@ function lintNodeStructure(
   }
 }
 
+type HtmlTraversalMode = 'html' | 'svg' | 'math'
+
+const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml'
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
+const MATHML_NAMESPACE = 'http://www.w3.org/1998/Math/MathML'
+const HTML_ANNOTATION_ENCODINGS = new Set(['text/html', 'application/xhtml+xml'])
+
+function traversalModeForElement(elem: Element, fallback: HtmlTraversalMode): HtmlTraversalMode {
+  switch (elem.namespace) {
+    case HTML_NAMESPACE:
+      return 'html'
+    case SVG_NAMESPACE:
+      return 'svg'
+    case MATHML_NAMESPACE:
+      return 'math'
+    default:
+      return fallback
+  }
+}
+
+function firstClassToken(elem: Element): string | undefined {
+  return elem.attribs?.class?.split(/\s+/).find((token) => token.length > 0)
+}
+
+function classlessTagIssue(
+  tag: string,
+  path: string[],
+  siblingIndex: number,
+  targetPath: HtmlLintIssue['targetPath']
+): HtmlLintIssue {
+  return {
+    code: 'CLASSLESS_TAG_NOT_ALLOWED',
+    message: `HTML tag "<${tag}>" has no class attribute. Add a meaningful SpiraCSS Block/Element class so this element can own styles. Choose a Block for an independent component or an Element under its nearest Block, following the configured naming rules. Under the default naming rules, an Element base is one word; customPatterns may override this. Do not add a tag selector in SCSS to bypass this check. Add "${tag}" to htmlLint.classlessTagAllowlist only if the tag is intentionally structural and should not own styles.`,
+    baseClass: tag,
+    path,
+    target: { tagName: tag, siblingIndex },
+    targetPath
+  }
+}
+
+function dynamicClassIssue(
+  tag: string,
+  path: string[],
+  siblingIndex: number,
+  targetPath: HtmlLintIssue['targetPath'],
+  className?: string
+): HtmlLintIssue {
+  return {
+    code: 'DYNAMIC_CLASS_UNRESOLVED',
+    message: `HTML tag "<${tag}>" has a dynamic class value that cannot be verified statically. Keep a resolvable SpiraCSS Block/Element class in the source, or stop and resolve the template expression before applying a classless-tag fix.`,
+    baseClass: className ?? tag,
+    path,
+    target: { tagName: tag, siblingIndex },
+    targetPath
+  }
+}
+
+function lintClasslessTags(
+  $: CheerioAPI,
+  roots: Element[],
+  options: NormalizedHtmlLintOptions,
+  issues: HtmlLintIssue[]
+): void {
+  const walk = (
+    elem: Element,
+    path: string[],
+    mode: HtmlTraversalMode,
+    depth: number,
+    siblingIndex: number,
+    targetPath: HtmlLintIssue['targetPath'] = []
+  ): void => {
+    if (depth > MAX_DEPTH) return
+
+    const tag = elem.tagName.toLowerCase()
+    const currentMode = traversalModeForElement(elem, mode)
+    const className = firstClassToken(elem)
+    const nextPath = className ? [...path, className] : path
+    const nextTargetPath = [...targetPath, { tagName: tag, siblingIndex, ...(className ? { className } : {}) }]
+    const hasDynamicClass = elem.attribs?.['data-spiracss-dynamic-class'] === 'true'
+
+    if (currentMode === 'svg') {
+      if (tag === 'foreignobject') {
+        logicalChildElements($, elem).forEach((child, index) =>
+          walk(child, nextPath, 'html', depth + 1, index + 1, nextTargetPath)
+        )
+        return
+      }
+      if (tag === 'svg' && hasDynamicClass) {
+        issues.push(dynamicClassIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath, className))
+      } else if (options.classlessTagCheck && tag === 'svg' && !className && !options.classlessTagAllowlist.has(tag)) {
+        issues.push(classlessTagIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath))
+      }
+      logicalChildElements($, elem).forEach((child, index) =>
+        walk(child, nextPath, 'svg', depth + 1, index + 1, nextTargetPath)
+      )
+      return
+    }
+
+    if (currentMode === 'math') {
+      if (tag === 'annotation-xml') {
+        const encoding = elem.attribs?.encoding?.trim().toLowerCase()
+        const annotationMode = encoding && HTML_ANNOTATION_ENCODINGS.has(encoding) ? 'html' : 'math'
+        logicalChildElements($, elem).forEach((child, index) =>
+          walk(child, nextPath, annotationMode, depth + 1, index + 1, nextTargetPath)
+        )
+        return
+      }
+      if (tag === 'math' && hasDynamicClass) {
+        issues.push(dynamicClassIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath, className))
+      } else if (options.classlessTagCheck && tag === 'math' && !className && !options.classlessTagAllowlist.has(tag)) {
+        issues.push(classlessTagIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath))
+      }
+      logicalChildElements($, elem).forEach((child, index) =>
+        walk(child, nextPath, 'math', depth + 1, index + 1, nextTargetPath)
+      )
+      return
+    }
+
+    if (tag === 'svg') {
+      if (hasDynamicClass) {
+        issues.push(dynamicClassIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath, className))
+      } else if (options.classlessTagCheck && !className && !options.classlessTagAllowlist.has(tag)) {
+        issues.push(classlessTagIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath))
+      }
+      logicalChildElements($, elem).forEach((child, index) =>
+        walk(child, nextPath, 'svg', depth + 1, index + 1, nextTargetPath)
+      )
+      return
+    }
+
+    if (tag === 'math') {
+      if (hasDynamicClass) {
+        issues.push(dynamicClassIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath, className))
+      } else if (options.classlessTagCheck && !className && !options.classlessTagAllowlist.has(tag)) {
+        issues.push(classlessTagIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath))
+      }
+      logicalChildElements($, elem).forEach((child, index) =>
+        walk(child, nextPath, 'math', depth + 1, index + 1, nextTargetPath)
+      )
+      return
+    }
+
+    if (DOCUMENT_METADATA_TAGS.has(tag)) return
+
+    if (DOCUMENT_SHELL_TAGS.has(tag) || CONDITIONAL_CONTAINER_TAGS.has(tag) || TABLE_STRUCTURE_TAGS.has(tag)) {
+      logicalChildElements($, elem).forEach((child, index) =>
+        walk(child, nextPath, 'html', depth + 1, index + 1, nextTargetPath)
+      )
+      return
+    }
+
+    if (NATIVE_CONTROL_INTERNAL_TAGS.has(tag) || (tag === 'input' && elem.attribs?.type?.toLowerCase() === 'hidden')) {
+      return
+    }
+
+    if (hasDynamicClass) {
+      issues.push(dynamicClassIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath, className))
+    } else if (options.classlessTagCheck && !className && !options.classlessTagAllowlist.has(tag)) {
+      issues.push(classlessTagIssue(tag, [...path, `<${tag}>`], siblingIndex, nextTargetPath))
+    }
+
+    logicalChildElements($, elem).forEach((child, index) =>
+      walk(child, nextPath, 'html', depth + 1, index + 1, nextTargetPath)
+    )
+  }
+
+  roots.forEach((root, index) => walk(root, [], 'html', 0, index + 1))
+}
+
 export function lintHtmlStructure(
   rawHtml: string,
   isRootMode: boolean,
   naming: NamingOptions,
   selectorPolicy?: SelectorPolicy,
   externalOptions?: ExternalOptions,
-  jsxClassBindings?: JsxClassBindingsConfig
+  jsxClassBindings?: JsxClassBindingsConfig,
+  htmlLintOptions?: HtmlLintOptions
 ): HtmlLintIssue[] {
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
   const sanitized = sanitizeHtml(raw, jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)
-  const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
+  const $: CheerioAPI = explicitRoot
+    ? load(sanitized, { scriptingEnabled: false })
+    : load(sanitized, { scriptingEnabled: false }, false)
   const policy = normalizeSelectorPolicy(selectorPolicy)
   const external = normalizeExternalOptions(externalOptions)
+  const htmlLint = normalizeHtmlLintOptions(htmlLintOptions)
 
   const issues: HtmlLintIssue[] = []
   const unbalanced = findUnbalancedTags(sanitized)
@@ -1345,6 +1613,7 @@ export function lintHtmlStructure(
     })
   }
   let roots: Element[]
+  let classlessRoots: Element[]
   if (isRootMode) {
     if (!explicitRoot) {
       const rootElements = $.root().children().get().filter(isRootCandidate)
@@ -1368,6 +1637,7 @@ export function lintHtmlStructure(
       })
       return issues
     }
+    classlessRoots = [node]
     if (!hasClassAttribute(node)) {
       issues.push({
         code: 'INVALID_BASE_CLASS',
@@ -1375,13 +1645,24 @@ export function lintHtmlStructure(
         baseClass: '',
         path: []
       })
+      const descendantRoots = collectClassedDescendantRoots($, [node])
+      for (const rootEl of descendantRoots) {
+        const tree = buildTree($, rootEl, naming, policy, external)
+        if (!tree) continue
+        lintNodeStructure(tree, null, null, naming, policy, external, [], false, false, issues)
+      }
+      lintClasslessTags($, classlessRoots, htmlLint, issues)
       return issues
     }
     roots = [node]
   } else {
-    roots = $('wrapper').children().get().filter(isElement)
+    classlessRoots = $('wrapper').children().get().filter(isTagElement)
+    roots = collectClassedDescendantRoots($, classlessRoots)
   }
   if (roots.length === 0) {
+    if (!isRootMode) {
+      lintClasslessTags($, classlessRoots, htmlLint, issues)
+    }
     issues.push({
       code: 'INVALID_BASE_CLASS',
       message: 'No element with class attribute found.',
@@ -1396,6 +1677,8 @@ export function lintHtmlStructure(
     if (!tree) continue
     lintNodeStructure(tree, null, null, naming, policy, external, [], true, isRootMode, issues)
   }
+
+  lintClasslessTags($, classlessRoots, htmlLint, issues)
 
   return issues
 }
@@ -1591,7 +1874,9 @@ export function generateFromHtml(
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
   const sanitized = sanitizeHtml(raw, opts.jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)
-  const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
+  const $: CheerioAPI = explicitRoot
+    ? load(sanitized, { scriptingEnabled: false })
+    : load(sanitized, { scriptingEnabled: false }, false)
   const policy = normalizeSelectorPolicy(opts.selectorPolicy)
   const external = normalizeExternalOptions(opts.external)
 
@@ -1699,7 +1984,9 @@ export function summarizeRootBlocks(rawHtml: string, isRootMode: boolean, opts: 
   const raw = isRootMode ? rawHtml : `<wrapper>${rawHtml}</wrapper>`
   const sanitized = sanitizeHtml(raw, opts.jsxClassBindings)
   const explicitRoot = detectExplicitRoot(sanitized)
-  const $: CheerioAPI = explicitRoot ? load(sanitized) : load(sanitized, null, false)
+  const $: CheerioAPI = explicitRoot
+    ? load(sanitized, { scriptingEnabled: false })
+    : load(sanitized, { scriptingEnabled: false }, false)
   const policy = normalizeSelectorPolicy(opts.selectorPolicy)
   const external = normalizeExternalOptions(opts.external)
 

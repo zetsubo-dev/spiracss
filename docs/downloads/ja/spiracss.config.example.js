@@ -7,10 +7,11 @@
 // - selectorPolicy: バリアント/状態の表現方針
 // - stylelint:   @spiracss/stylelint-plugin の各ルールに渡すオプション
 // - htmlFormat: HTML プレースホルダ付与の出力属性
+// - htmlLint:    HTML 構造 lint の設定
 // - jsxClassBindings: JSX class バインディングの解析ルール
 // - generator:   VS Code 拡張など HTML → SCSS 生成ツール用のオプション
 
-/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; jsxClassBindings: any; generator: any }} */
+/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; htmlLint: any; jsxClassBindings: any; generator: any }} */
 const config = {
   // コメントリンクや stylelint の @rel 検証で使うエイリアス定義（プロジェクトルートからの相対パス推奨 / 絶対パスはプロジェクト内のみ）
   aliasRoots: {
@@ -202,6 +203,14 @@ const config = {
   htmlFormat: {
     // 'class' | 'className'
     classAttribute: 'class'
+  },
+
+  // HTML 構造 lint の設定（HTML CLI / VS Code）
+  htmlLint: {
+    // false にするとクラスなしタグ検査だけを無効化します（デフォルト: true）
+    classlessTagCheck: true,
+    // 組み込みの基本リスト。必要に応じてプロジェクト固有のタグを追加します。
+    classlessTagAllowlist: ['picture', 'source', 'img', 'track', 'map', 'area', 'br', 'wbr']
   },
 
   // JSX class/className の解析ルール（HTML CLI / VS Code）

@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Guide v0.4.3-beta
+# SpiraCSS AI Agent Guide v0.4.4
 
 This document is self-contained (rules + fix guidance live here). For decision-making, assume only this file and spiracss.config.js are authoritative; sample configs below are reference examples.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -9,15 +9,16 @@ Lint messages are actionable fix guidance derived from the current implementatio
 2. Tool output (Stylelint / HTML CLI). If it conflicts with this document, follow the tool output and report doc drift; config still overrides.
 3. This document (rules + workflow; use it to interpret and apply tool output)
 
-Defaults are only a fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
+Defaults are only an explicit fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.4.3-beta, @spiracss/html-cli v0.4.3-beta.
+Version compatibility: @spiracss/stylelint-plugin v0.4.4, @spiracss/html-cli v0.4.4.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
 ## 1. Design Overview (minimum)
 
 Principles:
-- Minimal structure: Block > (Block | Element)
+- HTML component tree: Block > (Block | Element). This describes parent/child relationships in HTML; it does not impose a maximum Block nesting depth. `Block > Block > Block` is allowed in HTML when each parent/child relationship is valid.
+- SCSS selector structure is a separate concern: Stylelint checks how selectors are written inside each SCSS file. The SCSS depth rules in §5 and the Stylelint message keys in §13.1 do not restrict HTML DOM depth.
 - Deterministic naming over subjective judgment
 - Variant vs State separation
 - Tool-verifiable rules first
@@ -45,7 +46,7 @@ Note: Most lint rules do not enforce layer intent (Page vs Component responsibil
 6) Run lint tools; fix code to satisfy config. Change config only if explicitly requested.
 
 If config is missing or a key is absent, mark the decision as tentative and prefer asking before final changes.
-If config is missing, Stylelint-based fixes are blocked (createRules errors). Only HTML tools can proceed with fallback defaults, and results must be treated as provisional.
+If config is missing, Stylelint-based fixes are blocked (createRules errors). HTML CLI lint/generation also stop by default with `CONFIG_MISSING`; use `--allow-provisional` only after explicitly accepting fallback defaults, and treat every such result as provisional.
 
 ## 3. Effective Config Resolution (how settings are derived)
 
@@ -87,7 +88,9 @@ If config is missing, Stylelint-based fixes are blocked (createRules errors). On
 - spiracss-html-lint: uses stylelint.base.naming (fallback: stylelint.class.naming), merged external (base + class), and top-level selectorPolicy.
 - spiracss-html-to-scss (generator): uses generator.globalScssModule, pageEntryAlias, pageEntrySubdir, childScssDir, layoutMixins, rootFileCase; also uses naming + external (base + class) + selectorPolicy for classification.
 - spiracss-html-format: uses htmlFormat.classAttribute ("class" | "className"); data-spiracss-classname is an internal placeholder and is normalized back to class/className (do not author it).
-- If config is missing, HTML tools fall back to defaults. If unreadable, tools exit with error.
+- HTML lint does not enforce a configured or semantic maximum HTML Block nesting depth. It checks class classification and parent/child validity (for example, an Element cannot directly contain a Block); Block > Block relationships may continue to any practical HTML depth. An internal `MAX_DEPTH` safety guard only rejects pathological parser input and is not an SpiraCSS design rule.
+- `MAX_BLOCK_NESTING_DEPTH` and `tooDeepBlockNesting` belong to Stylelint's `spiracss/class-structure` rule. They are SCSS selector-writing checks, not HTML CLI checks.
+- If config is missing, HTML CLI lint/generation exit with `CONFIG_MISSING` unless `--allow-provisional` is passed. If unreadable, tools exit with error.
 - Stylelint does not fall back; it requires a config (path or object) with aliasRoots.
 
 ## 4. Naming and Classification (Block / Element / Modifier / Utility / External)
@@ -151,7 +154,7 @@ Internal capitals create additional words; camel/pascal multi-word names become 
 - `u-` is not automatically External for Stylelint class-structure; add it to external.prefixes if you want to skip naming checks. Placement treats `u-` as external only for placement rules.
 - Recommended: follow the project config (official examples often include external.prefixes: ['u-']). If `u-` is not external, class-structure may report invalid names while placement skips them. Do not change config without approval.
 
-## 5. Structure and Sections
+## 5. SCSS Structure and Sections (Stylelint)
 
 ### 5.1 Section order and placement
 
@@ -166,17 +169,17 @@ Rules:
 - Comment patterns control section detection; requireComment=true makes them mandatory.
 - interactionProps always uses comment patterns to detect the interaction section.
 
-### 5.2 Structure constraints
+### 5.2 SCSS selector structure constraints (`spiracss/class-structure`)
 
-- Allowed: Block > Block, Block > Element.
-- Element cannot contain Block in basic/shared sections (interaction is exempt).
-- Block > Block > Block (3+ levels) is invalid in basic/shared sections (interaction is exempt). There is no config option to allow this; refactor or disable the rule.
-- Element chain depth is limited by elementDepth (interaction is exempt).
-- Element > Element chains should be rare and limited to decorative/semantic grouping; avoid using them for layout. Promote to Block when in doubt.
+- For SCSS selectors, the supported direct child relationships are Block > Block and Block > Element.
+- In basic/shared SCSS, an Element selector cannot contain a Block selector (interaction is exempt).
+- Within a single SCSS file, a Block > Block > Block selector chain (3+ Block levels) is invalid in basic/shared sections (interaction is exempt). This is a Stylelint selector-writing rule; it does not limit HTML DOM nesting. There is no config option to allow this; refactor or disable the Stylelint rule.
+- Within a single SCSS file, Element selector chain depth is limited by elementDepth (interaction is exempt).
+- In SCSS, Element > Element chains should be rare and limited to decorative/semantic grouping; avoid using them for layout. Promote to Block when in doubt.
 - childCombinator=true requires ">" under Block direct children (shared/interaction are exempt).
 - childNesting=true forbids top-level child selectors; nest them inside the Block.
 - Shared section relaxes the ">" requirement but still enforces structure rules.
-- Do not target a grandchild Element from a parent Block when Block > Block exists (interaction is exempt).
+- In SCSS, do not target a grandchild Element from a parent Block when Block > Block exists (interaction is exempt).
 - Root-level selectors must include the root Block (no stray root rules).
 - rootSingle=true requires a single root Block per file; it applies only to top-level selectors that include Spira classes (External-only selectors are excluded from this check).
 
@@ -207,6 +210,7 @@ Rules:
 ## 6. Property Placement (placement)
 
 Property placement enforces the parent/child responsibility split:
+- This is a Stylelint check on CSS properties in SCSS selectors; it does not validate or limit HTML DOM depth.
 - Parent decides layout and placement of children.
 - Child decides its own internal layout in its own file.
 
@@ -428,7 +432,7 @@ HTML CLI:
 - Placeholder insertion skips JSX bindings that include dynamic expressions (conditions, props, interpolations).
 - Template syntax (EJS/Nunjucks/Astro/etc) is skipped for formatting to avoid breaking markup.
 
-Note: Dynamic class usage or template syntax may hide structural violations from HTML CLI. If detected in input, stop and report even if lint can run.
+Note: `DYNAMIC_CLASS_UNRESOLVED` is emitted when a class binding cannot be verified statically. Other template syntax may still hide structural violations from HTML CLI; if present, stop and report even if lint can run.
 
 Stylelint:
 - createRules accepts only a config object with aliasRoots (passing a path throws an error). For path-based loading, use createRulesAsync(path).
@@ -501,9 +505,11 @@ Note: examples use `npx`. npx may auto-install packages; do not run it without e
 
 ### 12.3 HTML CLI options for automation (reference)
 
-- spiracss-html-to-scss: `--json`, `--dry-run`, `--base-dir`, `--ignore-structure-errors`, `--selection`, `--stdin`
-- spiracss-html-lint: `--json`, `--selection`, `--stdin`
+- spiracss-html-to-scss: `--json`, `--dry-run`, `--base-dir`, `--ignore-structure-errors`, `--selection`, `--stdin`, `--allow-provisional`
+- spiracss-html-lint: `--json`, `--selection`, `--stdin`, `--allow-provisional`
 - spiracss-html-format: `--output` (`-o`), `--stdin`
+
+For `--json` output, a missing config returns `ok: false`, `status: "blocked"`, `blocked.code: "CONFIG_MISSING"`, and exit code 1 unless `--allow-provisional` is passed. With explicit provisional execution, the command may continue but returns `ok: false`, `status: "provisional"`, `config.status: "missing"`, `provisional: true`, and exit code 1; never treat that result as final project validation. `--ignore-structure-errors` may continue generation, but returns `ok: false`, `status: "ignored"`, and exit code 1. Each issue includes `path`; element-targeted issues include `targetPath` and source `position` when the source element can be mapped. Classless or dynamic-class issues also include `target.tagName` and `target.siblingIndex` to disambiguate repeated ancestors.
 
 ## 13. Lint-Driven Fix Loop (use error messages)
 
@@ -513,7 +519,7 @@ If a message conflicts with config, re-check the config. If a message conflicts 
 
 Stylelint rules -> config section -> typical fixes:
 - spiracss/class-structure -> stylelint.class
-  - Fix naming, child combinators, depth, modifier placement.
+  - Fix SCSS selector naming, child combinators, selector depth, and modifier placement.
 - spiracss/page-layer -> stylelint.pageLayer
   - Ensure direct child Blocks in page entry SCSS have a `// @components/...` link comment and it resolves to componentsDirs.
 - spiracss/property-placement -> stylelint.placement
@@ -531,6 +537,8 @@ Stylelint rules -> config section -> typical fixes:
 
 HTML lint error codes -> typical fixes:
 - INVALID_BASE_CLASS: base class is invalid (modifier/utility/invalid pattern), external class is first with non-external later, no root element, or root has no class; put a valid Block/Element first and ensure the element exists.
+- CLASSLESS_TAG_NOT_ALLOWED: add a meaningful SpiraCSS Block/Element class to the reported HTML tag; do not add a tag selector in SCSS. Add the tag to htmlLint.classlessTagAllowlist only when it is intentionally structural and should not own styles.
+- DYNAMIC_CLASS_UNRESOLVED: resolve the template/dynamic class binding first; do not treat the tag as classless or add a replacement class based on incomplete static input.
 - MODIFIER_WITHOUT_BASE: add a Block/Element base class first.
 - DISALLOWED_MODIFIER: use data-* (when data mode) or change selectorPolicy.
 - UTILITY_WITHOUT_BASE: add a Block/Element base class first.
@@ -542,12 +550,13 @@ HTML lint error codes -> typical fixes:
 - ELEMENT_PARENT_OF_BLOCK: promote parent Element to Block or refactor.
 - DISALLOWED_VARIANT_ATTRIBUTE / DISALLOWED_STATE_ATTRIBUTE: use modifiers in class mode.
 - INVALID_VARIANT_VALUE / INVALID_STATE_VALUE: fix data value to match valueNaming.
+- MAX_DEPTH_EXCEEDED: the HTML traversal safety limit was exceeded; treat the result as `status: "blocked"` and simplify or split the input. This is not a SpiraCSS HTML-depth rule, and `--ignore-structure-errors` must not override it.
 
 Definition of done:
-- If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If dynamic class bindings or template syntax are present, stop and report (lint results are not sufficient).
+- If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If `DYNAMIC_CLASS_UNRESOLVED` is present, stop and resolve the binding before applying a classless-tag fix. Other template syntax may still require manual review when the parser cannot materialize its contents.
 - Stylelint passes AND @rel path validation passes (when validatePath=true).
 
-### 13.1 Stylelint message keys (v0.4.3-beta)
+### 13.1 Stylelint message keys (v0.4.4)
 
 Stylelint messages include a stable message key and a docs URL with an anchor like `#invalidName`.
 This document lists keys + meanings only; exact message text may change, so rely on tool output.
@@ -555,11 +564,11 @@ If you need deeper guidance, open the linked rule page and anchor.
 
 spiracss/class-structure:
 - invalidName: class name violates naming rules
-- elementChainTooDeep: Element chain exceeds elementDepth
-- elementCannotOwnBlock: Block cannot be nested under an Element (basic/shared)
-- blockDescendantSelector: chained selector under a Block; style only direct children
-- blockTargetsGrandchildElement: parent Block must not style grandchild Elements directly
-- tooDeepBlockNesting: Block > Block > Block nesting is not allowed (basic/shared)
+- elementChainTooDeep: SCSS Element selector chain exceeds elementDepth
+- elementCannotOwnBlock: Block cannot be nested under an Element in SCSS (basic/shared)
+- blockDescendantSelector: chained SCSS selector under a Block; style only direct children
+- blockTargetsGrandchildElement: parent Block must not style grandchild Elements directly in SCSS
+- tooDeepBlockNesting: Block > Block > Block selector nesting within one SCSS file is not allowed (basic/shared); this does not describe HTML depth
 - multipleRootBlocks: multiple root Blocks in one file
 - duplicateRootBlock: same root Block is defined more than once at top level
 - needChild: missing `>` for direct child selector (basic section)
@@ -575,12 +584,12 @@ spiracss/class-structure:
 - rootSelectorNeedNesting: root compound selector (e.g. `.block.external`) must be moved under the root as nested `&...`
 - missingRootBlock: no root Block found
 - fileNameMismatch: root Block name must match filename (rootFile/rootCase)
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
 spiracss/page-layer:
 - missingComponentLink: direct child Block in page entry SCSS lacks a link comment
 - nonComponentLink: link comment does not resolve to componentsDirs
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
 spiracss/property-placement (see §6.3 for fix details):
 - containerInChildBlock: container property on child Block selector → move to child Block file or use CSS variable
@@ -596,8 +605,8 @@ spiracss/property-placement (see §6.3 for fix details):
 - forbiddenAtRoot: `@at-root` only in interaction → move to interaction section or remove
   (external-only roots allowed when all selectors are external classes; tags/ids/attributes/pseudos disqualify)
 - forbiddenExtend: `@extend` forbidden → use mixin, CSS variables, or direct styles
-- selectorResolutionSkipped: selector resolution skipped due to complexity (warning)
-- selectorParseFailed: selector parse failed; some checks skipped (warning)
+- selectorResolutionSkipped: selector resolution skipped due to complexity (Stylelint rule severity; error by default)
+- selectorParseFailed: selector parse failed; some checks skipped (Stylelint rule severity; error by default)
 
 spiracss/interaction-scope:
 - needAtRoot: interaction selectors must be inside `@at-root & { ... }` and start with `&` (when enabled)
@@ -605,7 +614,7 @@ spiracss/interaction-scope:
 - needTail: interaction section must be at the end (when enabled)
 - needRootBlock: interaction section must be directly under the root Block
 - mixedStateVariant: do not mix state selectors with variant selectors in the same selector
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
 spiracss/interaction-properties:
 - needInteraction: transition/animation must be declared inside interaction
@@ -614,7 +623,7 @@ spiracss/interaction-properties:
 - transitionNone: disallow `none` as a transition target
 - invalidTransitionProperty: disallow keywords/custom properties in transition targets
 - initialOutsideInteraction: transitioned property is declared outside interaction
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
 spiracss/keyframes-naming:
 - needRoot: `@keyframes` must be at root level
@@ -623,11 +632,11 @@ spiracss/keyframes-naming:
 - invalidSharedName: shared keyframes name must follow `{prefix}{action}`
 - sharedFileOnly: shared keyframes must be in a configured shared file
 - missingBlock: cannot resolve root Block for keyframes naming (warning when blockWarnMissing=true)
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
 spiracss/pseudo-nesting:
 - needNesting: pseudos must be nested under `&` on the same compound
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
 spiracss/rel-comments:
 - missingParentRel: missing top-of-file link comment to the parent
@@ -636,11 +645,11 @@ spiracss/rel-comments:
 - missingChildRel: missing child link comment inside direct child rule
 - notFound: link target path does not exist (when validatePath=true)
 - childMismatch: child name does not match the `@rel` target
-- selectorParseFailed: selector parse failed; some checks were skipped (warning)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
 
-### 13.2 Autonomy coverage (v0.4.3-beta)
+### 13.2 Autonomy coverage (v0.4.4)
 
-Scope: static HTML classes and selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
+Scope: static HTML classes and SCSS selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
 
 | Category | Lint fixability | Notes |
 | --- | --- | --- |
@@ -653,15 +662,17 @@ Scope: static HTML classes and selectors; unsupported selectors may be skipped w
 | Keyframes | High | Element token is optional; if no match, it is treated as part of the action |
 | Pseudo-nesting | High | Parseable selectors only |
 | @rel comments | Medium-High | Path inference can require project context |
-| HTML lint | High | Skips dynamic bindings/templates |
+| HTML lint | High | Reports unresolved dynamic classes; template contents may require manual review |
 
 Overall estimate (static inputs, parseable selectors): high but not guaranteed; treat warnings as manual review.
 
-### 13.3 Warning handling (selectorParseFailed / selectorResolutionSkipped)
+### 13.3 Selector analysis diagnostics (selectorParseFailed / selectorResolutionSkipped)
 
-- Do not loop endlessly on warnings.
+- `selectorParseFailed` uses the Stylelint rule severity: it is an error by default, but a project may explicitly downgrade that rule to a warning for a known framework syntax.
+- Do not loop endlessly on the same diagnostic.
 - Try: split selector lists, simplify combinators, or refactor complex selectors.
-- If warnings persist after 3 attempts, stop and report with the selectors and context.
+- If the diagnostic persists after 3 attempts, stop and report with the selectors and context.
+- `selectorResolutionSkipped` uses the Stylelint rule severity as well: it is an error by default, but a project may explicitly downgrade that rule to a warning. Treat skipped analysis as reduced coverage.
 - If selectors contain unsupported combinators (descendant space, mid-chain `+`/`~`, `.block + .block`), treat lint pass as provisional and report; unsupported selectors may be skipped without warnings.
 
 ## 14. Examples
@@ -672,8 +683,34 @@ Overall estimate (static inputs, parseable selectors): high but not guaranteed; 
 ```html
 <div class="hero-section">
   <div class="content"></div>
-  <h1 class="title"></h1>
+<h1 class="title"></h1>
 </div>
+```
+
+✅ (deep Block hierarchy is allowed in HTML):
+
+```html
+<div class="page-shell">
+  <section class="hero-section">
+    <article class="card-panel">
+      <h2 class="title"></h2>
+    </article>
+  </section>
+</div>
+```
+
+HTML lint does not reject this depth. The separate `tooDeepBlockNesting` rule applies only to a Block > Block > Block selector chain written within one SCSS file.
+
+The separate SCSS case is:
+
+```scss
+.page-shell {
+  > .hero-section {
+    > .card-panel {
+      // This is the SCSS selector chain checked by tooDeepBlockNesting.
+    }
+  }
+}
 ```
 
 ❌ (Element > Block):
@@ -795,7 +832,7 @@ Child Block file:
 
 ## 15. Fallback Defaults (use only if config is missing)
 
-Note: Stylelint does not fall back to these defaults; use them only for HTML tools or provisional reasoning.
+Note: Stylelint does not fall back to these defaults; use the naming/classification-related values only for HTML tools or provisional reasoning. Stylelint-only options such as childCombinator, childNesting, rootSingle, rootFile, childDir, componentsDirs, elementDepth, and section comments must not be interpreted as HTML structure limits.
 
 - class:
   - blockCase=kebab, blockMaxWords=2, elementCase=kebab, modifierCase=kebab, modifierPrefix="-"

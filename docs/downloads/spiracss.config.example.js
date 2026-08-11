@@ -7,10 +7,11 @@
 // - selectorPolicy: variant/state representation policy
 // - stylelint:   options passed to the Stylelint plugin rules
 // - htmlFormat: output attribute for HTML placeholders
+// - htmlLint:    HTML structure lint rules
 // - jsxClassBindings: JSX class binding parsing rules
 // - generator:  options for HTML-to-SCSS generators (VS Code extension, CLI)
 
-/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; jsxClassBindings: any; generator: any }} */
+/** @type {{ aliasRoots: Record<string, string[]>; selectorPolicy: any; stylelint: any; htmlFormat: any; htmlLint: any; jsxClassBindings: any; generator: any }} */
 const config = {
   // Alias definitions used by Comment Links and Stylelint @rel validation (relative paths from project root recommended / absolute paths allowed only within the project)
   aliasRoots: {
@@ -202,6 +203,14 @@ const config = {
   htmlFormat: {
     // 'class' | 'className'
     classAttribute: 'class'
+  },
+
+  // HTML structure lint rules (HTML CLI / VS Code)
+  htmlLint: {
+    // Set to false to disable only the classless-tag check (default: true)
+    classlessTagCheck: true,
+    // Built-in baseline; append project-specific classless tags when needed.
+    classlessTagAllowlist: ['picture', 'source', 'img', 'track', 'map', 'area', 'br', 'wbr']
   },
 
   // JSX class/className parsing rules (HTML CLI / VS Code)

@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Guide v0.4.4
+# SpiraCSS AI Agent Guide v0.4.5
 
 This document is self-contained (rules + fix guidance live here). For decision-making, assume only this file and spiracss.config.js are authoritative; sample configs below are reference examples.
 Lint messages are actionable fix guidance derived from the current implementation. If they conflict with this document, follow the tool output and report the mismatch; config remains highest priority.
@@ -11,7 +11,7 @@ Lint messages are actionable fix guidance derived from the current implementatio
 
 Defaults are only an explicit fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.4.4, @spiracss/html-cli v0.4.4.
+Version compatibility: @spiracss/stylelint-plugin v0.4.5, @spiracss/html-cli v0.4.5.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
 ## 1. Design Overview (minimum)

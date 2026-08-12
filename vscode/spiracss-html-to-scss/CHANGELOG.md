@@ -2,6 +2,16 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.4.5
+
+### Fixed
+
+- Update the shared `@spiracss/html-cli` dependency to `0.4.5`, including the timeout and custom-component handling fixes.
+
+### Changed
+
+- Align the extension version with the monorepo release.
+
 ## 0.4.4
 
 ### Changed

@@ -7,7 +7,12 @@ import type { AnyNode, Element } from 'domhandler'
 import { lstatSync, readdirSync, realpathSync } from 'fs'
 import * as path from 'path'
 
-import { type JsxClassBindingOptions, replaceJsxClassBindings, stripJsxClassBindings } from './jsx-class-bindings'
+import {
+  type JsxClassBindingOptions,
+  readJsxBracedExpressionEnd,
+  replaceJsxClassBindings,
+  stripJsxClassBindings
+} from './jsx-class-bindings'
 
 /* ---------- type guards ---------- */
 const hasClassAttribute = (node: Element): boolean => {
@@ -215,7 +220,6 @@ const RX = {
   BACKTICK_ATTR: /=`([^`]*)`/g,
   SELF_CLOSING: /<([A-Z][\w.-]*)([^>]*)\/>/g,
   CLASS_CLEAN: /class="([^"]*)"/g,
-  SPREAD: /\{\.\.\.[^}]+\}/g,
   EJS: /<%[\s\S]*?%>/g,
   NUN_VAR: /\{\{[\s\S]*?\}\}/g,
   NUN_TAG: /\{%[\s\S]*?%\}/g,
@@ -235,13 +239,10 @@ const DYNAMIC_CLASS_VALUE_RE = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\
 const DYNAMIC_CLASS_TOKEN_RE = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\{[\s\S]*?\}/g
 const DYNAMIC_UNQUOTED_CLASS_RE =
   /\bclass\s*=\s*(?:\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}|<%[\s\S]*?%>|\$\{[\s\S]*?\}|\{[^}]*\})/gi
-const JSX_SPREAD_RE = /\{\.\.\.[^}]+\}/g
-const JSX_TAG_WITH_SPREAD_RE = /<[A-Za-z][\w.-]*(?:[^<>]|"[^"]*"|'[^']*')*\{\.\.\.[^}]+\}(?:[^<>]|"[^"]*"|'[^']*")*>/g
 const VUE_CLASS_BINDING_RE = /\s+(?::class|v-bind:class)\s*=\s*("[^"]*"|'[^']*')/gi
 
 /** Patterns removed at the attribute level. */
 const REMOVE_PATTERNS: RegExp[] = [
-  RX.SPREAD,
   RX.EJS,
   RX.NUN_VAR,
   RX.NUN_TAG,
@@ -733,19 +734,116 @@ function preserveDynamicClassAttributes(html: string): string {
   })
 }
 
+type JsxSpreadRange = {
+  start: number
+  end: number
+}
+
+function readQuotedAttributeEnd(html: string, start: number): number | null {
+  const quote = html[start]
+  if (quote !== '"' && quote !== "'") return null
+
+  let i = start + 1
+  while (i < html.length) {
+    if (html[i] === quote) return i + 1
+    i += 1
+  }
+  return null
+}
+
+function isJsxSpreadExpression(html: string, start: number, end: number): boolean {
+  return /^\s*\.\.\./.test(html.slice(start + 1, end - 1))
+}
+
+function removeRanges(input: string, ranges: JsxSpreadRange[]): string {
+  const parts: string[] = []
+  let cursor = 0
+  for (const range of ranges) {
+    parts.push(input.slice(cursor, range.start))
+    cursor = range.end
+  }
+  parts.push(input.slice(cursor))
+  return parts.join('')
+}
+
+/**
+ * Remove JSX spread attributes from opening tags while preserving dynamic-class markers.
+ * This is intentionally a linear scanner: a regex cannot safely parse nested JSX expressions.
+ */
 function preserveDynamicClassBindings(html: string): string {
-  return html
-    .replace(JSX_TAG_WITH_SPREAD_RE, (tag) => {
-      const spreadMatches = [...tag.matchAll(JSX_SPREAD_RE)]
-      if (spreadMatches.length === 0) return tag
-      const lastSpreadIndex = spreadMatches[spreadMatches.length - 1].index ?? -1
-      const trailing = tag.slice(lastSpreadIndex + spreadMatches[spreadMatches.length - 1][0].length)
+  const output: string[] = []
+  let outputCursor = 0
+  let cursor = 0
+
+  while (cursor < html.length) {
+    const tagStart = html.indexOf('<', cursor)
+    if (tagStart < 0) break
+    if (!/[A-Za-z]/.test(html[tagStart + 1] ?? '')) {
+      cursor = tagStart + 1
+      continue
+    }
+
+    let i = tagStart + 1
+    while (i < html.length && /[A-Za-z0-9_.:-]/.test(html[i])) i += 1
+
+    const spreads: JsxSpreadRange[] = []
+    let tagEnd: number | null = null
+    let validTag = true
+    while (i < html.length) {
+      const ch = html[i]
+      if (ch === '"' || ch === "'") {
+        const end = readQuotedAttributeEnd(html, i)
+        if (end === null) {
+          validTag = false
+          break
+        }
+        i = end
+        continue
+      }
+      if (ch === '{') {
+        const end = readJsxBracedExpressionEnd(html, i)
+        if (end === null) {
+          validTag = false
+          break
+        }
+        if (isJsxSpreadExpression(html, i, end)) spreads.push({ start: i, end })
+        i = end
+        continue
+      }
+      if (ch === '>') {
+        tagEnd = i
+        break
+      }
+      if (ch === '<') {
+        validTag = false
+        break
+      }
+      i += 1
+    }
+
+    if (validTag && tagEnd !== null && spreads.length > 0) {
+      const lastSpread = spreads[spreads.length - 1]
+      const trailing = html.slice(lastSpread.end, tagEnd + 1)
       const hasStaticClassAfterSpread = /\b(?:class|className)\s*=\s*(?:"[^"]*"|'[^']*'|\{`[^`]*`\})/i.test(trailing)
+      const withoutSpread = removeRanges(
+        html.slice(tagStart, tagEnd + 1),
+        spreads.map((range) => ({
+          start: range.start - tagStart,
+          end: range.end - tagStart
+        }))
+      )
       const marker = hasStaticClassAfterSpread ? '' : ' data-spiracss-dynamic-class="true"'
-      const withoutSpread = tag.replace(JSX_SPREAD_RE, '')
-      return marker ? withoutSpread.replace(/\s*(\/?>)$/, `${marker}$1`) : withoutSpread
-    })
-    .replace(DYNAMIC_UNQUOTED_CLASS_RE, 'data-spiracss-dynamic-class="true"')
+      const value = marker ? withoutSpread.replace(/\s*(\/?>)$/, `${marker}$1`) : withoutSpread
+      output.push(html.slice(outputCursor, tagStart), value)
+      outputCursor = tagEnd + 1
+    }
+
+    cursor = tagEnd === null ? tagStart + 1 : tagEnd + 1
+  }
+
+  if (output.length === 0) return html.replace(DYNAMIC_UNQUOTED_CLASS_RE, 'data-spiracss-dynamic-class="true"')
+  output.push(html.slice(outputCursor))
+  return output.join('').replace(DYNAMIC_UNQUOTED_CLASS_RE, 'data-spiracss-dynamic-class="true"')
 }
 
 function preserveVueClassBindings(html: string): string {
@@ -1398,24 +1496,6 @@ function findDepthExceeded($: CheerioAPI, roots: Element[]): DepthExceeded | und
   return undefined
 }
 
-function findTargetPath($: CheerioAPI, roots: Element[], target: Element): HtmlTargetPath | undefined {
-  const visit = (elem: Element, targetPath: HtmlTargetPath): HtmlTargetPath | undefined => {
-    if (elem === target) return targetPath
-    if (targetPath.length > MAX_DEPTH) return undefined
-    for (const [index, child] of logicalChildElements($, elem).entries()) {
-      const result = visit(child, [...targetPath, targetPathSegment(child, index + 1)])
-      if (result) return result
-    }
-    return undefined
-  }
-
-  for (const [index, root] of roots.entries()) {
-    const result = visit(root, [targetPathSegment(root, index + 1)])
-    if (result) return result
-  }
-  return undefined
-}
-
 function targetPathSegment(elem: Element, siblingIndex: number): HtmlTargetPath[number] {
   const className = firstClassToken(elem)
   return {
@@ -1425,17 +1505,38 @@ function targetPathSegment(elem: Element, siblingIndex: number): HtmlTargetPath[
   }
 }
 
-function collectClassedDescendantRoots($: CheerioAPI, roots: Element[]): Element[] {
-  const result: Element[] = []
-  const visit = (elem: Element, depth: number): void => {
-    if (depth > MAX_DEPTH) return
-    if (isElement(elem)) {
-      result.push(elem)
-      return
+type ClassedRoot = {
+  element: Element
+  targetPath: HtmlTargetPath
+}
+
+function collectClassedDescendantRoots($: CheerioAPI, roots: Element[]): ClassedRoot[] {
+  const result: ClassedRoot[] = []
+  const stack = roots
+    .map((root, index) => ({
+      element: root,
+      depth: 0,
+      targetPath: [targetPathSegment(root, index + 1)]
+    }))
+    .reverse()
+
+  while (stack.length > 0) {
+    const current = stack.pop()!
+    if (current.depth > MAX_DEPTH) continue
+    if (isElement(current.element)) {
+      result.push({ element: current.element, targetPath: current.targetPath })
+      continue
     }
-    logicalChildElements($, elem).forEach((child) => visit(child, depth + 1))
+    const children = logicalChildElements($, current.element)
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      const child = children[index]
+      stack.push({
+        element: child,
+        depth: current.depth + 1,
+        targetPath: [...current.targetPath, targetPathSegment(child, index + 1)]
+      })
+    }
   }
-  roots.forEach((root) => visit(root, 0))
   return result
 }
 
@@ -1967,8 +2068,49 @@ type SourceIndexedElement = Element & {
 
 type SourceLookup = {
   $: CheerioAPI
-  roots: Element[]
+  elementsByPath: Map<string, SourceIndexedElement>
   wrapperLength: number
+  lineStarts: number[]
+}
+
+function targetPathKey(targetPath: NonNullable<HtmlLintIssue['targetPath']>): string {
+  return targetPath
+    .map(({ tagName, siblingIndex, className }) =>
+      JSON.stringify([tagName.toLowerCase(), siblingIndex, className ?? ''])
+    )
+    .join('\u0000')
+}
+
+function buildSourceElementIndex($: CheerioAPI, roots: Element[]): Map<string, SourceIndexedElement> {
+  const elementsByPath = new Map<string, SourceIndexedElement>()
+  const stack = roots.map((root, index) => ({
+    element: root,
+    depth: 1,
+    pathKey: targetPathKey([targetPathSegment(root, index + 1)])
+  }))
+  while (stack.length > 0) {
+    const current = stack.pop()!
+    elementsByPath.set(current.pathKey, current.element as SourceIndexedElement)
+    if (current.depth >= MAX_DIAGNOSTIC_PATH_DEPTH) continue
+    const children = logicalChildElements($, current.element)
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      const child = children[index]
+      stack.push({
+        element: child,
+        depth: current.depth + 1,
+        pathKey: `${current.pathKey}\u0000${targetPathKey([targetPathSegment(child, index + 1)])}`
+      })
+    }
+  }
+  return elementsByPath
+}
+
+function buildLineStarts(sourceHtml: string): number[] {
+  const lineStarts = [0]
+  for (let index = 0; index < sourceHtml.length; index += 1) {
+    if (sourceHtml[index] === '\n') lineStarts.push(index + 1)
+  }
+  return lineStarts
 }
 
 function createSourceLookup(sourceHtml: string, isRootMode: boolean): SourceLookup {
@@ -1985,50 +2127,41 @@ function createSourceLookup(sourceHtml: string, isRootMode: boolean): SourceLook
   const roots = isRootMode
     ? [findExplicitRoot($, explicitRoot) ?? findFirstElement($)].filter((root): root is Element => Boolean(root))
     : $('wrapper').children().get().filter(isTagElement)
-  return { $, roots, wrapperLength: isRootMode ? 0 : '<wrapper>'.length }
-}
-
-function findSourceElementByPath(
-  sourceLookup: SourceLookup,
-  targetPath: NonNullable<HtmlLintIssue['targetPath']>
-): SourceIndexedElement | undefined {
-  if (targetPath.length === 0) return undefined
-  const { $, roots: initialRoots } = sourceLookup
-
-  let current: Element | undefined
-  for (const target of targetPath) {
-    const candidates = current ? logicalChildElements($, current) : initialRoots
-    current = candidates.find((candidate, index) => {
-      if (index + 1 !== target.siblingIndex) return false
-      if (candidate.tagName.toLowerCase() !== target.tagName.toLowerCase()) return false
-      if (target.className && firstClassToken(candidate) !== target.className) return false
-      return true
-    })
-    if (!current) return undefined
+  return {
+    $,
+    elementsByPath: buildSourceElementIndex($, roots),
+    wrapperLength: isRootMode ? 0 : '<wrapper>'.length,
+    lineStarts: buildLineStarts(sourceHtml)
   }
-  return current as SourceIndexedElement | undefined
 }
 
 function sourcePositionForRange(
-  sourceHtml: string,
+  lineStarts: number[],
+  sourceLength: number,
   offset: number,
   endOffset: number
 ): NonNullable<HtmlLintIssue['position']> {
-  const boundedOffset = Math.max(0, Math.min(offset, sourceHtml.length))
-  const boundedEndOffset = Math.max(boundedOffset, Math.min(endOffset, sourceHtml.length))
-  const before = sourceHtml.slice(0, boundedOffset)
-  const beforeEnd = sourceHtml.slice(0, boundedEndOffset)
-  const line = before.split('\n').length
-  const endLine = beforeEnd.split('\n').length
-  const lastLineBreak = before.lastIndexOf('\n')
-  const endLastLineBreak = beforeEnd.lastIndexOf('\n')
+  const boundedOffset = Math.max(0, Math.min(offset, sourceLength))
+  const boundedEndOffset = Math.max(boundedOffset, Math.min(endOffset, sourceLength))
+  const findLine = (position: number): number => {
+    let low = 0
+    let high = lineStarts.length
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2)
+      if (lineStarts[middle] <= position) low = middle + 1
+      else high = middle
+    }
+    return Math.max(0, low - 1)
+  }
+  const lineIndex = findLine(boundedOffset)
+  const endLineIndex = findLine(boundedEndOffset)
   return {
     offset: boundedOffset,
-    line,
-    column: boundedOffset - lastLineBreak,
+    line: lineIndex + 1,
+    column: boundedOffset - lineStarts[lineIndex] + 1,
     endOffset: boundedEndOffset,
-    endLine,
-    endColumn: boundedEndOffset - endLastLineBreak
+    endLine: endLineIndex + 1,
+    endColumn: boundedEndOffset - lineStarts[endLineIndex] + 1
   }
 }
 
@@ -2039,12 +2172,16 @@ function attachSourcePositions(issues: HtmlLintIssue[], sourceHtml: string, isRo
 
   issues.forEach((issue) => {
     if (!sourceLookup || !issue.targetPath || issue.targetPath.length === 0) return
-    const sourceElement = findSourceElementByPath(sourceLookup, issue.targetPath)
+    const sourceElement = sourceLookup.elementsByPath.get(targetPathKey(issue.targetPath))
     const startIndex = sourceElement?.startIndex
     if (typeof startIndex !== 'number') return
     const endIndex = sourceElement?.sourceCodeLocation?.startTag?.endOffset ?? sourceElement?.endIndex ?? startIndex + 1
-    const wrapperLength = isRootMode ? 0 : '<wrapper>'.length
-    issue.position = sourcePositionForRange(sourceHtml, startIndex - wrapperLength, endIndex - wrapperLength)
+    issue.position = sourcePositionForRange(
+      sourceLookup.lineStarts,
+      sourceHtml.length,
+      startIndex - sourceLookup.wrapperLength,
+      endIndex - sourceLookup.wrapperLength
+    )
   })
 }
 
@@ -2087,7 +2224,7 @@ export function lintHtmlStructure(
       path: []
     })
   }
-  let roots: Element[]
+  let roots: ClassedRoot[]
   let classlessRoots: Element[]
   if (isRootMode) {
     if (!explicitRoot) {
@@ -2128,7 +2265,7 @@ export function lintHtmlStructure(
       })
       const descendantRoots = collectClassedDescendantRoots($, [node])
       for (const rootEl of descendantRoots) {
-        const tree = buildTreeInternal($, rootEl, naming, policy, external, 0, findTargetPath($, [node], rootEl))
+        const tree = buildTreeInternal($, rootEl.element, naming, policy, external, 0, rootEl.targetPath)
         if (!tree) continue
         lintNodeStructure(tree, null, null, naming, policy, external, [], false, false, issues)
       }
@@ -2136,7 +2273,7 @@ export function lintHtmlStructure(
       attachSourcePositions(issues, rawHtml, isRootMode)
       return issues
     }
-    roots = [node]
+    roots = [{ element: node, targetPath: nodeTargetPath }]
   } else {
     classlessRoots = $('wrapper').children().get().filter(isTagElement)
     const exceededDepth = findDepthExceeded($, classlessRoots)
@@ -2158,7 +2295,7 @@ export function lintHtmlStructure(
   }
 
   for (const rootEl of roots) {
-    const tree = buildTreeInternal($, rootEl, naming, policy, external, 0, findTargetPath($, classlessRoots, rootEl))
+    const tree = buildTreeInternal($, rootEl.element, naming, policy, external, 0, rootEl.targetPath)
     if (!tree) continue
     lintNodeStructure(tree, null, null, naming, policy, external, [], true, isRootMode, issues)
   }

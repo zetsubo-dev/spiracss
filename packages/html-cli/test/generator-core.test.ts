@@ -63,6 +63,54 @@ describe('generator-core', () => {
     assert.ok(!sanitized.includes('<%'))
   })
 
+  it('sanitizes arbitrary custom tags without backtracking on quoted attributes', () => {
+    const customTags = ['x-media', 'media-card', 'Ui.Image']
+    const webc = Array.from({ length: 12 }, (_, index) => {
+      const tag = customTags[index % customTags.length]
+      return `
+      <${tag}
+        src="@pages/index/section/img/image-${index}.png"
+        alt=""
+        loading="eager"
+        data-path="C:\\"
+      ></${tag}>
+    `
+    }).join('')
+    const sanitized = sanitizeHtml(`<section class="section">${webc}</section>`)
+    assert.ok(sanitized.includes('section'))
+    for (const tag of customTags) {
+      assert.ok(sanitized.includes(`<${tag}`), `Expected <${tag}> to remain intact.`)
+      assert.ok(sanitized.includes(`</${tag}>`), `Expected </${tag}> to remain intact.`)
+    }
+  })
+
+  it('handles nested JSX spread expressions without corrupting opening tags', () => {
+    const nestedObject = sanitizeHtml('<Widget {...{ className: "title" }}></Widget>')
+    const nestedCall = sanitizeHtml('<media-card {...makeProps({ className: "title" })}></media-card>')
+    const arrowExpression = sanitizeHtml('<Ui.Image {...items.map((item) => item)}></Ui.Image>')
+    const regexExpression = sanitizeHtml('<Widget {...makeProps({ pattern: /}/ })}></Widget>')
+    const keywordRegexExpression = sanitizeHtml('<Widget {...{ value: void /}/ }}></Widget>')
+    const divisionExpression = sanitizeHtml(
+      `<Widget {...{ value: ${Array.from({ length: 4000 }, () => 'a').join(' / ')} }}></Widget>`
+    )
+
+    for (const sanitized of [
+      nestedObject,
+      nestedCall,
+      arrowExpression,
+      regexExpression,
+      keywordRegexExpression,
+      divisionExpression
+    ]) {
+      assert.ok(sanitized.includes('data-spiracss-dynamic-class="true"'))
+      assert.ok(!/[})]\s*(?:data-spiracss-dynamic-class|>)/.test(sanitized))
+    }
+
+    const staticAfterSpread = sanitizeHtml('<media-card {...{ className: "dynamic" }} className="title"></media-card>')
+    assert.ok(staticAfterSpread.includes('class="title"'))
+    assert.ok(!staticAfterSpread.includes('data-spiracss-dynamic-class'))
+  })
+
   it('sanitizes JSX template literals (static classes remain)', async () => {
     const jsx = await fsp.readFile(path.join(fixturesDir, 'jsx/sample-box.jsx'), 'utf8')
     const sanitized = sanitizeHtml(jsx)
@@ -547,6 +595,46 @@ describe('generator-core', () => {
       endLine: 1,
       endColumn: 30
     })
+  })
+
+  it('attaches positions for many classless custom tags without quadratic rescanning', () => {
+    const itemCount = 1000
+    const html = `<section class="hero-section">\n${Array.from(
+      { length: itemCount },
+      (_, index) => `  <x-item-${index}></x-item-${index}>\n`
+    ).join('')}</section>`
+    const startedAt = Date.now()
+    const issues = lintHtmlStructure(html, true, { blockCase: 'kebab' }).filter(
+      (issue) => issue.code === 'CLASSLESS_TAG_NOT_ALLOWED'
+    )
+    const elapsedMs = Date.now() - startedAt
+
+    assert.strictEqual(issues.length, itemCount)
+    assert.strictEqual(issues[0].position?.line, 2)
+    assert.strictEqual(issues[itemCount - 1].position?.line, itemCount + 1)
+    assert.ok(elapsedMs < 2000, `Expected linear source-position lookup, took ${elapsedMs}ms.`)
+  })
+
+  it('collects many classed descendants in one traversal for selection linting', () => {
+    const itemCount = 1000
+    const html = `<section>${Array.from(
+      { length: itemCount },
+      (_, index) => `<article class="card-${index}"></article>`
+    ).join('')}</section>`
+    const startedAt = Date.now()
+    const issues = lintHtmlStructure(html, false, { blockCase: 'kebab' })
+    const elapsedMs = Date.now() - startedAt
+
+    assert.ok(issues.length > 0)
+    assert.ok(elapsedMs < 2000, `Expected one-pass target-path collection, took ${elapsedMs}ms.`)
+
+    const orderedIssues = lintHtmlStructure('<div class="u-first"></div><div class="u-second"></div>', false, {
+      blockCase: 'kebab'
+    }).filter((issue) => issue.code === 'UTILITY_WITHOUT_BASE')
+    assert.deepStrictEqual(
+      orderedIssues.map((issue) => issue.baseClass),
+      ['u-first', 'u-second']
+    )
   })
 
   it('HTML lint includes ancestor identity for repeated class paths', () => {

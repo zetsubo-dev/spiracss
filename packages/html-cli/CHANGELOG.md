@@ -2,6 +2,13 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.5
+
+### Fixed
+
+- Prevent HTML lint and HTML-to-SCSS from timing out on quoted attributes and arbitrary custom WebC components.
+- Preserve nested JSX spread expressions without corrupting opening tags, and keep source diagnostics efficient for large inputs.
+
 ## 0.4.4
 
 ### Added

@@ -55,6 +55,7 @@ const WORD_CHAR_RE = /[A-Za-z0-9_$-]/
 const IDENT_CHAR_RE = /[A-Za-z0-9_$]/
 const IDENT_START_RE = /[A-Za-z_$]/
 const DISALLOWED_MEMBER_BASES = new Set(['props', 'state', 'context', 'ctx', 'this'])
+const REGEX_PREFIX_KEYWORDS = new Set(['return', 'throw', 'case', 'typeof', 'void', 'delete', 'await', 'yield'])
 
 const isWhitespace = (ch: string): boolean => /\s/.test(ch)
 const isWordChar = (ch: string): boolean => ch !== '' && WORD_CHAR_RE.test(ch)
@@ -172,6 +173,56 @@ function skipBlockComment(input: string, start: number): number {
   return input.length
 }
 
+function canStartRegexLiteral(input: string, start: number): boolean {
+  let i = start - 1
+  while (i >= 0 && isWhitespace(input[i])) i -= 1
+  if (i < 0) return true
+  if (/[([{:;,!?=+\-*%&|^~<>]/.test(input[i])) return true
+  const keywordEnd = i
+  for (const keyword of REGEX_PREFIX_KEYWORDS) {
+    const keywordStart = keywordEnd - keyword.length + 1
+    if (
+      keywordStart >= 0 &&
+      input.slice(keywordStart, keywordEnd + 1) === keyword &&
+      (keywordStart === 0 || (!isIdentifierChar(input[keywordStart - 1]) && input[keywordStart - 1] !== '.'))
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+function skipRegexLiteral(input: string, start: number): number | null {
+  if (!canStartRegexLiteral(input, start)) return null
+  let i = start + 1
+  let inCharacterClass = false
+  while (i < input.length) {
+    const ch = input[i]
+    if (ch === '\\') {
+      i += 2
+      continue
+    }
+    if (ch === '\n' || ch === '\r') return null
+    if (ch === '[') {
+      inCharacterClass = true
+      i += 1
+      continue
+    }
+    if (ch === ']') {
+      inCharacterClass = false
+      i += 1
+      continue
+    }
+    if (ch === '/' && !inCharacterClass) {
+      i += 1
+      while (/[A-Za-z]/.test(input[i] ?? '')) i += 1
+      return i
+    }
+    i += 1
+  }
+  return null
+}
+
 function skipTemplateLiteral(input: string, start: number): TemplateLiteralResult | null {
   let i = start + 1
   while (i < input.length) {
@@ -220,6 +271,13 @@ function readBracedExpression(input: string, start: number): BracedExpressionRes
       i = skipBlockComment(input, i)
       continue
     }
+    if (ch === '/') {
+      const regexEnd = skipRegexLiteral(input, i)
+      if (regexEnd !== null) {
+        i = regexEnd
+        continue
+      }
+    }
     if (ch === '{') {
       depth += 1
       i += 1
@@ -236,6 +294,11 @@ function readBracedExpression(input: string, start: number): BracedExpressionRes
     i += 1
   }
   return null
+}
+
+/** Return the end offset of a JSX braced expression, or null when it is incomplete. */
+export function readJsxBracedExpressionEnd(input: string, start: number): number | null {
+  return readBracedExpression(input, start)?.endIndex ?? null
 }
 
 function readBracketStringLiteral(input: string, start: number): StringLiteralResult | null {

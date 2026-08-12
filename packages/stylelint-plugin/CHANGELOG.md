@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.4.5
+
+### Changed
+
+- Align the package version with the monorepo release.
+
 ## 0.4.4
 
 ### Changed

@@ -3,6 +3,7 @@
 .vscode-test
 .claude
 .serena
+.cache/**
 src
 test
 fixtures
@@ -26,6 +27,7 @@ DEV.md
 .README.draft.md
 
 # Build artifacts
+dist/test/**
 **/*.map
 **/*.ts
 

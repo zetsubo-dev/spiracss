@@ -1,6 +1,6 @@
 {
   "name": "@spiracss/stylelint-plugin",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "type": "module",
   "description": "Stylelint plugin enforcing SpiraCSS conventions for class structure, property placement, interaction scope/properties, keyframes naming, pseudo nesting, page layer, and rel-comment links.",
   "homepage": "https://spiracss.jp",
@@ -57,6 +57,7 @@
     "format:check": "oxfmt --check ."
   },
   "dependencies": {
+    "postcss": "^8.4.49",
     "postcss-selector-parser": "^7.1.1",
     "postcss-value-parser": "^4.2.0",
     "safe-regex": "^2.1.1"
@@ -71,7 +72,6 @@
     "mocha": "^11.7.5",
     "oxfmt": "^0.50.0",
     "oxlint": "^1.65.0",
-    "postcss": "^8.4.49",
     "postcss-scss": "^4.0.9",
     "stylelint": "^17.0.0",
     "ts-node": "^10.9.2",

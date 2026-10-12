@@ -150,6 +150,27 @@ export const messages = createRuleMessages(ruleName, {
       '&...'
     )}.`,
   missingRootBlock: () => 'No root Block found. Define a top-level Block selector that matches the naming rules.',
+  rootScopeRequired: (blocks: string[], configuredStyle: string) =>
+    `Component root selector ${formatCode(blocks.map((block) => `.${block}`).join(', '))} uses class syntax, but configured ${formatCode(
+      'scssRootStyle'
+    )} is ${formatCode(configuredStyle)} and requires an ${formatCode('@scope')} root ` +
+    `(from ${formatCode('generator.scssRootStyle')} or its ${formatCode('stylelint.class.scssRootStyle')} override). ` +
+    `Replace this component root with ${formatCode(`@scope (${blocks.map((block) => `.${block}`).join(', ')}) { :scope { ... } }`)} ` +
+    `(direct ${formatCode(`@scope (${blocks.map((block) => `.${block}`).join(', ')}) { ... }`)} is also accepted). ` +
+    `Keep ${formatCode('@use')}/${formatCode('@forward')} and page-entry link comments outside the scope; ` +
+    `keep ${formatCode('meta.load-css()')} and Block sections inside its root body. ` +
+    `Keep meta-loaded child Block files in class form; ${formatCode('@scope')} is forbidden in configured child Block directories.`,
+  childScopeNotAllowed: (file: string, childDir: string, block: string) =>
+    `Child Block file ${formatCode(file)} under configured ${formatCode('childDir')} (${formatCode(childDir)}) must use class syntax, not ${formatCode('@scope')}. ` +
+    `Sass ${formatCode('meta.load-css()')} can prepend the loading parent's selector and break child scope references. ` +
+    `Remove the scope wrapper and write ${formatCode(`.${block} { ... }`)}; replace child-root ${formatCode(':scope')} references with the Block selector or nested ${formatCode('&')}. ` +
+    `If this is a thematic wrapper, preserve its condition during manual migration; do not simply discard it. ` +
+    `This applies to child and descendant files for every ${formatCode('scssRootStyle')} setting, including an omitted setting. Keep the component root's scope and loading position unchanged. Do not auto-fix: specificity may change.`,
+  scopeOwnerAmbiguous: (params: string) =>
+    `Cannot determine Block ownership of ${formatCode(`@scope ${params}`)} around another Block scope. ` +
+    `Use a filename matching the component Block (or its component directory with ${formatCode('rootFile: false')}), ` +
+    `or declare a thematic wrapper's class in ${formatCode('external.classes')} / ${formatCode('external.prefixes')}. ` +
+    `Disabling filename checks must not disable Block ownership checks.`,
   selectorParseFailed: (...args: RuleMessageArgs) => formatSelectorParseFailed(args[0]),
   fileNameMismatch: (block: string, expectedFiles: string[], actualFile: string) =>
     `Root Block ${formatCode(`.${block}`)} must be defined in ${formatList(expectedFiles, {

@@ -9,6 +9,7 @@ import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
+import { isAmbiguousScope, isScopeOwnerRule } from '../utils/scope-context'
 import { getCommentText, isRuleInsideAtRule, safeTestPattern } from '../utils/section'
 import { createSelectorCacheWithErrorFlag, type SelectorParserCache } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
@@ -27,6 +28,7 @@ import {
   processSelector
 } from './spiracss-class-structure.selectors'
 import type { Kind } from './spiracss-class-structure.types'
+import { hasMetaLoadCss } from './spiracss-rel-comments.root'
 import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
 
 export { ruleName }
@@ -48,6 +50,7 @@ const optionSchema = {
   rootSingle: [isBoolean],
   rootFile: [isBoolean],
   rootCase: [isString],
+  scssRootStyle: ['class', 'scope', 'scope-explicit'],
   childFileCase: [isString],
   childDir: [isString],
   componentsDirs: [isString],
@@ -403,20 +406,83 @@ const rule = createRule(
         })
       }
 
-      if (options.root.file && rootBlockName && fileBase) {
-        const isComponentsLayer = options.paths.components.some((dir) => {
+      root.walkAtRules((scope) => {
+        if (isAmbiguousScope(scope)) {
+          stylelint.utils.report({ ruleName, result, node: scope, message: messages.scopeOwnerAmbiguous(scope.params) })
+        }
+      })
+
+      if (filePath) {
+        const childDirSegments = path.normalize(options.paths.childDir).split(path.sep).filter(Boolean)
+        let componentPathEnd = -1
+        const componentMatches: Array<{ start: number; end: number }> = []
+        options.paths.components.forEach((dir) => {
           const normalizedDir = path.normalize(dir)
           const dirSegments = normalizedDir.split(path.sep).filter(Boolean)
-          if (dirSegments.length === 0) return false
-          if (dirSegments.length === 1) return pathSegments.includes(dirSegments[0])
-          return hasSegmentSequence(pathSegments, dirSegments)
+          if (dirSegments.length === 0) return
+          for (let start = 0; start <= pathSegments.length - dirSegments.length; start++) {
+            if (dirSegments.every((segment, index) => pathSegments[start + index] === segment)) {
+              componentMatches.push({ start, end: start + dirSegments.length })
+            }
+          }
         })
+        componentMatches.sort((a, b) => a.start - b.start || a.end - b.end)
+        for (const match of componentMatches) {
+          // Component-directory names inside a child subtree do not establish a new root.
+          let insideChildDir = false
+          if (componentPathEnd >= 0 && childDirSegments.length > 0) {
+            for (let childStart = componentPathEnd; childStart < match.end; childStart++) {
+              if (childDirSegments.every((segment, index) => pathSegments[childStart + index] === segment)) {
+                insideChildDir = true
+                break
+              }
+            }
+          }
+          if (!insideChildDir) componentPathEnd = Math.max(componentPathEnd, match.end)
+        }
+        const isComponentsLayer = componentPathEnd >= 0
         const assetsIndex = pathSegments.indexOf('assets')
-        const isAssetsCss = assetsIndex >= 0 && pathSegments[assetsIndex + 1] === 'css'
+        const isAssetsCss =
+          assetsIndex >= 0 && pathSegments[assetsIndex + 1] === 'css' && componentPathEnd <= assetsIndex + 1
         const isExcludedFile = fileName === 'index.scss' || fileName.startsWith('_')
-        const isChildScss = pathSegments.includes(options.paths.childDir)
+        const childPathSegments = isComponentsLayer
+          ? pathSegments.slice(componentPathEnd, -1)
+          : pathSegments.slice(-childDirSegments.length - 1, -1)
+        const isChildScss = hasSegmentSequence(childPathSegments, childDirSegments)
 
-        if (isComponentsLayer && !isAssetsCss && !isExcludedFile) {
+        if (isChildScss) {
+          root.walkAtRules((scope) => {
+            if (scope.name.toLowerCase() !== 'scope') return
+            stylelint.utils.report({
+              ruleName,
+              result,
+              node: scope,
+              message: messages.childScopeNotAllowed(fileName, options.paths.childDir, rootBlockName || fileBase)
+            })
+          })
+        }
+
+        const requiresScope = options.root.style === 'scope' || options.root.style === 'scope-explicit'
+        const isComponentRoot =
+          !isChildScss &&
+          !isAssetsCss &&
+          !isExcludedFile &&
+          (isComponentsLayer || hasMetaLoadCss(root, options.paths.childDir))
+        if (requiresScope && isComponentRoot) {
+          topLevelRules.forEach((rule) => {
+            if (!rootBlockRules.has(rule) || isScopeOwnerRule(rule)) return
+            const blockNames = collectRootBlockNames(parseStrippedSelectors(rule.selector), options, patterns)
+            if (blockNames.length === 0) return
+            stylelint.utils.report({
+              ruleName,
+              result,
+              node: rule,
+              message: messages.rootScopeRequired(blockNames, options.root.style!)
+            })
+          })
+        }
+
+        if (options.root.file && rootBlockName && fileBase && isComponentsLayer && !isAssetsCss && !isExcludedFile) {
           const expectedBase = isChildScss
             ? formatFileBase(rootBlockName, options.paths.childFileCase)
             : formatFileBase(rootBlockName, options.root.case)

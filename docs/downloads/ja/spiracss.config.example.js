@@ -221,6 +221,10 @@ const config = {
 
   // HTML → SCSS 生成ツール（VS Code 拡張 / CLI）用の設定
   generator: {
+    // コンポーネントルート書式：scope-explicit（既定、:scope で包む） / scope（直接記述） / class（従来形式）
+    scssRootStyle: 'scope-explicit',
+    // コンポーネントルート SCSS だけに適用。meta で読み込む Block と選択範囲の生成はクラス形式。
+    // 直接形式も選択可能。lint では :scope のラッパーを必須にしません。
     // 生成 SCSS に共通で挿入する `@use "<path>" as *;` のパス（デフォルト: '@styles/partials/global'）
     globalScssModule: '@styles/partials/global',
     // ページエントリコメントのエイリアス（デフォルト: 'assets'）

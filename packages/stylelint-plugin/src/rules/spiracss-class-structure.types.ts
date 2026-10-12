@@ -49,6 +49,7 @@ export type RootOptions = {
   single: boolean
   file: boolean
   case: FileNameCase
+  style?: 'class' | 'scope' | 'scope-explicit'
 }
 
 export type PathsOptions = {

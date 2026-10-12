@@ -100,6 +100,32 @@ Note: If your project is CommonJS (no `"type": "module"` in `package.json`), use
 - Placeholder formatting skips JSX bindings that include dynamic expressions (e.g. conditions, props, function calls, non-static `${}` segments). When formatting JSX/TSX, bindings are normalized to plain class strings for placeholders; treat the output as scaffolding (not CSS Modules-safe).
 - The conversion spec is shared with the VS Code HTML to SCSS extension.
 
+## SCSS root style
+
+### Migration from v0.4.x
+
+Version 0.5.0 changes the component root default to `scope-explicit`. To keep an existing project's SCSS and cascade unchanged, set `generator.scssRootStyle: 'class'` before upgrading. This also preserves class-form component roots in Stylelint's `createRules()` configuration. Existing files are not rewritten, and HTML lint rules are unchanged. Migrate component roots deliberately; do not convert every child Block file.
+
+Set `generator.scssRootStyle` in `spiracss.config.js` to `scope-explicit` (default), `scope`, or `class`. `scope-explicit` wraps the component body in `@scope (.block-name)` and `:scope`; `scope` writes the body directly inside `@scope`, while `class` selects the previous class-selector output. The setting is shared with the VS Code extension and applies only to the component root SCSS generated in root mode, which loads the child Block styles with `meta.load-css()` only when independent child Blocks are present. Those loaded Block files and their selectors remain in class form; they do not get individual scopes. Selection mode generates class-form Blocks to be loaded by the component root. HTML classes and HTML lint rules are unchanged.
+
+The default is the recommended form for SCSS compiled with Sass; it can also be selected explicitly:
+
+```js
+generator: {
+  scssRootStyle: 'scope-explicit'
+}
+```
+
+This changes the default for newly generated component roots, not existing stylesheets. Select `class` to retain the previous generation syntax. The direct `scope` form remains available and valid for CSS linting, but Sass currently warns about leading child combinators directly inside `@scope`. Direct declarations such as `padding: 20px` are a separate, supported CSS feature; the warning is not a reason to require a `:scope` wrapper in lint. These forms have different CSS specificity and are not interchangeable cascade rewrites. Do not silently convert an existing direct scope to the explicit form.
+
+SpiraCSS requires class-form child and descendant Block files under the configured `childDir`. Stylelint rejects every `@scope` in these files, including thematic wrappers, for all root style settings and direct rule configurations. The generator already emits these files in class form.
+
+This is a SpiraCSS safety policy, not a native CSS limitation: Sass can prepend the loading parent's selector to a child scope, producing the non-matching `:scope :scope`. Keep `meta.load-css()` inside the root's `:scope` body in `scope-explicit` mode; its placement and generated child specificity are unchanged. Do not automatically move the include or rewrite existing child scopes. See the [child scope policy](https://spiracss.jp/configuration/options/#scope-root-syntax).
+
+A root-mode component remains a component root even without independent child Blocks. It still follows the configured root syntax; only the unnecessary `meta.load-css()` call is omitted. Adding or removing children does not switch its root syntax.
+
+When Stylelint is configured through `createRules()` / `createRulesAsync()`, the root style setting also controls `spiracss/class-structure`: `scope` or `scope-explicit` requires `@scope` for the component root, accepting either direct contents or a `:scope` wrapper. Class-form component roots receive an error with the setting, cause, and repair example. Child scopes receive a separate error with the configured directory, Sass risk, and class-form repair. `@container`, `@layer`, `@media`, and `@supports` wrappers do not bypass these checks or become errors themselves.
+
 ## Docs
 
 - [HTML CLI](https://spiracss.jp/tooling/html-cli/)

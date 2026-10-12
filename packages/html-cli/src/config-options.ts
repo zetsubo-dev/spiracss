@@ -9,6 +9,7 @@ import {
   type JsxClassBindingsConfig,
   type NamingOptions,
   type SelectorPolicy,
+  type ScssRootStyle,
   type WordCase
 } from './generator-core'
 
@@ -233,6 +234,7 @@ const validateConsumedConfig = (config: SpiracssConfig): void => {
       'childScssDir',
       'layoutMixins',
       'rootFileCase',
+      'scssRootStyle',
       'childFileCase'
     ],
     'generator'
@@ -244,6 +246,12 @@ const validateConsumedConfig = (config: SpiracssConfig): void => {
   assertStringList(generator?.layoutMixins, 'generator.layoutMixins')
   assertFileCase(generator?.rootFileCase, 'generator.rootFileCase')
   assertFileCase(generator?.childFileCase, 'generator.childFileCase')
+  if (
+    generator?.scssRootStyle !== undefined &&
+    !['class', 'scope', 'scope-explicit'].includes(generator.scssRootStyle as string)
+  ) {
+    throw new Error('generator.scssRootStyle must be "class", "scope", or "scope-explicit".')
+  }
 
   const fileCase = config.fileCase
   if (typeof fileCase === 'string') {
@@ -334,6 +342,7 @@ export function resolveProjectOptions(config?: SpiracssConfig): ResolvedProjectO
     layoutMixins: Array.isArray(layoutMixins) ? ([...layoutMixins] as string[]) : [],
     naming,
     rootFileCase,
+    scssRootStyle: (generator?.scssRootStyle as ScssRootStyle | undefined) ?? 'scope-explicit',
     childFileCase,
     selectorPolicy,
     external,

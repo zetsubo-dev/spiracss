@@ -6,6 +6,7 @@ import { normalizeCacheSizes } from '../utils/cache'
 import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
+import { hasScopeAncestor } from '../utils/scope-context'
 import { collectCompoundSegments, createSelectorCacheWithErrorFlag, type SelectorParserCache } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
 import { isPlainObject } from '../utils/validate'
@@ -29,7 +30,7 @@ type Violation = {
   endIndex: number
 }
 
-const collectViolations = (selector: string, selectorCache: SelectorParserCache): Violation[] => {
+const collectViolations = (selector: string, selectorCache: SelectorParserCache, inScope: boolean): Violation[] => {
   const violations: Violation[] = []
   const selectors = selectorCache.parse(selector)
   selectors.forEach((sel) => {
@@ -40,6 +41,7 @@ const collectViolations = (selector: string, selectorCache: SelectorParserCache)
       compound.pseudos.forEach((pseudo) => {
         const value = typeof pseudo.value === 'string' ? pseudo.value.toLowerCase() : ''
         if (value === ':global' || value === ':local') return
+        if (value === ':scope' && inScope) return
         const index = pseudo.sourceIndex ?? 0
         const endIndex = index + pseudo.toString().length
         violations.push({ index, endIndex })
@@ -105,7 +107,7 @@ const rule = createRule(
         const selector: string = rule.selector || ''
         if (!selector.includes(':')) return
 
-        const violations = collectViolations(selector, selectorCache)
+        const violations = collectViolations(selector, selectorCache, hasScopeAncestor(rule))
         if (violations.length === 0) return
 
         violations.forEach(({ index, endIndex }) => {

@@ -52,6 +52,7 @@ type ClassStructureConfig = {
   rootSingle?: boolean
   rootFile?: boolean
   rootCase?: ClassStructureOptions['root']['case']
+  scssRootStyle?: ClassStructureOptions['root']['style']
   childFileCase?: ClassStructureOptions['paths']['childFileCase']
   childDir?: string
   componentsDirs?: string[]
@@ -154,6 +155,7 @@ type SpiracssConfig = {
   selectorPolicy?: ClassStructureSelectorPolicy
   fileCase?: FileNameCase | FileCaseConfig
   generator?: {
+    scssRootStyle?: 'class' | 'scope' | 'scope-explicit'
     rootFileCase?: ClassStructureOptions['root']['case']
     childFileCase?: FileNameCase
     childScssDir?: string
@@ -413,6 +415,9 @@ const buildRules = (spiracss: SpiracssConfig): Record<string, unknown> => {
         : undefined
 
   const classConfig = { ...(stylelint?.class ?? {}) }
+  if (classConfig.scssRootStyle === undefined) {
+    classConfig.scssRootStyle = generator?.scssRootStyle ?? 'scope-explicit'
+  }
   assignIfDefined(classConfig, 'comments', mergeObjects<CommentConfig>(baseComments, classConfig.comments))
   assignIfDefined(classConfig, 'external', mergeObjects<ExternalConfig>(baseExternal, classConfig.external))
   if (classConfig.naming === undefined) {

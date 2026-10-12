@@ -422,6 +422,8 @@ type NormalizedSelectorPolicy = {
   }
 }
 
+export type ScssRootStyle = 'class' | 'scope' | 'scope-explicit'
+
 export type GeneratorOptions = {
   globalScssModule: string
   pageEntryPrefix: string
@@ -429,6 +431,7 @@ export type GeneratorOptions = {
   layoutMixins: string[]
   naming: NamingOptions
   rootFileCase?: FileNameCase
+  scssRootStyle?: ScssRootStyle
   childFileCase?: FileNameCase
   selectorPolicy?: SelectorPolicy
   external?: ExternalOptions
@@ -2316,7 +2319,8 @@ function block(
   policy: NormalizedSelectorPolicy,
   naming: NamingOptions,
   external: NormalizedExternalOptions,
-  isRoot: boolean = false
+  isRoot: boolean = false,
+  directScope: boolean = false
 ): string {
   const ind = indent(lv)
   const buf: string[] = []
@@ -2360,7 +2364,8 @@ function block(
 
   const elementStateEntries = c.isIndependent ? collectElementStateEntries(c, policy, naming, external) : []
 
-  variantSelectors.forEach((sel) => {
+  variantSelectors.forEach((variantSelector) => {
+    const sel = directScope ? variantSelector.replace(/^&/, ':scope') : variantSelector
     if (layoutMixins.length === 0) {
       buf.push(`${ind}${sel} {`, `${indent(lv + 1)}// variant styles`, `${ind}}`, '')
     } else {
@@ -2426,7 +2431,7 @@ function block(
     )
 
     if (stateSelectors.size > 0 || elementStateEntries.length > 0) {
-      buf.push(`${ind}@at-root & {`)
+      buf.push(`${ind}@at-root ${directScope ? ':scope' : '&'} {`)
       stateSelectors.forEach((sel) => {
         buf.push(`${indent(lv + 1)}${sel} {`, `${indent(lv + 2)}// state styles`, `${indent(lv + 1)}}`, '')
       })
@@ -2440,7 +2445,7 @@ function block(
       })
       buf.push(`${ind}}`, '')
     } else {
-      buf.push(`${ind}// @at-root & {`, `${ind}// }`, '')
+      buf.push(`${ind}// @at-root ${directScope ? ':scope' : '&'} {`, `${ind}// }`, '')
     }
   }
 
@@ -2473,17 +2478,28 @@ function scssContent(
           : '// @rel/(parent-block).scss\n\n'
       }`
 
-  return `${header}.${c.baseClass} {\n${block(
+  const configuredRootStyle = opts.scssRootStyle ?? 'scope-explicit'
+  if (!['class', 'scope', 'scope-explicit'].includes(configuredRootStyle)) {
+    throw new Error('generator.scssRootStyle must be "class", "scope", or "scope-explicit".')
+  }
+  // Only the component root owns a scope; meta-loaded Blocks retain class selectors.
+  const rootStyle = c.isRoot ? configuredRootStyle : 'class'
+  const explicitScope = rootStyle === 'scope-explicit'
+  const body = block(
     c,
-    1,
+    explicitScope ? 2 : 1,
     layoutMixins,
     childScssDir,
     childFileCase,
     policy,
     opts.naming,
     external,
-    c.isRoot ?? false
-  )}\n}\n`
+    c.isRoot ?? false,
+    rootStyle === 'scope'
+  )
+  if (rootStyle === 'class') return `${header}.${c.baseClass} {\n${body}\n}\n`
+  if (explicitScope) return `${header}@scope (.${c.baseClass}) {\n  :scope {\n${body}\n  }\n}\n`
+  return `${header}@scope (.${c.baseClass}) {\n${body}\n}\n`
 }
 
 /* ---------- public: HTML -> GeneratedFile[] ---------- */

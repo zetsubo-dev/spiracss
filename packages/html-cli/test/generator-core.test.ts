@@ -352,12 +352,12 @@ describe('generator-core', () => {
     assert.ok(sanitized.includes('hero-section'))
   })
 
-  it('generates expected SCSS for sample-box root and hero-header', async () => {
+  it('preserves expected class SCSS for sample-box root and hero-header when selected', async () => {
     const html = await fsp.readFile(path.join(fixturesDir, 'html/sample-box.html'), 'utf8')
     const expectedRoot = await fsp.readFile(path.join(fixturesDir, 'html/sample-box.scss'), 'utf8')
     const expectedHero = await fsp.readFile(path.join(fixturesDir, 'html/scss/hero-header.scss'), 'utf8')
 
-    const generated = generateFromHtml(html, fixturesDir, true, baseOptions)
+    const generated = generateFromHtml(html, fixturesDir, true, { ...baseOptions, scssRootStyle: 'class' })
     const root = generated.find((f) => f.path === 'sample-box.scss')?.content
     const hero = generated.find((f) => f.path.endsWith('hero-header.scss'))?.content
 

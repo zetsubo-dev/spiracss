@@ -2,6 +2,24 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.5.0
+
+### Added
+
+- Recognize class-based `@scope` component roots across structure, placement, interaction, link, page-layer, and keyframes checks.
+- Accept direct scope declarations, relative child selectors, `&`, and explicit `:scope` references without requiring a `:scope` wrapper. Preserve CSS output and diagnostic source locations.
+- Enforce scope syntax for component roots when the shared root style setting selects scope. Reject every `@scope` in configured child Block directories for all settings, including direct rules, thematic wrappers, and index/partial files; report the Sass risk and class-form repair without moving the root include or changing generated child specificity.
+- Preserve thematic scope wrappers with their own declarations when root filename matching is disabled, and classify child subtrees independently of component alias order or repeated directory names.
+- Report ambiguous nested scope ownership instead of silently treating it as a theme; use matching filenames, the component directory when `rootFile: false`, or configured external classes to disambiguate.
+- Prioritize explicitly configured component paths over the legacy `assets/css` page exclusion.
+- Recognize subjects inside contextual `:is()` / `:where()` scope preludes so naming and property-placement checks cannot be bypassed by ancestor conditions.
+- Respect custom child directories that reuse component-directory names without misclassifying child Blocks as component roots.
+
+### Changed
+
+- `createRules()` defaults component root lint to scope syntax, matching the generator. Set `generator.scssRootStyle: 'class'` to preserve previous root generation and root syntax lint behavior for existing projects. HTML structure rules are unchanged.
+- Existing child-file scope wrappers must be migrated manually to class form; `class` preserves root generation, but does not opt out of the child scope safety restriction. Native nested scopes remain supported in component root files under the existing ownership rules.
+
 ## 0.4.5
 
 ### Changed

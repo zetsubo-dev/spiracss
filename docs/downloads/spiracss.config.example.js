@@ -221,6 +221,10 @@ const config = {
 
   // Settings for HTML-to-SCSS generators (VS Code extension / CLI)
   generator: {
+    // Component root syntax: scope-explicit (default), scope (direct), or class (previous syntax).
+    scssRootStyle: 'scope-explicit',
+    // Applies only to component root SCSS; meta-loaded Blocks and selection output retain class selectors.
+    // Direct scope output remains selectable; lint does not require a :scope wrapper.
     // Path for `@use "<path>" as *;` injected into generated SCSS (default: '@styles/partials/global')
     globalScssModule: '@styles/partials/global',
     // Alias for page entry comments (default: 'assets')

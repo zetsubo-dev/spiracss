@@ -1,0 +1,898 @@
+# SpiraCSS AI Agent Full Reference v0.5.0
+
+This is the optional full reference. Start with the [diagnostic-first routing guide](https://spiracss.jp/downloads/spiracss-ai-agent-doc.md) and load this file only when the current diagnostic and focused rule pages are insufficient.
+The project config and current tool output remain authoritative. If they conflict with this reference, follow the tool output, re-check the config, and report the mismatch.
+
+## 0. Source of Truth and Fix Guidance (must follow)
+
+1. spiracss.config.js (project-specific; always read first)
+2. Tool output (Stylelint / HTML CLI). If it conflicts with this document, follow the tool output and report doc drift; config still overrides.
+3. This document (rules + workflow; use it to interpret and apply tool output)
+
+Defaults are only an explicit fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
+
+Version compatibility: @spiracss/stylelint-plugin v0.5.0, @spiracss/html-cli v0.5.0.
+If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
+
+## 1. Design Overview (minimum)
+
+Principles:
+- HTML component tree: Block > (Block | Element). This describes parent/child relationships in HTML; it does not impose a maximum Block nesting depth. `Block > Block > Block` is allowed in HTML when each parent/child relationship is valid.
+- SCSS selector structure is a separate concern: Stylelint checks how selectors are written inside each SCSS file. The SCSS depth rules in §5 and the Stylelint message keys in §13.1 do not restrict HTML DOM depth.
+- Deterministic naming over subjective judgment
+- Variant vs State separation
+- Tool-verifiable rules first
+
+Layers:
+- Global: tokens, mixins, utilities, shared keyframes
+- Page: placement and page-level layout. Page layer focuses on wiring/placing components; avoid styling internals of imported components, creating page-specific scss/ directories, or writing @keyframes/transition.
+- Component: Block/Element structure, Variant/State, interaction rules
+
+Component model:
+- One Block per SCSS file by default (config may relax)
+- Elements are internal to a Block; do not use Element as a structural container for Blocks
+- Two internal sections: --shared (intra-block reuse) and --interaction (state, pseudo, ARIA)
+- Parent controls placement/margins of child Blocks; child controls its internal layout
+
+Note: Most lint rules do not enforce layer intent (Page vs Component responsibility). The page-layer rule adds limited enforcement for page entry SCSS, but you must still follow this document’s guidance when generating structure and placement.
+
+## 2. AI Decision Flow (execute in this order)
+
+1) Load spiracss.config.js from project root.
+2) Resolve effective settings (naming, structure, selectorPolicy, interaction, keyframes, rel).
+3) Classify classes and decide Block/Element/Modifier/Utility/External.
+4) Place rules into correct sections (basic/shared/interaction) based on selectorPolicy.
+5) Generate or modify code.
+6) Run lint tools; fix code to satisfy config. Change config only if explicitly requested.
+
+If config is missing or a key is absent, mark the decision as tentative and prefer asking before final changes.
+If config is missing, Stylelint-based fixes are blocked (createRules errors). HTML CLI lint/generation also stop by default with `CONFIG_MISSING`; use `--allow-provisional` only after explicitly accepting fallback defaults, and treat every such result as provisional.
+
+## 3. Effective Config Resolution (how settings are derived)
+
+### 3.1 Stylelint createRules / createRulesAsync
+
+- createRules accepts only a config object (not a path). For path-based loading, use createRulesAsync. Both require aliasRoots.
+- stylelint.base.comments.shared / interaction are merged into per-rule comments when not explicitly set:
+  - class.comments
+  - placement.comments
+  - interactionScope.comments
+  - interactionProps.comments
+  - rel.comments
+- Per-rule comments override base comments (shared/interaction).
+- Comment patterns accept RegExp or string. Strings become new RegExp(pattern, 'i').
+  - With stylelint validation enabled, invalid patterns are reported as invalid options and the rule stops.
+  - With validation disabled, invalid patterns fall back to defaults.
+- selectorPolicy:
+  - Top-level selectorPolicy is used when stylelint.base.selectorPolicy is not set.
+  - stylelint.base.selectorPolicy fills class/placement/interactionScope selectorPolicy unless overridden.
+- Shared naming defaults to stylelint.base.naming; if missing, stylelint.class.naming is used.
+- interactionProps inherits naming + external from stylelint.base/stylelint.class unless explicitly set in interactionProps.
+- keyframes inherits naming + external from stylelint.base/stylelint.class unless explicitly set in keyframes.
+- rel inherits naming + external from stylelint.base/stylelint.class unless explicitly set in rel.
+- pageLayer inherits naming + external from stylelint.base/stylelint.class; cache from stylelint.base.cache; componentsDirs from stylelint.base.paths.components (fallback: aliasRoots.components); pageEntryAlias/pageEntrySubdir from generator; aliasRoots from spiracss.aliasRoots.
+- stylelint.base.paths.childDir fills class.childDir / rel.childDir when missing.
+- stylelint.base.paths.components fills class.componentsDirs / pageLayer.componentsDirs when missing (fallback: aliasRoots.components).
+- generator.childScssDir fills class.childDir / rel.childDir when missing.
+- generator.rootFileCase fills class.rootCase / rel.fileCase when missing.
+- generator.childFileCase fills class.childFileCase / rel.childFileCase when missing.
+- spiracss.fileCase.root fills class.rootCase / rel.fileCase when missing.
+- spiracss.fileCase.child fills class.childFileCase / rel.childFileCase when missing.
+- stylelint.base.cache fills per-rule cache when missing.
+- placement.elementDepth defaults to class.elementDepth when missing.
+
+### 3.2 HTML tools (html-lint / html-to-scss / html-format)
+
+- All HTML tools load spiracss.config.js from the current working directory.
+- Run tools from the directory that contains spiracss.config.js.
+- spiracss-html-lint: uses stylelint.base.naming (fallback: stylelint.class.naming), merged external (base + class), and top-level selectorPolicy.
+- spiracss-html-to-scss (generator): uses generator.globalScssModule, pageEntryAlias, pageEntrySubdir, childScssDir, layoutMixins, rootFileCase; also uses naming + external (base + class) + selectorPolicy for classification.
+- spiracss-html-format: uses htmlFormat.classAttribute ("class" | "className"); data-spiracss-classname is an internal placeholder and is normalized back to class/className (do not author it).
+- HTML lint does not enforce a configured or semantic maximum HTML Block nesting depth. It checks class classification and parent/child validity (for example, an Element cannot directly contain a Block); Block > Block relationships may continue to any practical HTML depth. An internal `MAX_DEPTH` safety guard only rejects pathological parser input and is not an SpiraCSS design rule.
+- `MAX_BLOCK_NESTING_DEPTH` and `tooDeepBlockNesting` belong to Stylelint's `spiracss/class-structure` rule. They are SCSS selector-writing checks, not HTML CLI checks.
+- If config is missing, HTML CLI lint/generation exit with `CONFIG_MISSING` unless `--allow-provisional` is passed. If unreadable, tools exit with error.
+- Stylelint does not fall back; it requires a config (path or object) with aliasRoots.
+
+## 4. Naming and Classification (Block / Element / Modifier / Utility / External)
+
+### Scope support (v0.5.0+)
+
+Migration from v0.4.x: v0.5.0 changes the component root default to `scope-explicit`. Existing projects can set `generator.scssRootStyle: 'class'` to retain previous root generation and root syntax lint behavior. Child scopes remain prohibited for all settings and require manual migration. Do not rewrite existing CSS automatically. Class-selector examples below describe `class` mode or loaded child Block files; component roots follow the configured root style.
+
+- `generator.scssRootStyle` selects `scope-explicit` (default, a `:scope` wrapper), `scope` (direct contents of `@scope (.block-name)`), or `class` (the previous syntax). The HTML CLI and VS Code extension use the same setting. Apply it only to the component root SCSS generated in root mode, which loads children with `meta.load-css()` only when independent child Blocks are present. Loaded Block files retain class selectors without individual scopes. Selection-mode output also remains in class form.
+- Stylelint resolves class-based scope roots for all existing SpiraCSS checks. Direct declarations, relative child selectors, `&`, and explicit `:scope` references are supported; `:scope` is not mandatory. CSS output and specificity are preserved.
+- Child and descendant Block files under configured `childDir` must use class syntax. Every `@scope` in these files is a lint error for all settings, including an omitted raw rule setting, themed wrappers, index files, and partials. This is a SpiraCSS safety policy, not a native CSS restriction.
+- Path boundary: configured component locations cover the full child subtree; outside them, only files directly under `childDir` are recognized. Configure the owning component location for deeper directories and supply a filename for stdin. An unclassified path is not proof of safe Sass output.
+- Sass caveat: `meta.load-css()` inside a parent style rule prepends the parent selector to loaded child rules. A child `:scope` loaded inside the default parent's `:scope` becomes `:scope :scope` and cannot match. Keep loaded children in class form and the root include placement unchanged. Moving the include outside the root style rule lowers child specificity and is not the repair. Migrate existing child scopes manually; no auto-fix is provided. Lint uses configured directory conventions, not a Sass import graph.
+- Root mode identifies a component root regardless of whether it has independent child Blocks. It follows the configured root syntax even when no `meta.load-css()` call is needed. Child presence must not change the root syntax.
+- `createRules()` / `createRulesAsync()` propagates `generator.scssRootStyle` into `spiracss/class-structure` (default: `scope-explicit`). For scope settings, a class-form component root is an error; both direct scope contents and a `:scope` wrapper pass. Component roots are identified from configured component paths outside `childDir`, or their `meta.load-css(childDir)` include; page entries and loaded child Block files are not forced to use scope. `@container` / `@layer` / `@media` / `@supports` wrappers preserve the check. Follow the diagnostic's repair example for the component root only; keep imports outside scope and do not convert child files.
+- A scope does not relax ownership, pseudo nesting, interaction, or one-file selector structure rules. Thematic scopes wrapping conventional components remain supported. HTML classes and HTML nesting are unchanged.
+- In a root file, identify nested scope ownership by a matching filename or, with `rootFile: false`, a matching component directory. If neither is available, declare theme wrappers in `external.classes` / `external.prefixes`; ambiguous ownership is a lint error. Do not assume an unclassified wrapper is a theme.
+- Default new component root SCSS generation to `generator.scssRootStyle: 'scope-explicit'`, the recommended form for Sass; select `class` to retain the previous generation syntax. Existing files are not converted. The direct `scope` form remains selectable and valid for lint. Sass currently warns about direct leading combinators, not about every direct declaration inside `@scope`. Do not make `:scope` mandatory or automatically wrap existing direct scopes, which would change specificity.
+
+### 4.1 Base class selection (HTML lint)
+
+- The base class is the first class token in HTML.
+- HTML lint reports INVALID_BASE_CLASS when the base is invalid (including modifier/utility prefixes), or when an External base is mixed with any non-external class later.
+- Modifier/Utility as base can also emit MODIFIER_WITHOUT_BASE or UTILITY_WITHOUT_BASE when no Block/Element exists.
+- External-only elements are treated as non-Spira structure; avoid using them as component roots.
+
+### 4.2 Classification order (HTML base classification priority)
+
+1) Matches external.prefixes / external.classes -> External.
+2) Matches modifier pattern (modifierPrefix + modifierCase or customPatterns.modifier) -> Modifier (never a base class).
+3) Starts with "u-" -> Utility (never a base class).
+4) Starts with "-" or "_" -> Invalid as base.
+5) Matches customPatterns.block -> Block.
+6) Matches customPatterns.element -> Element.
+7) Word count >= 2 and <= blockMaxWords -> Block.
+8) Word count == 1 -> Element.
+9) Otherwise -> Invalid.
+
+This order is for HTML base classification. Stylelint validates class names individually (no base-first semantics).
+Reserved prefixes ("u-", "-", "_") are fixed for HTML base classification when not treated as External.
+customPatterns cannot override reserved prefixes; only external.* can bypass them, which removes the class from structure checks.
+If customPatterns.block is set, Block classification uses only that pattern (word-count Block classification is skipped).
+
+### 4.3 Word count rules
+
+- kebab: split by "-" (card-list -> 2 words)
+- snake: split by "_" (card_list -> 2 words)
+- camel: split by uppercase transitions (cardList -> 2 words)
+- pascal: split by uppercase transitions (CardList -> 2 words)
+
+Element is 1 word by default only when customPatterns.element is not set.
+Internal capitals create additional words; camel/pascal multi-word names become Block only when blockCase is camel/pascal.
+- ✅ title (elementCase=kebab/snake/camel), Title (elementCase=pascal)
+- ❌ bodyText, BodyText (these are multi-word and become Block only when blockCase is camel/pascal; otherwise invalid unless overridden)
+
+### 4.4 Custom patterns
+
+- customPatterns.block/element/modifier must be RegExp.
+- RegExp flags "g" and "y" are invalid for customPatterns.
+- customPatterns.block replaces the default Block pattern (blockCase + blockMaxWords); word-count Block classification is disabled while it is set.
+- When customPatterns.element is set, it replaces the default 1-word Element rule entirely and may allow multi-word names.
+
+### 4.5 Modifiers
+
+- modifierPrefix + modifierCase define modifier tokens unless customPatterns.modifier is set (then it replaces the default pattern).
+- Modifiers are validated by pattern (default: 1-2 words). "-foo-bar-baz" is invalid by default.
+- In SCSS, modifiers must be written as "&.<modifier>" inside the Block.
+- Only modifiers may be appended to "&".
+
+### 4.6 External classes
+
+- external.classes (exact) / external.prefixes (prefix) exclude classes from structure checks.
+- If an element mixes External and Spira classes, the base must be Block/Element (External cannot be the base).
+- If all classes are External, the element is treated as non-Spira structure.
+- Avoid referencing utilities in SCSS. Only consider external.prefixes for utilities if the project explicitly requires it and config changes are authorized.
+- `u-` is not automatically External for Stylelint class-structure; add it to external.prefixes if you want to skip naming checks. Placement treats `u-` as external only for placement rules.
+- Recommended: follow the project config (official examples often include external.prefixes: ['u-']). If `u-` is not external, class-structure may report invalid names while placement skips them. Do not change config without approval.
+
+## 5. SCSS Structure and Sections (Stylelint)
+
+### 5.1 Section order and placement
+
+Order:
+1. Basic structure
+2. --shared
+3. --interaction
+
+Rules:
+- --shared and --interaction must be direct children of the root Block.
+- Root wrappers like @layer/@supports/@media/@container/@scope are allowed.
+- Comment patterns control section detection; requireComment=true makes them mandatory.
+- interactionProps always uses comment patterns to detect the interaction section.
+
+### 5.2 SCSS selector structure constraints (`spiracss/class-structure`)
+
+- For SCSS selectors, the supported direct child relationships are Block > Block and Block > Element.
+- In basic/shared SCSS, an Element selector cannot contain a Block selector (interaction is exempt).
+- Within a single SCSS file, a Block > Block > Block selector chain (3+ Block levels) is invalid in basic/shared sections (interaction is exempt). This is a Stylelint selector-writing rule; it does not limit HTML DOM nesting. There is no config option to allow this; refactor or disable the Stylelint rule.
+- Within a single SCSS file, Element selector chain depth is limited by elementDepth (interaction is exempt).
+- In SCSS, Element > Element chains should be rare and limited to decorative/semantic grouping; avoid using them for layout. Promote to Block when in doubt.
+- childCombinator=true requires ">" under Block direct children (shared/interaction are exempt).
+- childNesting=true forbids top-level child selectors; nest them inside the Block.
+- Shared section relaxes the ">" requirement but still enforces structure rules.
+- In SCSS, do not target a grandchild Element from a parent Block when Block > Block exists (interaction is exempt).
+- Root-level selectors must include the root Block (no stray root rules).
+- rootSingle=true requires a single root Block per file; it applies only to top-level selectors that include Spira classes (External-only selectors are excluded from this check).
+
+### 5.3 Variant and State placement
+
+- Variant is written in basic structure by default.
+- State and ARIA go in interaction.
+- Variant selectors may appear in interaction only for transition initial values when needed.
+- Do not mix data-variant with data-state / aria-* in the same selector.
+
+### 5.4 Root file naming (rootFile)
+
+- Applies only inside componentsDirs (supports nested paths).
+- Skips assets/css, index.scss, and files starting with "_" (partials).
+- Both *.scss and *.module.scss are accepted (CSS Modules; ".module" is ignored).
+- If the path includes childDir, expected filename is the root Block name formatted by childFileCase.
+- Otherwise, expected filename is the root Block name formatted by rootCase.
+- If rootFile=false, no filename checks are applied.
+
+### 5.5 Page layer (page-layer)
+
+- Applies only to page entry SCSS under pageEntryAlias/pageEntrySubdir (resolved via aliasRoots). Files outside are skipped.
+- Direct child Block rules in page entry SCSS must begin with a link comment to a component file (first node in the rule body).
+- Link targets must resolve inside componentsDirs (e.g., `// @components/...`). This rule resolves aliases and checks whether the path falls under componentsDirs, but it does not verify that the target file actually exists. For file existence checks, use `spiracss/rel-comments` with `validatePath=true`.
+- Element selectors are not validated by this rule; use class-structure if you need structure checks.
+- selectorParseFailed means some selectors could not be parsed; treat coverage as partial.
+
+## 6. Property Placement (placement)
+
+Property placement enforces the parent/child responsibility split:
+- This is a Stylelint check on CSS properties in SCSS selectors; it does not validate or limit HTML DOM depth.
+- Parent decides layout and placement of children.
+- Child decides its own internal layout in its own file.
+
+### 6.1 What it checks (summary)
+
+- Page-root selectors (standalone `body` or standalone `#id`) are decoration-only:
+  - Do not place layout/container/item/internal properties on them.
+  - Do not use compound selectors like `body > .main` (page-root is treated as standalone).
+  - Do not add attributes or pseudos (page-root must be bare).
+- Container properties are allowed on the root Block/Element but disallowed on child Block selectors. Child Element selectors (`> .element`) are treated as root — allowed.
+- Item properties are allowed on any direct child selector (`> .child-block` or `> .element`), not on the root Block itself. In practice, child Block is the most common placement context.
+- Internal properties are allowed on the root Block/Element but disallowed on child Block selectors. Child Element selectors (`> .element`) are treated as root — allowed.
+- Enforces one-sided vertical margin (`marginSide`).
+- With `marginSideTags=true` (default), tag-selector rules are also checked for margin-side direction.
+- Restricts `position` on child Block selectors (when `position=true`).
+- `@extend` is always forbidden; `@at-root` is allowed only in the interaction section
+  (including external-only roots composed solely of external classes).
+
+### 6.2 Property categories (defaults)
+
+Container (examples):
+- `display: flex|inline-flex|grid|inline-grid`
+- `gap`, `row-gap`, `column-gap`
+- `justify-content`, `justify-items`, `align-content`, `align-items`
+- `grid`, `grid-template*`, `grid-auto-*`
+- `flex-direction`, `flex-wrap`
+
+Item (examples):
+- `margin*`, `margin-inline*`, `margin-block*`
+- `flex`, `flex-grow`, `flex-shrink`, `flex-basis`, `order`, `align-self`, `justify-self`
+- `grid-column`, `grid-row`, `grid-area`
+
+Internal (examples):
+- `padding*`, `overflow*`
+- When `sizeInternal=true` (default): `width/height`, `inline-size/block-size`, `min-*`, `max-*`
+- When `sizeInternal=false`: size properties become **unchecked** (not reclassified as item; placement validation is skipped for them)
+
+### 6.3 Fix heuristics (by error type)
+
+containerInChildBlock / internalInChildBlock:
+- The property belongs to the child Block's own file, not the parent file.
+- Find the child file: look for the `@rel` comment inside the `> .child-block` rule, or search for the file where `.child-block { ... }` is defined as the root Block.
+- Move the property to the root selector of that child file.
+- If the parent genuinely needs to control the value, use a CSS custom property:
+  - Child file: `padding: var(--child-block-padding, 16px);`
+  - Parent file: `> .child-block { --child-block-padding: 8px; }`
+  - This pattern works for any internal property (padding, overflow, size, etc.).
+- Alternatively, use the project's Variant/State mechanism (data attributes or modifier classes per selectorPolicy) if the value change is semantic.
+- For size properties (width/height/min-*/max-*), set `sizeInternal: false` in the config to skip this check entirely.
+
+itemInRoot:
+- Item properties (margin, flex, grid-column, etc.) on a root Block are not allowed because a Block should not define its own placement.
+- Move the property to the parent file's direct child selector (`> .child-block` or `> .element`): e.g., `> .child-block { margin-top: 24px; }`.
+- The parent file is typically linked via the `@rel` comment at the top of the child file.
+
+marginSideViolation:
+- Config `stylelint.placement.marginSide` enforces a single vertical margin direction (default: `"top"`).
+- Config `stylelint.placement.marginSideTags` controls whether tag-selector rules are checked too (default: `true`).
+- For `marginSideTags`, only tags in the selector chain are counted; tags that appear only inside pseudo arguments (e.g., `:is(main)`) are not treated as tag-selector rules.
+- If `marginSide="top"`: only `margin-top` is allowed; `margin-bottom` (or a shorthand that sets a non-zero bottom) is forbidden.
+- Fix: replace the forbidden side with the allowed one, or set the forbidden side to `0`/`auto`/`initial`.
+- Shorthand example: `margin: 0 16px` is OK (top/bottom are 0); `margin: 0 0 16px` violates when `marginSide="top"`.
+
+positionInChildBlock:
+- `position` on a child Block selector is restricted (when `stylelint.placement.position=true`, the default).
+- Scenarios:
+  1. `fixed` / `sticky`: not allowed on child Block. Move to the child Block's own file.
+  2. `relative` / `absolute`: allowed ONLY if offset properties (`top`/`right`/`bottom`/`left`/`inset`/`inset-*`) exist in the same wrapper context. Wrapper at-rules (`@media`/`@supports`/`@container`/`@layer`) and `responsiveMixins` are transparent (same context); `@scope` creates a new boundary.
+  3. `static`: always allowed (no restriction).
+  4. CSS-wide keywords (`inherit`/`unset`/`revert`/`revert-layer`) and `initial`: skipped (no error).
+  5. Other values (e.g., dynamic / interpolated): not allowed. Use `static`, `relative`/`absolute` with offsets, or move to the child file.
+
+selectorKindMismatch:
+- A selector list mixes incompatible kinds (e.g., root Block + child Block in the same rule).
+- Fix: split into separate rules so each selector has a single kind.
+
+pageRoot* (pageRootContainer / pageRootItem / pageRootInternal / pageRootNoChildren):
+- Page-root selectors (standalone `body`, `#id`) are decoration-only. No layout, placement, or internal properties allowed.
+- Fix: create a page root Block class (e.g., `.page-home`) and apply layout there. Use `> .child-block` for item placement.
+- pageRootNoChildren: the page-root selector must be bare (no attributes, pseudos, or compound selectors).
+
+forbiddenAtRoot:
+- `@at-root` is only allowed in the interaction section. Move the rule inside the interaction section (marked by `comments.interaction` pattern), or remove `@at-root` and restructure the selector.
+
+forbiddenExtend:
+- `@extend` is always forbidden. Replace with a mixin, CSS custom properties, or apply the styles directly.
+
+Notes:
+- Placement checks treat `u-` classes as external and skip them (placement only; class-structure still validates unless configured).
+- Selector analysis supports only direct combinators and trailing sibling combinators; descendant combinators are unsupported. `.block + .block` and mid-chain `+`/`~` are rejected. Unsupported selectors may be skipped without warnings; selectorParseFailed/selectorResolutionSkipped are not guaranteed.
+- `@scope` is treated as a context boundary; wrapper at-rules like `@media/@supports/@container/@layer` are treated as the same context.
+- `responsiveMixins` can mark `@include` wrappers as transparent for context checks.
+- Some selectors may be skipped when resolution becomes too complex; Stylelint reports `selectorResolutionSkipped` in that case.
+
+## 7. Variant/State Policy (selectorPolicy)
+
+Keys:
+- variant.dataKeys: array of allowed data-* keys for Variant.
+- state.dataKey: a single data-* key for State.
+- state.ariaKeys: array of allowed aria-* keys for State.
+- valueNaming (or per-variant/state override): applies to data values only.
+
+Mode matrix:
+
+| variant.mode | state.mode | Variant in HTML | State in HTML | Modifiers | Variant/State attributes |
+| --- | --- | --- | --- | --- | --- |
+| data | data | data-variant (variant.dataKeys) | data-state + aria-* | disallowed | allowed |
+| class | data | modifier | data-state + aria-* | allowed | data-variant disallowed |
+| data | class | data-variant | modifier | allowed | data-state/aria disallowed |
+| class | class | modifier (variant) | modifier (indistinguishable) | allowed | data-* disallowed |
+
+Notes:
+- Variant can use multiple keys (e.g., data-variant, data-size). State uses one data key (e.g., data-state) plus optional aria-*.
+- When variant.mode=class and state.mode=class, modifiers represent Variant and State cannot be distinguished.
+- valueNaming defaults to { case: kebab, maxWords: 2 }.
+- selectorPolicy applies only to reserved keys (variant.dataKeys, state.dataKey, state.ariaKeys). Unrelated attributes (e.g., data-testid) are ignored and should not be removed.
+- Non-reserved attribute selectors in SCSS can cause placement selector analysis to skip without warnings; treat placement results as provisional if you use them.
+
+## 8. Interaction and Pseudo Nesting
+
+interactionScope:
+- requireAtRoot=true: use @at-root & { ... } and selectors must start with "&".
+- requireAtRoot=false: @at-root wrapper is optional, but pseudo-nesting still requires "&".
+- requireComment=true: // --interaction is mandatory.
+- requireTail=true: interaction block must be the last non-comment node inside the root Block.
+- requireTail is checked only when the interaction section is detected (comment + @at-root &).
+- commentOnly=true: only validate sections with the comment.
+  - false: pseudo/state selectors without comment are detected and reported.
+- pseudos is configured by stylelint.interactionScope.pseudos.
+
+pseudo:
+- Pseudo-classes/elements must be nested under "&".
+- ✅ .block { &:hover {} }
+- ✅ .block { > .child { &:hover {} } }
+- ❌ .block:hover {}
+- ❌ & > .child:hover {}
+
+Default pseudos: :hover, :focus, :focus-visible, :active, :visited.
+
+## 9. Transition / Animation (interactionProps)
+
+Rules:
+- transition / animation only in interaction section.
+- transition must specify target properties.
+- transition: all, transition: none, transition-property: all, transition-property: none are prohibited.
+- inherit / initial / unset / revert / revert-layer are prohibited.
+- custom properties / var(...) are not allowed as transition targets.
+- transition target properties should not appear outside interaction for the same Block/Element.
+
+Example:
+
+```scss
+.sample-block {
+  // --interaction
+  @at-root & {
+    opacity: 0;                      // initial value inside interaction
+    transition: opacity 0.2s ease;
+    &:hover { opacity: 1; }
+  }
+}
+```
+
+## 10. Keyframes (keyframes)
+
+- @keyframes must be at root level and file end (unless ignored by config).
+- Naming: {block}-{action} or {block}-{element}-{action}.
+- {block}-{element}-{action}: if the token after {block} matches an element in the same file, it is treated as {element}. If not, the token is treated as part of the {action} (still valid if it matches action naming).
+- actionMaxWords applies to action part (capped at 3 by implementation); action case follows blockCase.
+Note: Some projects may enforce strict element matching by convention. If so, require the element to exist even though the implementation allows the fallback.
+- blockSource:
+  - selector: use root Block selector
+  - file: use filename
+  - selector-or-file: try selector first, then file
+- blockWarnMissing=true: emits warning if block cannot be determined; naming checks are skipped.
+- ignoreFiles / ignorePatterns can skip files or names.
+- ignoreSkipPlacement skips placement checks for ignored names.
+- Names starting with sharedPrefixes are shared keyframes: use `{prefix}{action}` and place them only in sharedFiles.
+- sharedPrefixes default: ["kf-"]
+- sharedFiles default: ["keyframes.scss"]
+
+## 11. @rel Comments (rel)
+
+aliasRoots:
+- Required for Stylelint; not used by HTML CLI.
+- Key pattern: [a-z][a-z0-9-]* (e.g., components, assets).
+- Values are arrays of paths.
+
+Example:
+```js
+aliasRoots: {
+  components: ['src/components'],
+  styles: ['src/styles'],
+  assets: ['src/assets']
+}
+```
+
+Requirement flags:
+- requireMeta: if true, a parent file using meta.load-css requires a page @rel at root scope.
+- requireScss: if true, SCSS under childDir requires child -> parent @rel.
+- requireChild enables parent -> child @rel checks.
+- requireChildShared / requireChildInteraction control checks inside those sections (only when requireChild=true).
+- requireParent enables the root-scope @rel requirement when applicable.
+
+Placement rules (when required by config):
+- Parent Block -> Page: // @assets/css/page.scss at root scope, before rules.
+- Child Block -> Parent: // @rel/../parent-block.scss at root scope, before rules.
+- Parent -> Child: // @rel/scss/child-block.scss as the first node inside "> .child-block" rule.
+- Root Block must be the first rule in the file when requireParent applies (after any @use/@forward/@import).
+
+Filename case checks (childMismatch):
+- fileCase: expected filename case for child targets.
+- childFileCase: optional filename case used only when the @rel target path includes childDir (defaults to fileCase).
+- Both *.scss and *.module.scss are accepted when matching child target filenames.
+
+## 12. Tooling Constraints
+
+HTML CLI:
+- SCSS generation extracts static class names from JSX class/className (string literals, template literal static parts, member access like styles.foo). When `jsxClassBindings.memberAccessAllowlist` is set, only the listed base identifiers are treated as class sources (empty array disables member access extraction), and chained access (e.g. `styles.layout.hero`) is treated as dynamic. Dynamic expressions are dropped.
+- Placeholder insertion skips JSX bindings that include dynamic expressions (conditions, props, interpolations).
+- Template syntax (EJS/Nunjucks/Astro/etc) is skipped for formatting to avoid breaking markup.
+
+Note: `DYNAMIC_CLASS_UNRESOLVED` is emitted when a class binding cannot be verified statically. Other template syntax may still hide structural violations from HTML CLI; if present, stop and report even if lint can run.
+
+Stylelint:
+- createRules accepts only a config object with aliasRoots (passing a path throws an error). For path-based loading, use createRulesAsync(path).
+- CSS Modules `:global` / `:local` are treated as transparent (the inner selector is linted; they do not bypass SpiraCSS checks).
+- Path resolution uses the current working directory as the project root. Run Stylelint from the directory that contains spiracss.config.js to avoid false `@rel` path errors.
+
+### 12.1 Execution preconditions
+
+- If Node/Stylelint/CLI are not installed, stop and ask before proceeding.
+- `npx` may auto-install packages; do not run it without explicit approval.
+- Do not run `npm install` or other dependency changes without explicit approval.
+- If HTML CLI prints `WARN [INVALID_CUSTOM_PATTERN]`, stop and ask; customPatterns are ignored and naming rules may be wrong.
+
+### 12.2 Minimal execution recipes (reference)
+
+Stylelint config (config object):
+```js
+// stylelint.config.js
+import spiracssPlugin, { createRules } from '@spiracss/stylelint-plugin'
+import spiracssConfig from './spiracss.config.js'
+
+export default {
+  plugins: [...spiracssPlugin, 'stylelint-scss'],
+  customSyntax: 'postcss-scss',
+  rules: {
+    ...createRules(spiracssConfig),
+    'scss/at-rule-no-unknown': true
+  }
+}
+```
+
+Stylelint config (path-based, createRulesAsync):
+```js
+// stylelint.config.js
+import spiracssPlugin, { createRulesAsync } from '@spiracss/stylelint-plugin'
+
+const rules = await createRulesAsync('./spiracss.config.js')
+
+export default {
+  plugins: [...spiracssPlugin, 'stylelint-scss'],
+  customSyntax: 'postcss-scss',
+  rules: {
+    ...rules,
+    'scss/at-rule-no-unknown': true
+  }
+}
+```
+
+Run Stylelint (from the directory containing spiracss.config.js):
+```bash
+npx stylelint "**/*.scss"
+```
+Note: examples use `npx`. `npx` may auto-install packages; do not run it without explicit approval (see §12.1). Use `yarn stylelint` or `pnpm stylelint` if that matches the project setup.
+
+HTML CLI examples (run from the directory containing spiracss.config.js):
+```bash
+# Lint HTML (root mode)
+npx spiracss-html-lint --root path/to/file.html
+
+# Lint HTML (selection mode, stdin)
+cat fragment.html | npx spiracss-html-lint --selection --stdin
+
+# Generate SCSS
+npx spiracss-html-to-scss --root path/to/file.html
+
+# Format HTML
+npx spiracss-html-format path/to/file.html
+```
+Note: examples use `npx`. npx may auto-install packages; do not run it without explicit approval (see §12.1). Use `yarn spiracss-html-lint` / `yarn spiracss-html-to-scss` / `yarn spiracss-html-format` if that matches the project setup.
+
+### 12.3 HTML CLI options for automation (reference)
+
+- spiracss-html-to-scss: `--json`, `--dry-run`, `--base-dir`, `--ignore-structure-errors`, `--selection`, `--stdin`, `--allow-provisional`
+- spiracss-html-lint: `--json`, `--selection`, `--stdin`, `--allow-provisional`
+- spiracss-html-format: `--output` (`-o`), `--stdin`
+
+For `--json` output, a missing config returns `ok: false`, `status: "blocked"`, `blocked.code: "CONFIG_MISSING"`, and exit code 1 unless `--allow-provisional` is passed. With explicit provisional execution, the command may continue but returns `ok: false`, `status: "provisional"`, `config.status: "missing"`, `provisional: true`, and exit code 1; never treat that result as final project validation. `--ignore-structure-errors` may continue generation, but returns `ok: false`, `status: "ignored"`, and exit code 1. Each issue includes `path`; element-targeted issues include `targetPath` and source `position` when the source element can be mapped. Classless or dynamic-class issues also include `target.tagName` and `target.siblingIndex` to disambiguate repeated ancestors.
+
+## 13. Lint-Driven Fix Loop (use error messages)
+
+Lint messages are designed to be actionable. Read the message first, then map to the config section below.
+Tool output is required for autonomous fixes because it provides message keys and locations; do not proceed without it.
+If a message conflicts with config, re-check the config. If a message conflicts with this document, follow the tool output and report doc drift. Only change config when explicitly instructed.
+
+Stylelint rules -> config section -> typical fixes:
+- spiracss/class-structure -> stylelint.class
+  - Fix SCSS selector naming, child combinators, selector depth, and modifier placement.
+- spiracss/page-layer -> stylelint.pageLayer
+  - Ensure direct child Blocks in page entry SCSS have a `// @components/...` link comment and it resolves to componentsDirs.
+- spiracss/property-placement -> stylelint.placement
+  - Fix placement rules (margin side, position, size/internal, responsive mixins).
+- spiracss/interaction-scope -> stylelint.interactionScope
+  - Fix @at-root &, leading &, comment, tail placement.
+- spiracss/interaction-properties -> stylelint.interactionProps
+  - Move transition/animation to interaction; specify targets; move initial values.
+- spiracss/keyframes-naming -> stylelint.keyframes
+  - Move @keyframes to root/end; rename to {block}-{action}.
+- spiracss/pseudo-nesting -> stylelint.pseudo
+  - Nest pseudo under &; do not attach pseudo directly to selector.
+- spiracss/rel-comments -> stylelint.rel
+  - Add/move @rel comments; fix alias paths; ensure root Block is first rule when required.
+
+HTML lint error codes -> typical fixes:
+- INVALID_BASE_CLASS: base class is invalid (modifier/utility/invalid pattern), external class is first with non-external later, no root element, or root has no class; put a valid Block/Element first and ensure the element exists.
+- CLASSLESS_TAG_NOT_ALLOWED: add a meaningful SpiraCSS Block/Element class to the reported HTML tag; do not add a tag selector in SCSS. Add the tag to htmlLint.classlessTagAllowlist only when it is intentionally structural and should not own styles.
+- DYNAMIC_CLASS_UNRESOLVED: resolve the template/dynamic class binding first; do not treat the tag as classless or add a replacement class based on incomplete static input.
+- MODIFIER_WITHOUT_BASE: add a Block/Element base class first.
+- DISALLOWED_MODIFIER: use data-* (when data mode) or change selectorPolicy.
+- UTILITY_WITHOUT_BASE: add a Block/Element base class first.
+- MULTIPLE_BASE_CLASSES: keep one base class per element.
+- UNBALANCED_HTML: fix invalid markup (missing/extra closing tags).
+- MULTIPLE_ROOT_ELEMENTS: in root mode, ensure a single root element or switch to selection mode.
+- ROOT_NOT_BLOCK: root base must be Block.
+- ELEMENT_WITHOUT_BLOCK_ANCESTOR: move Element inside a Block.
+- ELEMENT_PARENT_OF_BLOCK: promote parent Element to Block or refactor.
+- DISALLOWED_VARIANT_ATTRIBUTE / DISALLOWED_STATE_ATTRIBUTE: use modifiers in class mode.
+- INVALID_VARIANT_VALUE / INVALID_STATE_VALUE: fix data value to match valueNaming.
+- MAX_DEPTH_EXCEEDED: the HTML traversal safety limit was exceeded; treat the result as `status: "blocked"` and simplify or split the input. This is not a SpiraCSS HTML-depth rule, and `--ignore-structure-errors` must not override it.
+
+Definition of done:
+- If any HTML was modified or used as input for SCSS generation, HTML lint must pass in the appropriate mode. If `DYNAMIC_CLASS_UNRESOLVED` is present, stop and resolve the binding before applying a classless-tag fix. Other template syntax may still require manual review when the parser cannot materialize its contents.
+- Stylelint passes AND @rel path validation passes (when validatePath=true).
+
+### 13.1 Stylelint message keys (v0.4.4)
+
+Stylelint messages include a stable message key and a docs URL with an anchor like `#invalidName`.
+This document lists keys + meanings only; exact message text may change, so rely on tool output.
+If you need deeper guidance, open the linked rule page and anchor.
+
+spiracss/class-structure:
+- invalidName: class name violates naming rules
+- elementChainTooDeep: SCSS Element selector chain exceeds elementDepth
+- elementCannotOwnBlock: Block cannot be nested under an Element in SCSS (basic/shared)
+- blockDescendantSelector: chained SCSS selector under a Block; style only direct children
+- blockTargetsGrandchildElement: parent Block must not style grandchild Elements directly in SCSS
+- tooDeepBlockNesting: Block > Block > Block selector nesting within one SCSS file is not allowed (basic/shared); this does not describe HTML depth
+- multipleRootBlocks: multiple root Blocks in one file
+- duplicateRootBlock: same root Block is defined more than once at top level
+- needChild: missing `>` for direct child selector (basic section)
+- needChildNesting: top-level child selector; must be nested inside the Block
+- sharedNeedRootBlock: shared section must be directly under the root Block
+- needAmpForMod: modifier must be written as `&.<modifier>` inside the Block
+- needModifierPrefix: only modifier classes may be appended to `&`
+- disallowedModifier: modifiers are disabled when variant/state are both data mode
+- invalidVariantAttribute: variant attributes are disabled when variant.mode=class
+- invalidStateAttribute: state attributes are disabled when state.mode=class
+- invalidDataValue: invalid data value naming (valueNaming)
+- rootSelectorMissingBlock: selector must include the root Block
+- rootSelectorNeedNesting: root compound selector (e.g. `.block.external`) must be moved under the root as nested `&...`
+- missingRootBlock: no root Block found
+- fileNameMismatch: root Block name must match filename (rootFile/rootCase)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+spiracss/page-layer:
+- missingComponentLink: direct child Block in page entry SCSS lacks a link comment
+- nonComponentLink: link comment does not resolve to componentsDirs
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+spiracss/property-placement (see §6.3 for fix details):
+- containerInChildBlock: container property on child Block selector → move to child Block file or use CSS variable
+- itemInRoot: item property on root Block selector → move to parent file's `> .child-block` or `> .element` selector
+- selectorKindMismatch: mixed selector kinds prevent analysis → split into separate rules
+- marginSideViolation: forbidden margin side per marginSide config → use allowed side or set forbidden side to 0/auto/initial
+- internalInChildBlock: internal property on child Block selector → move to child Block file or use CSS variable (size props: `sizeInternal: false` to opt out)
+- positionInChildBlock: position restriction on child Block → fixed/sticky: move to child file; relative/absolute: add offsets in same context
+- pageRootContainer: container property on page-root → create page root Block class for layout
+- pageRootItem: item property on page-root → use page root Block with child selector
+- pageRootInternal: internal property on page-root → define on page root Block class
+- pageRootNoChildren: page-root must be standalone → remove compound selectors/pseudos
+- forbiddenAtRoot: `@at-root` only in interaction → move to interaction section or remove
+  (external-only roots allowed when all selectors are external classes; tags/ids/attributes/pseudos disqualify)
+- forbiddenExtend: `@extend` forbidden → use mixin, CSS variables, or direct styles
+- selectorResolutionSkipped: selector resolution skipped due to complexity (Stylelint rule severity; error by default)
+- selectorParseFailed: selector parse failed; some checks skipped (Stylelint rule severity; error by default)
+
+spiracss/interaction-scope:
+- needAtRoot: interaction selectors must be inside `@at-root & { ... }` and start with `&` (when enabled)
+- needComment: missing `// --interaction` comment (when enabled)
+- needTail: interaction section must be at the end (when enabled)
+- needRootBlock: interaction section must be directly under the root Block
+- mixedStateVariant: do not mix state selectors with variant selectors in the same selector
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+spiracss/interaction-properties:
+- needInteraction: transition/animation must be declared inside interaction
+- missingTransitionProperty: transition must include explicit property names
+- transitionAll: disallow `all` as a transition target
+- transitionNone: disallow `none` as a transition target
+- invalidTransitionProperty: disallow keywords/custom properties in transition targets
+- initialOutsideInteraction: transitioned property is declared outside interaction
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+spiracss/keyframes-naming:
+- needRoot: `@keyframes` must be at root level
+- needTail: `@keyframes` must be at file end
+- invalidName: keyframes name must follow `{block}-{action}` or `{block}-{element}-{action}`
+- invalidSharedName: shared keyframes name must follow `{prefix}{action}`
+- sharedFileOnly: shared keyframes must be in a configured shared file
+- missingBlock: cannot resolve root Block for keyframes naming (warning when blockWarnMissing=true)
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+spiracss/pseudo-nesting:
+- needNesting: pseudos must be nested under `&` on the same compound
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+spiracss/rel-comments:
+- missingParentRel: missing top-of-file link comment to the parent
+- misplacedParentRel: parent link comment must be at top of file
+- rootBlockNotFirst: root Block must be the first rule in its root scope
+- missingChildRel: missing child link comment inside direct child rule
+- notFound: link target path does not exist (when validatePath=true)
+- childMismatch: child name does not match the `@rel` target
+- selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+
+### 13.2 Autonomy coverage (v0.4.4)
+
+Scope: static HTML classes and SCSS selectors; unsupported selectors may be skipped without warnings. Dynamic class bindings and selectorParseFailed/selectorResolutionSkipped reduce coverage.
+
+| Category | Lint fixability | Notes |
+| --- | --- | --- |
+| Naming / classification | High | Dynamic HTML can hide violations |
+| Structure / sections | High | Element chain intent may need judgment |
+| Page layer | Medium-High | Requires valid page entry detection and component link resolution |
+| Property placement | High | Selector warnings reduce certainty |
+| Variant / State | High | Must match selectorPolicy |
+| Interaction | High | |
+| Keyframes | High | Element token is optional; if no match, it is treated as part of the action |
+| Pseudo-nesting | High | Parseable selectors only |
+| @rel comments | Medium-High | Path inference can require project context |
+| HTML lint | High | Reports unresolved dynamic classes; template contents may require manual review |
+
+Overall estimate (static inputs, parseable selectors): high but not guaranteed; treat warnings as manual review.
+
+### 13.3 Selector analysis diagnostics (selectorParseFailed / selectorResolutionSkipped)
+
+- `selectorParseFailed` uses the Stylelint rule severity: it is an error by default, but a project may explicitly downgrade that rule to a warning for a known framework syntax.
+- Do not loop endlessly on the same diagnostic.
+- Try: split selector lists, simplify combinators, or refactor complex selectors.
+- If the diagnostic persists after 3 attempts, stop and report with the selectors and context.
+- `selectorResolutionSkipped` uses the Stylelint rule severity as well: it is an error by default, but a project may explicitly downgrade that rule to a warning. Treat skipped analysis as reduced coverage.
+- If selectors contain unsupported combinators (descendant space, mid-chain `+`/`~`, `.block + .block`), treat lint pass as provisional and report; unsupported selectors may be skipped without warnings.
+
+## 14. Examples
+
+### 14.1 HTML structure (✅ / ❌)
+
+✅
+```html
+<div class="hero-section">
+  <div class="content"></div>
+<h1 class="title"></h1>
+</div>
+```
+
+✅ (deep Block hierarchy is allowed in HTML):
+
+```html
+<div class="page-shell">
+  <section class="hero-section">
+    <article class="card-panel">
+      <h2 class="title"></h2>
+    </article>
+  </section>
+</div>
+```
+
+HTML lint does not reject this depth. The separate `tooDeepBlockNesting` rule applies only to a Block > Block > Block selector chain written within one SCSS file.
+
+The separate SCSS case is:
+
+```scss
+.page-shell {
+  > .hero-section {
+    > .card-panel {
+      // This is the SCSS selector chain checked by tooDeepBlockNesting.
+    }
+  }
+}
+```
+
+❌ (Element > Block):
+```html
+<div class="hero-section">
+  <div class="title">
+    <div class="badge-container"></div>
+  </div>
+</div>
+```
+
+❌ (modifier first):
+```html
+<div class="-primary title"></div>
+```
+
+### 14.2 Variant/State (data mode)
+
+HTML:
+```html
+<div class="card-block" data-variant="primary" data-state="active" aria-expanded="true"></div>
+```
+
+SCSS:
+```scss
+.card-block {
+  &[data-variant="primary"] {}
+
+  // --interaction
+  @at-root & {
+    &[data-state="active"] {}
+    &[aria-expanded="true"] {}
+  }
+}
+```
+
+### 14.3 Variant/State (class mode)
+
+HTML:
+```html
+<div class="card-block -primary -active"></div>
+```
+
+SCSS:
+```scss
+.card-block {
+  &.-primary {}
+
+  // --interaction
+  @at-root & {
+    &.-active {}
+  }
+}
+```
+
+### 14.4 @rel placement (examples)
+
+Parent Block file:
+```scss
+// @assets/css/home.scss
+
+.parent-block {
+  > .child-block {
+    // @rel/scss/child-block.scss
+  }
+}
+```
+
+Child Block file:
+```scss
+// @rel/../parent-block.scss
+
+.child-block {}
+```
+
+### 14.5 Generated SCSS header (example)
+
+```scss
+@use "@styles/partials/global" as *;
+@use "sass:meta";
+
+// @assets/css/page.scss
+
+.sample-block {
+  @include meta.load-css("scss");
+}
+```
+
+### 14.6 Shared section (example)
+
+```scss
+.sample-block {
+  // --shared
+  .icon { width: 24px; }                // No ">" required
+  .caption { }                          // Direct child; ">" not required
+}
+```
+
+### 14.7 Page layer (✅ / ❌)
+
+✅ (page entry SCSS):
+```scss
+.main-container {
+  > .about-content {
+    // @components/pages/about/about-content/about-content.scss
+    margin-top: 2rem;
+  }
+}
+```
+
+❌ (missing link comment):
+```scss
+.main-container {
+  > .about-content {
+    margin-top: 2rem;
+  }
+}
+```
+
+## 15. Fallback Defaults (use only if config is missing)
+
+Note: Stylelint does not fall back to these defaults; use the naming/classification-related values only for HTML tools or provisional reasoning. Stylelint-only options such as childCombinator, childNesting, rootSingle, rootFile, childDir, componentsDirs, elementDepth, and section comments must not be interpreted as HTML structure limits.
+
+- class:
+  - blockCase=kebab, blockMaxWords=2, elementCase=kebab, modifierCase=kebab, modifierPrefix="-"
+  - childCombinator=true
+  - childNesting=true
+  - rootSingle=true
+  - rootFile=true
+  - rootCase="preserve"
+  - childFileCase="preserve"
+  - childDir="scss"
+  - componentsDirs=["components"]
+  - elementDepth=4
+  - comments.shared=/--shared/i, comments.interaction=/--interaction/i
+- selectorPolicy:
+  - valueNaming={ case: kebab, maxWords: 2 }
+  - variant.mode=data, variant.dataKeys=[data-variant]
+  - state.mode=data, state.dataKey=data-state, state.ariaKeys=[aria-expanded, aria-selected, aria-disabled]
+- placement:
+  - elementDepth=4, marginSide="top", marginSideTags=true, position=true, sizeInternal=true, responsiveMixins=[]
+- interactionScope:
+  - requireAtRoot=true, requireComment=true, requireTail=true, commentOnly=false
+  - pseudos=[:hover, :focus, :focus-visible, :active, :visited]
+- rel:
+  - requireScss=true
+  - requireMeta=true
+  - requireParent=true
+  - requireChild=true
+  - requireChildShared=true
+  - requireChildInteraction=false
+  - validatePath=true
+  - skipNoRules=true
+  - fileCase="preserve"
+  - childFileCase=(unset; falls back to fileCase)
+- keyframes:
+  - sharedPrefixes=["kf-"], sharedFiles=["keyframes.scss"], actionMaxWords=3
+  - blockSource="selector", blockWarnMissing=true, ignoreSkipPlacement=false
+
+## 16. Optional Official References (absolute URLs)
+
+These links are optional. This document is self-contained.
+
+- https://spiracss.jp
+- https://spiracss.jp/architecture/principles/
+- https://spiracss.jp/architecture/layers/
+- https://spiracss.jp/architecture/components/
+- https://spiracss.jp/configuration/
+- https://spiracss.jp/tooling/stylelint/
+- https://spiracss.jp/tooling/html-cli/

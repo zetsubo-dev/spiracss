@@ -175,6 +175,7 @@ export const normalizeOptions = (raw: unknown, reportInvalid?: InvalidOptionRepo
     rootSingle?: boolean
     rootFile?: boolean
     rootCase?: FileNameCase
+    scssRootStyle?: Options['root']['style']
     childFileCase?: FileNameCase
     childDir?: string
     componentsDirs?: string[]
@@ -200,7 +201,8 @@ export const normalizeOptions = (raw: unknown, reportInvalid?: InvalidOptionRepo
     root: {
       single: normalizeBoolean(opt.rootSingle, defaultOptions.root.single),
       file: normalizeBoolean(opt.rootFile, defaultOptions.root.file),
-      case: normalizeFileNameCase(opt.rootCase, defaultOptions.root.case)
+      case: normalizeFileNameCase(opt.rootCase, defaultOptions.root.case),
+      style: ['class', 'scope', 'scope-explicit'].includes(opt.scssRootStyle ?? '') ? opt.scssRootStyle : undefined
     },
     paths: {
       childDir: normalizeString(opt.childDir, defaultOptions.paths.childDir),

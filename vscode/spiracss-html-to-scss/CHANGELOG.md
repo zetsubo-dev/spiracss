@@ -2,6 +2,19 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.5.0
+
+### Added
+
+- Use the shared HTML CLI's `generator.scssRootStyle` selection for conventional, direct-scope, and explicit-scope SCSS generation.
+- Document the shared root setting and verify root, child Block, and selection output through the extension commands.
+
+### Changed
+
+- Default newly generated component root SCSS to `scope-explicit` through the shared HTML CLI. The Block files loaded by `meta.load-css()` and selection-mode output retain class selectors; existing files are not converted automatically.
+- Update the bundled `@spiracss/html-cli` dependency to `0.5.0` and align the extension version with the monorepo release.
+- Document Stylelint's child scope prohibition and manual migration; generated child classes and include placement are unchanged.
+
 ## 0.4.5
 
 ### Fixed

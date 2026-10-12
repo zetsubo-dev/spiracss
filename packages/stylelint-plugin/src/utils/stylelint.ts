@@ -1,6 +1,8 @@
 import type { Plugin, Rule, RuleBase, RuleMessages } from 'stylelint'
 import stylelint from 'stylelint'
 
+import { scopedLintRoot, scopeOptions } from './scope-context'
+
 export type SpiraPlugin = Plugin & { ruleName: string }
 
 export const createRule = <P = unknown, S = unknown, M extends RuleMessages = RuleMessages>(
@@ -8,7 +10,20 @@ export const createRule = <P = unknown, S = unknown, M extends RuleMessages = Ru
   messages: M,
   rule: RuleBase<P, S>,
   meta?: Rule['meta']
-): Rule<P, S, M> => Object.assign(rule, { ruleName, messages, meta })
+): Rule<P, S, M> => {
+  const wrapped: RuleBase<P, S> = (primary, secondary, context) => {
+    const check = rule(primary, secondary, context)
+    return (root, result) => {
+      if (primary === false || ruleName === 'spiracss/pseudo-nesting') return check(root, result)
+      const options = scopeOptions(
+        result.stylelint?.config?.rules?.['spiracss/class-structure'],
+        typeof primary === 'object' ? primary : secondary
+      )
+      return check(scopedLintRoot(root, options), result)
+    }
+  }
+  return Object.assign(wrapped, { ruleName, messages, meta })
+}
 
 export const createPlugin = (ruleName: string, rule: Rule): SpiraPlugin => {
   const plugin = stylelint.createPlugin(ruleName, rule) as SpiraPlugin

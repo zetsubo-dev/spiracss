@@ -2,6 +2,19 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.5.0
+
+### Added
+
+- Add `generator.scssRootStyle`: `scope-explicit` (a `:scope` wrapper), `scope` (direct scope contents), or `class` (the previous syntax). Apply it only to root-mode component roots, with `meta.load-css()` when independent children exist; loaded child Block files and selection-mode output retain class selectors.
+- Resolve and validate this option through the shared CLI/VS Code configuration API.
+
+### Changed
+
+- Default newly generated component root SCSS to `scope-explicit`, the recommended scoped form for Sass. Existing files are not converted automatically; `class` and direct `scope` remain selectable and supported by lint.
+- Existing projects can set `generator.scssRootStyle: 'class'` to retain previous output without an automatic cascade migration.
+- Document Stylelint's class-only child scope policy and retain the root include placement and generated child specificity.
+
 ## 0.4.5
 
 ### Fixed

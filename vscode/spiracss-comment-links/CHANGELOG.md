@@ -2,6 +2,12 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.5.0
+
+### Changed
+
+- Align the extension version with the monorepo release. Comment-link behavior is unchanged.
+
 ## 0.4.5
 
 ### Changed

@@ -155,6 +155,48 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     }
   })
 
+  test('Shared config defaults to explicit scope and selects other root styles', async function () {
+    this.timeout(20000)
+    const htmlFile = path.join(fixturesDir, 'html/sample-box.html')
+    const docDir = path.dirname(htmlFile)
+    const rootFile = path.join(docDir, 'SampleBox.scss')
+    const childDir = path.join(docDir, 'scss-test')
+    try {
+      const extension = vscode.extensions.getExtension('spiracss.spiracss-html-to-scss')
+      assert.ok(extension)
+      await extension.activate()
+      for (const style of [undefined, 'class', 'scope', 'scope-explicit']) {
+        writeConfig(
+          cjsConfigContent.replace(
+            "    rootFileCase: 'pascal',",
+            style ? `    scssRootStyle: '${style}',\n    rootFileCase: 'pascal',` : "    rootFileCase: 'pascal',"
+          )
+        )
+        removePath(rootFile)
+        removePath(childDir)
+        await openAndSelectAll(htmlFile)
+        await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
+        const content = fs.readFileSync(rootFile, 'utf8')
+        assert.strictEqual(content.includes('@scope (.sample-box) {'), style !== 'class')
+        assert.strictEqual(content.includes('  :scope {'), style === undefined || style === 'scope-explicit')
+        assert.ok(!content.includes('@scope (.hero-header)'))
+        const childContent = fs.readFileSync(path.join(childDir, 'HeroHeader.scss'), 'utf8')
+        assert.ok(childContent.includes('.hero-header {'))
+        assert.ok(!childContent.includes('@scope'))
+        removePath(childDir)
+        await openAndSelectAll(htmlFile)
+        await vscode.commands.executeCommand('extension.generateSpiracssScssFromSelection')
+        const selectionContent = fs.readFileSync(path.join(childDir, 'SampleBox.scss'), 'utf8')
+        assert.ok(selectionContent.includes('.sample-box {'))
+        assert.ok(!selectionContent.includes('@scope'))
+      }
+    } finally {
+      writeConfig(cjsConfigContent)
+      removePath(rootFile)
+      removePath(childDir)
+    }
+  })
+
   test('Extension should be present', () => {
     assert.ok(vscode.extensions.getExtension('spiracss.spiracss-html-to-scss'))
   })

@@ -47,6 +47,9 @@ importers:
 
   packages/stylelint-plugin:
     dependencies:
+      postcss:
+        specifier: ^8.4.49
+        version: 8.5.6
       postcss-selector-parser:
         specifier: ^7.1.1
         version: 7.1.1
@@ -75,9 +78,6 @@ importers:
       oxlint:
         specifier: ^1.65.0
         version: 1.65.0
-      postcss:
-        specifier: ^8.4.49
-        version: 8.5.6
       postcss-scss:
         specifier: ^4.0.9
         version: 4.0.9(postcss@8.5.6)
@@ -133,7 +133,7 @@ importers:
   vscode/spiracss-html-to-scss:
     dependencies:
       '@spiracss/html-cli':
-        specifier: workspace:^0.4.5
+        specifier: workspace:^0.5.0
         version: link:../../packages/html-cli
     devDependencies:
       '@types/mocha':

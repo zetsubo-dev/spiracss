@@ -15,6 +15,10 @@ All notable changes to this extension will be documented in this file.
 - Update the bundled `@spiracss/html-cli` dependency to `0.5.0` and align the extension version with the monorepo release.
 - Document Stylelint's child scope prohibition and manual migration; generated child classes and include placement are unchanged.
 
+### Fixed
+
+- Exclude verification logs and compiled tests from the distributed VSIX.
+
 ## 0.4.5
 
 ### Fixed

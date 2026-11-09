@@ -16,7 +16,7 @@ Beta release. Breaking changes may still occur.
 
 ## Requirements
 
-- Node.js >= 20
+- Node.js >= 24.22.2 and < 25 (Node.js 24 LTS; next release)
 
 ## Install
 

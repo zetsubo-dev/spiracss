@@ -16,19 +16,24 @@ Beta release. Breaking changes may still occur.
 
 ## Requirements
 
-- Node.js >= 20.19.0
-- Stylelint v17+
+- Node.js >= 24.22.2 and < 25 (Node.js 24 LTS)
+- Stylelint v17 or v18
+
+The development dependency uses Stylelint 18; Stylelint 17 remains supported for
+projects whose SCSS plugins and shared configs do not yet support 18. Check their
+peer dependencies before upgrading the whole lint toolchain. The published 0.5.0
+release supports Stylelint 17 only; these requirements apply to the next release.
 
 > Stylelint v16 users: use `@spiracss/stylelint-plugin@0.3.x`.
 
 ## Install
 
 ```bash
-pnpm add -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
+pnpm add -D @spiracss/stylelint-plugin stylelint@17 stylelint-scss postcss-scss
 ```
 
 ```bash
-npm install -D @spiracss/stylelint-plugin stylelint stylelint-scss postcss-scss
+npm install -D @spiracss/stylelint-plugin stylelint@17 stylelint-scss postcss-scss
 ```
 
 ## Usage

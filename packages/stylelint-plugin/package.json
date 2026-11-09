@@ -26,7 +26,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=24.15.0 <25"
+    "node": ">=24.22.2 <25"
   },
   "types": "dist/esm/index.d.ts",
   "files": [
@@ -57,23 +57,23 @@
     "format:check": "oxfmt --check ."
   },
   "dependencies": {
-    "postcss": "^8.4.49",
-    "postcss-selector-parser": "^7.1.1",
+    "postcss": "^8.5.32",
+    "postcss-selector-parser": "^7.1.7",
     "postcss-value-parser": "^4.2.0",
     "safe-regex": "^2.1.1"
   },
   "peerDependencies": {
-    "stylelint": "^17.0.0"
+    "stylelint": "^17.0.0 || ^18.0.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.12.4",
     "@types/safe-regex": "^1.1.6",
     "mocha": "^11.7.5",
-    "oxfmt": "^0.50.0",
+    "oxfmt": "^0.77.0",
     "oxlint": "^1.65.0",
     "postcss-scss": "^4.0.9",
-    "stylelint": "^17.0.0",
+    "stylelint": "^18.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.6.0"

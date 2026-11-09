@@ -2,6 +2,13 @@
 
 All notable changes to this extension will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Update the extension development and packaging Node.js pin to 24.22.2. The VS Code host requirement and extension behavior are unchanged.
+- Refresh compatible development dependencies and update Oxfmt to remove vulnerable Tinypool versions. Fix the remaining test/packaging-tool advisories through tested, parent-scoped security overrides documented in the workspace `SECURITY.md`.
+
 ## 0.5.0
 
 ### Changed

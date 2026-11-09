@@ -2,6 +2,15 @@
 
 All notable changes to this package will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Add Stylelint 18 support while retaining Stylelint 17 compatibility. Use Stylelint 18 for development and document the peer dependency requirements of third-party SCSS plugins and configs.
+- Require Node.js >= 24.22.2 and < 25 and pin development to 24.22.2, including the October 2026 security fixes.
+- Refresh PostCSS and selector-parser minimum versions to patched releases and align PostCSS types with Stylelint 18. Refresh compatible dependency resolutions and update Oxfmt to remove vulnerable Tinypool versions.
+- Fix the remaining development-tool advisories through parent-scoped overrides for diff, serialize-javascript, Glob, and Minimatch, with API contract tests and rationale in the workspace `SECURITY.md`.
+
 ## 0.5.0
 
 ### Added

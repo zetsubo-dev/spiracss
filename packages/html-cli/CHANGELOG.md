@@ -2,6 +2,14 @@
 
 All notable changes to this package will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Require Node.js >= 24.22.2 and < 25 and pin development to 24.22.2, including the October 2026 security fixes. CLI behavior is unchanged.
+- Raise the Cheerio minimum to 1.2.0, refresh compatible dependency resolutions, and update Oxfmt to remove vulnerable Tinypool versions.
+- Fix the remaining development-tool advisories through tested, parent-scoped security overrides documented in the workspace `SECURITY.md`.
+
 ## 0.5.0
 
 ### Added

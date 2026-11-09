@@ -44,5 +44,11 @@ Beta
 
 ## Monorepo Development
 
+- Node.js: 24.22.2 (Node.js 24 LTS; `.node-version`)
 - Package manager: `pnpm` (`pnpm-workspace.yaml`)
 - Install workspace dependencies from the repo root: `pnpm install`
+- The Stylelint plugin is developed against Stylelint 18 and also supports 17.
+  These changes are unreleased; published version 0.5.0 supports Stylelint 17.
+- Run `pnpm test:tooling` to verify the security-patched development dependencies.
+- See [SECURITY.md](SECURITY.md) for runtime security updates and the scoped
+  development-tool overrides.

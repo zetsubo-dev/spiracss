@@ -2,7 +2,7 @@
 
 ## Node.js 24 LTS
 
-Development is pinned to Node.js 24.22.2. The next npm releases require
+Development is pinned to Node.js 24.22.2. The v0.5.1 npm releases require
 `>=24.22.2 <25`. Use the newest available Node.js 24 patch, not an older patch
 that merely satisfies Stylelint's own minimum.
 

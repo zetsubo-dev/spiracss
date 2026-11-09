@@ -21,8 +21,8 @@ Beta release. Breaking changes may still occur.
 
 The development dependency uses Stylelint 18; Stylelint 17 remains supported for
 projects whose SCSS plugins and shared configs do not yet support 18. Check their
-peer dependencies before upgrading the whole lint toolchain. The published 0.5.0
-release supports Stylelint 17 only; these requirements apply to the next release.
+peer dependencies before upgrading the whole lint toolchain. These requirements
+apply from 0.5.1; version 0.5.0 supports Stylelint 17 only.
 
 > Stylelint v16 users: use `@spiracss/stylelint-plugin@0.3.x`.
 

@@ -48,7 +48,7 @@ Beta
 - Package manager: `pnpm` (`pnpm-workspace.yaml`)
 - Install workspace dependencies from the repo root: `pnpm install`
 - The Stylelint plugin is developed against Stylelint 18 and also supports 17.
-  These changes are unreleased; published version 0.5.0 supports Stylelint 17.
+  Stylelint 18 support is available from 0.5.1; version 0.5.0 supports Stylelint 17 only.
 - Run `pnpm test:tooling` to verify the security-patched development dependencies.
 - See [SECURITY.md](SECURITY.md) for runtime security updates and the scoped
   development-tool overrides.

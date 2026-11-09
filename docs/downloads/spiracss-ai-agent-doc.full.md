@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Full Reference v0.5.0
+# SpiraCSS AI Agent Full Reference v0.5.1
 
 This is the optional full reference. Start with the [diagnostic-first routing guide](https://spiracss.jp/downloads/spiracss-ai-agent-doc.md) and load this file only when the current diagnostic and focused rule pages are insufficient.
 The project config and current tool output remain authoritative. If they conflict with this reference, follow the tool output, re-check the config, and report the mismatch.
@@ -11,8 +11,10 @@ The project config and current tool output remain authoritative. If they conflic
 
 Defaults are only an explicit fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.5.0, @spiracss/html-cli v0.5.0.
+Version compatibility: @spiracss/stylelint-plugin v0.5.1, @spiracss/html-cli v0.5.1.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
+
+Version 0.5.1 requires Node.js `>=24.22.2 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.0 supports Stylelint 17 only. Check the peer dependencies of other SCSS plugins and shared configs before upgrading; do not force incompatible dependency versions.
 
 ## 1. Design Overview (minimum)
 

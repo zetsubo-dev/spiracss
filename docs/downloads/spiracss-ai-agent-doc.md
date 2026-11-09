@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Routing Guide v0.5.0
+# SpiraCSS AI Agent Routing Guide v0.5.1
 
 This is the small, diagnostic-first entry point for AI agents working with SpiraCSS. Do not load the full reference for every task. Read the current project config and tool output first, then load only the linked rule or option page required by the diagnostic.
 
@@ -14,7 +14,9 @@ Use these sources in this order:
 
 If the tool output conflicts with documentation, follow the tool output, re-check the config, and report possible documentation drift. Do not change config unless explicitly requested.
 
-Compatibility: `@spiracss/stylelint-plugin` v0.5.0 and `@spiracss/html-cli` v0.5.0. Confirm the installed versions before applying version-specific guidance.
+Compatibility: `@spiracss/stylelint-plugin` v0.5.1 and `@spiracss/html-cli` v0.5.1. Confirm the installed versions before applying version-specific guidance.
+
+Version 0.5.1 requires Node.js `>=24.22.2 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.0 requires Node.js `>=24.15.0 <25` and supports Stylelint 17 only. Do not force incompatible peer dependencies in SCSS plugins and shared configs. Check installed package requirements before upgrading.
 
 When upgrading from v0.4.x, the component root default changes to `scope-explicit`. To preserve existing class-form roots and CSS, the project owner can select `generator.scssRootStyle: 'class'`. This does not exempt child files from the new scope prohibition. Do not change config or migrate styles automatically; follow the chosen project setting.
 

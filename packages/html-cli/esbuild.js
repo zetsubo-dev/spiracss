@@ -1,4 +1,5 @@
 const esbuild = require('esbuild')
+const { buildParserAssets } = require('./scripts/build-parser-assets.cjs')
 
 const production = process.argv.includes('--production')
 const watch = process.argv.includes('--watch')
@@ -24,10 +25,12 @@ const esbuildProblemMatcherPlugin = {
 }
 
 async function main() {
+  await buildParserAssets('dist')
   // Library build (no shebang)
   const libCtx = await esbuild.context({
     entryPoints: {
-      index: 'src/index.ts'
+      index: 'src/index.ts',
+      eslint: 'src/eslint.ts'
     },
     bundle: true,
     format: 'cjs',

@@ -19,6 +19,9 @@ Beta release. Breaking changes may still occur.
 - Node.js >= 24.22.2 and < 25 (Node.js 24 LTS)
 - Stylelint v17 or v18
 
+The published 0.5.1 minimum above is unchanged. Current development requires
+Node.js >= 24.22.3 and < 25; use the latest Node.js 24 security patch.
+
 The development dependency uses Stylelint 18; Stylelint 17 remains supported for
 projects whose SCSS plugins and shared configs do not yet support 18. Check their
 peer dependencies before upgrading the whole lint toolchain. These requirements

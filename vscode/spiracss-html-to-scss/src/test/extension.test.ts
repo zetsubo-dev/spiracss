@@ -2,8 +2,11 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
+import { createRequire } from 'module'
+import { generationCoverageLine } from '../generation-output'
 import {
   adjustLintIssuePositions,
+  diagnosticsForLintIssues,
   formatLintIssueLines,
   getLintRuleMessage,
   isProvisionalContinuationConfirmed
@@ -126,9 +129,28 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
   const openAndSelectAll = async (filePath: string): Promise<vscode.TextEditor> => {
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
     const editor = await vscode.window.showTextDocument(doc)
+    assert.strictEqual(vscode.window.activeTextEditor?.document.uri.toString(), doc.uri.toString())
     const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length))
     editor.selection = new vscode.Selection(fullRange.start, fullRange.end)
     return editor
+  }
+
+  // A lint failure reveals the Output panel; its focused document would stay the active editor for later commands.
+  const hideOutputPanel = async (): Promise<void> => {
+    const shown = (): boolean =>
+      vscode.window.visibleTextEditors.some((editor) => editor.document.uri.scheme === 'output')
+    const until = (expected: boolean): Promise<void> =>
+      new Promise((resolve) => {
+        if (shown() === expected) return resolve()
+        const listener = vscode.window.onDidChangeVisibleTextEditors(() => {
+          if (shown() !== expected) return
+          listener.dispose()
+          resolve()
+        })
+      })
+    await until(true)
+    await vscode.commands.executeCommand('workbench.action.closePanel')
+    await until(false)
   }
 
   suiteSetup(() => {
@@ -214,7 +236,28 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     assert.match(getLintRuleMessage('MAX_DEPTH_EXCEEDED'), /safety limit/i)
   })
 
-  test('lint output includes the source position when available', () => {
+  test('lint output includes the source position when available', async () => {
+    // Load public core with its own asset directory, not the test bundle's directory.
+    const { lintMarkup, loadMarkupParsers } = createRequire(path.join(__dirname, '../../package.json'))(
+      '@spiracss/html-cli'
+    ) as typeof import('@spiracss/html-cli')
+    const parsers = await loadMarkupParsers(['astro'])
+    for (const [value, count] of [
+      ['open', 1],
+      ['"true"', 0]
+    ] as const) {
+      const result = lintMarkup(`<div class="card-list" aria-expanded={${value}}/>`, {
+        format: 'astro',
+        mode: 'root',
+        config: {},
+        parsers
+      })
+      assert.strictEqual(result.status, 'pass', JSON.stringify(result.errors))
+      const line = generationCoverageLine(result.coverage)
+      assert.strictEqual(Boolean(line), count > 0)
+      if (count) assert.ok(line?.includes('1'))
+    }
+    assert.strictEqual(generationCoverageLine(undefined), undefined)
     const lines = formatLintIssueLines(
       {
         code: 'CLASSLESS_TAG_NOT_ALLOWED',
@@ -236,6 +279,7 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
           message: 'Add a class.',
           baseClass: '',
           path: [],
+          range: [0, 5],
           position: { offset: 0, line: 1, column: 1, endOffset: 5, endLine: 1, endColumn: 6 }
         }
       ],
@@ -246,6 +290,21 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
     assert.strictEqual(adjusted[0]?.position?.offset, 104)
     assert.strictEqual(adjusted[0]?.position?.line, 6)
     assert.strictEqual(adjusted[0]?.position?.column, 3)
+    assert.deepStrictEqual(adjusted[0]?.range, [104, 109])
+  })
+
+  test('keeps positionless issues in output without a fabricated squiggle', async () => {
+    const document = await vscode.workspace.openTextDocument({ content: '日本😀\r\nBad_Name', language: 'html' })
+    const issue = { code: 'INVALID_BASE_CLASS' as const, message: 'Unknown source location.', baseClass: '', path: [] }
+    const located = { ...issue, position: { offset: 6, line: 2, column: 1, endOffset: 14, endLine: 2, endColumn: 9 } }
+    const diagnostics = diagnosticsForLintIssues([issue, located], document)
+    assert.strictEqual(diagnostics.length, 1)
+    assert.strictEqual(document.getText(diagnostics[0].range), 'Bad_Name')
+    assert.ok(formatLintIssueLines(issue, true).some((line) => line.includes('Unknown source location.')))
+    assert.strictEqual(
+      adjustLintIssuePositions([issue], ' \r\n<div/>', new vscode.Position(3, 1), 20)[0].position,
+      undefined
+    )
   })
 
   test('Extension should activate', async () => {
@@ -277,6 +336,61 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       commands.includes('extension.insertSracssPlaceholders'),
       'insertSracssPlaceholders command should be registered'
     )
+  })
+
+  test('Legacy template extensions keep legacy diagnostics when associated with HTML', async function () {
+    this.timeout(20000)
+    const extension = vscode.extensions.getExtension('spiracss.spiracss-html-to-scss')
+    assert.ok(extension)
+    await extension.activate()
+
+    const source = '<div class="product-card"><p class="title <%= active ? \'-active\' : \'\' %>"></p></div>'
+    const formalCodes = ['MULTIPLE_BASE_CLASSES', ...Array.from({ length: 6 }, () => 'UNCLASSIFIED_CLASS_TOKEN')]
+    const cases = [
+      ...['ejs', 'njk', 'nunjucks', 'svelte'].map((suffix) => ({
+        name: `sample.${suffix}`,
+        scheme: 'file',
+        expectedCodes: ['DYNAMIC_CLASS_UNRESOLVED']
+      })),
+      { name: 'sample.html', scheme: 'file', expectedCodes: formalCodes },
+      { name: 'untitled-source', scheme: 'untitled', expectedCodes: formalCodes }
+    ]
+    const tempDir = fs.mkdtempSync(path.join(fixturesDir, 'format-selection-'))
+    try {
+      // Untitled documents have no workspace folder, so config resolves from the document directory.
+      fs.writeFileSync(path.join(tempDir, 'spiracss.config.js'), cjsConfigContent, { flag: 'wx' })
+      for (const { name, scheme, expectedCodes } of cases) {
+        const filePath = path.join(tempDir, name)
+        if (scheme === 'file') fs.writeFileSync(filePath, source, { flag: 'wx' })
+        const uri = vscode.Uri.file(filePath).with({ scheme })
+        const document = await vscode.languages.setTextDocumentLanguage(
+          await vscode.workspace.openTextDocument(uri),
+          'html'
+        )
+        const editor = await vscode.window.showTextDocument(document)
+        assert.strictEqual(vscode.window.activeTextEditor?.document.uri.toString(), document.uri.toString())
+        try {
+          if (scheme === 'untitled') {
+            assert.ok(await editor.edit((edit) => edit.insert(new vscode.Position(0, 0), source)))
+          }
+          assert.strictEqual(document.languageId, 'html')
+          editor.selection = new vscode.Selection(document.positionAt(0), document.positionAt(source.length))
+          const entries = fs.readdirSync(tempDir).sort()
+
+          await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
+          await hideOutputPanel()
+
+          const diagnostics = vscode.languages.getDiagnostics(document.uri).filter((issue) => issue.source === 'SpiraCSS')
+          assert.deepStrictEqual(diagnostics.map((issue) => issue.code), expectedCodes, uri.toString())
+          assert.deepStrictEqual(fs.readdirSync(tempDir).sort(), entries, 'Lint failures must not generate SCSS')
+        } finally {
+          await vscode.window.showTextDocument(document)
+          await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor')
+        }
+      }
+    } finally {
+      removePath(tempDir)
+    }
   })
 
   test('Generate SCSS from HTML fixture file', async function () {

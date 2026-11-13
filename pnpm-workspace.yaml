@@ -11,6 +11,9 @@ allowBuilds:
 # Verify the replacement APIs with `pnpm test:tooling` and the full package tests.
 # Remove each override when its upstream parent requires a patched version.
 overrides:
+  'eslint@10.14.0>minimatch': 11.0.5
+  '@eslint/config-array@0.23.5>minimatch': 11.0.5
+  '@typescript-eslint/typescript-estree@8.72.1>minimatch': 11.0.5
   'mocha@11.8.0>diff': 8.0.3
   'mocha@11.8.0>serialize-javascript': 7.1.4
   'mocha@11.8.0>glob': 14.0.4

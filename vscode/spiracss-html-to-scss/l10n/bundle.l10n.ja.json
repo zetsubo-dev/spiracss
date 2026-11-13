@@ -1,4 +1,5 @@
 {
+  "Selectors were not generated for unenumerable dynamic values at {0} site(s).": "動的値を列挙できない {0} 箇所は selector 未生成です。",
   "Failed to load spiracss.config.js. Settings might not be applied.": "spiracss.config.js の読み込みに失敗しました。設定が反映されない可能性があります。",
   "Overwrite": "上書き",
   "Skip": "スキップ",

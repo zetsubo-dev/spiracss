@@ -17,6 +17,7 @@ function runTsCli(
   const result = spawnSync(process.execPath, ['-r', tsNodeRegister, entry, ...args], {
     cwd,
     encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
     env: {
       ...process.env,
       TS_NODE_PROJECT: path.resolve('tsconfig.json'),
@@ -82,6 +83,54 @@ describe('CLI config safety contract', () => {
     assert.strictEqual(output.ok, false)
     assert.deepStrictEqual(output.blocked?.code, 'CONFIG_MISSING')
     assert.strictEqual(output.provisional, true)
+  })
+
+  it('reports unenumerated generation sites once in JSON and only nonzero in human output', async function () {
+    this.timeout(15000)
+    const file = path.join(projectDir, 'dynamic.astro')
+    await fsp.writeFile(path.join(projectDir, 'spiracss.config.js'), 'module.exports = {}', 'utf8')
+    try {
+      for (const [value, count] of [
+        ['open', 1],
+        ['"true"', 0]
+      ] as const) {
+        await fsp.writeFile(file, `<div class="card-list" aria-expanded={${value}}/>`, 'utf8')
+        const json = runTsCli(cliSource, ['--root', '--dry-run', '--json', file], projectDir)
+        assert.strictEqual(json.status, 0, json.stderr)
+        const result = JSON.parse(json.stdout)
+        assert.strictEqual(result.status, 'pass')
+        assert.strictEqual(result.coverage.generationUnenumeratedSites, count)
+        assert.deepStrictEqual(result.errors, [])
+        assert.ok(!json.stderr.includes('unenumerable dynamic'))
+        const human = runTsCli(cliSource, ['--root', '--dry-run', file], projectDir)
+        assert.strictEqual(human.status, 0, human.stderr)
+        assert.strictEqual(human.stderr.split('\n').filter((l) => l.includes('unenumerable dynamic')).length, count)
+        if (count) assert.match(human.stderr, /1 site\(s\)/)
+      }
+    } finally {
+      await fsp.rm(path.join(projectDir, 'spiracss.config.js'), { force: true })
+    }
+  })
+
+  it('keeps file-level unsupported-format JSON positionless without changing blocked exit or writing files', async () => {
+    const file = path.join(projectDir, 'unrecognized.unknown')
+    await fsp.writeFile(file, '<div class="card-list"/>', 'utf8')
+    for (const entry of [cliSource, lintSource]) {
+      const result = runTsCli(entry, ['--root', '--allow-provisional', '--json', file], projectDir)
+      assert.strictEqual(result.status, 1)
+      const json = JSON.parse(result.stdout)
+      assert.strictEqual(json.status, 'blocked')
+      assert.strictEqual(json.ok, false)
+      const issue = json.errors.find((item: { code: string }) => item.code === 'FORMAT_UNSUPPORTED')
+      assert.ok(issue)
+      assert.ok(!('range' in issue) && !('position' in issue))
+      assert.ok(issue.reason && issue.repair.conditions.length)
+      assert.ok(
+        !issue.repair.conditions.some((condition: string) => /Place exactly one|Additional classes/.test(condition))
+      )
+      if (json.files) assert.deepStrictEqual(json.files, [])
+    }
+    assert.ok(!(await fsp.readdir(projectDir)).some((name) => name.endsWith('.scss')))
   })
 
   it('HTML-to-SCSS blocks missing config with the input file in JSON', () => {
@@ -281,6 +330,64 @@ describe('CLI config safety contract', () => {
       assert.strictEqual(output.ok, false)
       assert.strictEqual(output.blocked?.code, 'CONFIG_LOAD_ERROR')
       assert.strictEqual(output.config?.status, 'error')
+    } finally {
+      await fsp.rm(path.join(projectDir, 'spiracss.config.js'), { force: true })
+    }
+  })
+
+  it('reports out-of-scope counts only for formally inspected sources', async function () {
+    this.timeout(15000)
+    const legacyPath = path.join(projectDir, 'component.njk')
+    await fsp.writeFile(legacyPath, await fsp.readFile(htmlPath, 'utf8'), 'utf8')
+    await fsp.writeFile(path.join(projectDir, 'spiracss.config.js'), 'module.exports = {}', 'utf8')
+    try {
+      const legacy = runTsCli(lintSource, ['--root', legacyPath], projectDir)
+      assert.strictEqual(legacy.status, 0, legacy.stderr)
+      assert.strictEqual(
+        legacy.stdout,
+        'No SpiraCSS HTML structure errors.\nStatic-source inspection only. Rendered DOM was not inspected.\n'
+      )
+      const formal = runTsCli(lintSource, ['--root', htmlPath], projectDir)
+      assert.strictEqual(formal.status, 0, formal.stderr)
+      assert.strictEqual(
+        formal.stdout,
+        'No SpiraCSS HTML structure errors.\nStatic-source inspection only; 0 source site(s) were outside scope. Rendered DOM was not inspected.\n'
+      )
+    } finally {
+      await fsp.rm(path.join(projectDir, 'spiracss.config.js'), { force: true })
+    }
+  })
+
+  it('reuses one formal source parse for CLI lint plus JSON generation', async () => {
+    const file = path.join(projectDir, 'component.tsx')
+    await fsp.writeFile(
+      file,
+      'export function Card(){return <div className="card-list"><p className="body"/></div>}',
+      'utf8'
+    )
+    await fsp.writeFile(path.join(projectDir, 'spiracss.config.js'), 'module.exports = {}', 'utf8')
+    try {
+      const result = runTsCli(cliSource, ['--root', '--json', file], projectDir)
+      assert.strictEqual(result.status, 0, result.stderr)
+      const output = JSON.parse(result.stdout) as {
+        status: string
+        format: string
+        parserPath: string
+        metrics: { markupParses: number; expressionParses: number }
+        coverage: { elements: number }
+        files: Array<{ path: string }>
+      }
+      assert.strictEqual(output.status, 'pass')
+      assert.strictEqual(output.format, 'tsx')
+      assert.strictEqual(output.parserPath, 'parser')
+      assert.strictEqual(output.metrics.markupParses, 1)
+      assert.strictEqual(output.metrics.expressionParses, 0)
+      assert.strictEqual(output.coverage.elements, 2)
+      assert.deepStrictEqual(
+        output.files.map((entry) => entry.path),
+        ['card-list.scss']
+      )
+      await assert.rejects(fsp.access(path.join(projectDir, 'card-list.scss')))
     } finally {
       await fsp.rm(path.join(projectDir, 'spiracss.config.js'), { force: true })
     }

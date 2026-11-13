@@ -10,6 +10,7 @@ export type ParsedCliArgs = {
   ignoreStructureErrors: boolean
   dryRun: boolean
   json: boolean
+  format?: string
 }
 
 export function parseCliArgs(argv: string[], entryPoint: CliEntryPoint = 'generator'): ParsedCliArgs {
@@ -29,10 +30,19 @@ export function parseCliArgs(argv: string[], entryPoint: CliEntryPoint = 'genera
   let dryRun = false
   let json = false
   let baseDir: string | undefined
+  let format: string | undefined
   const positional: string[] = []
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
+    if (arg === '--format') {
+      const value = argv[index + 1]
+      if (!value || value.startsWith('--') || format !== undefined)
+        throw new Error('Usage error: --format requires one format operand and may be specified only once.')
+      format = value
+      index += 1
+      continue
+    }
     if (arg === '--base-dir') {
       if (entryPoint === 'lint') {
         throw new Error('Usage error: --base-dir is not supported by spiracss-html-lint.')
@@ -80,6 +90,7 @@ export function parseCliArgs(argv: string[], entryPoint: CliEntryPoint = 'genera
     inputPath: positional[0],
     ignoreStructureErrors,
     dryRun,
-    json
+    json,
+    format
   }
 }

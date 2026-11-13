@@ -4,6 +4,7 @@
 
 import {
   generateFromHtml,
+  generateFromMarkupDocument,
   type GeneratorOptions,
   type HtmlLintIssue,
   isGeneratedIndexFile,
@@ -11,12 +12,19 @@ import {
   loadProjectOptions,
   type LoadedProjectOptions,
   lintHtmlStructure,
+  lintMarkup,
+  loadMarkupParsers,
+  type MarkupConfig,
+  type MarkupDocument,
+  type MarkupFormat,
   type RootBlockSummary,
-  summarizeRootBlocks
+  summarizeRootBlocks,
+  summarizeMarkupRootBlocks
 } from '@spiracss/html-cli'
 import { promises as fsp } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { generationCoverageLine } from './generation-output'
 
 /* ---------- global overwrite choice / output channel ---------- */
 let globalWriteChoice: 'overwrite' | null = null
@@ -221,6 +229,19 @@ export function getLintRuleMessage(code: HtmlLintIssue['code']): string {
       return vscode.l10n.t('Rule: HTML tags must have a SpiraCSS Block or Element class.')
     case 'MAX_DEPTH_EXCEEDED':
       return vscode.l10n.t('Rule: HTML traversal exceeded the safety limit; simplify or split the input.')
+    case 'UNCLASSIFIED_CLASS_TOKEN':
+      return 'Rule: Every class token must match its configured role.'
+    case 'PARSE_ERROR':
+      return 'Parser: The selected source is not valid in its explicit format.'
+    case 'PARSER_RUNTIME_ERROR':
+      return 'Parser: Runtime or resource failure; this is not a source syntax violation.'
+    case 'CONFIG_INVALID':
+      return 'Configuration: Correct the reported project setting before checking markup.'
+    case 'PARSER_UNAVAILABLE':
+    case 'FORMAT_UNSUPPORTED':
+      return 'Parser: A supported format and its packaged parser are required.'
+    case 'SOURCE_RELATION_UNRESOLVED':
+      return 'Rule: This source relation or policy value needs static evidence.'
     default:
       return vscode.l10n.t('Rule: Unknown lint rule.')
   }
@@ -244,6 +265,10 @@ export function formatLintIssueLines(issue: HtmlLintIssue, includeDetail: boolea
   if (includeDetail) {
     const detailLabel = issue.message ? vscode.l10n.t('Detail: {0}', issue.message) : vscode.l10n.t('Detail: (none)')
     lines.push(detailLabel)
+    if (issue.reason) lines.push(`Reason: ${issue.reason}`)
+    if (issue.condition) lines.push(`Condition: ${issue.condition}`)
+    if (issue.repair) lines.push(`Repair: ${JSON.stringify(issue.repair)}`)
+    if (issue.docs) lines.push(`Docs: ${issue.docs}`)
   }
   return lines
 }
@@ -293,6 +318,7 @@ export function adjustLintIssuePositions(
     )
     return {
       ...issue,
+      ...(issue.range ? { range: [start.offset, end.offset] as [number, number] } : {}),
       position: {
         ...issue.position,
         ...start,
@@ -302,6 +328,24 @@ export function adjustLintIssuePositions(
       }
     }
   })
+}
+
+export function diagnosticsForLintIssues(issues: HtmlLintIssue[], document: vscode.TextDocument): vscode.Diagnostic[] {
+  return issues
+    .filter((issue) => issue.position)
+    .map((issue) => {
+      const position = issue.position!
+      const diagnostic = new vscode.Diagnostic(
+        new vscode.Range(document.positionAt(position.offset), document.positionAt(position.endOffset)),
+        [issue.message, issue.reason, issue.condition, issue.repair ? JSON.stringify(issue.repair) : '']
+          .filter(Boolean)
+          .join('\n'),
+        vscode.DiagnosticSeverity.Error
+      )
+      diagnostic.code = issue.code
+      diagnostic.source = 'SpiraCSS'
+      return diagnostic
+    })
 }
 
 async function reportLintIssues(issues: HtmlLintIssue[]): Promise<void> {
@@ -337,10 +381,13 @@ async function generateScss(
   html: string,
   docDir: string,
   isRootMode: boolean,
-  options: GeneratorOptions
+  options: GeneratorOptions,
+  document?: MarkupDocument
 ): Promise<GenerateScssResult> {
   const { childScssDir } = options
-  const generated = generateFromHtml(html, docDir, isRootMode, options)
+  const generated = document
+    ? generateFromMarkupDocument(document, docDir, isRootMode, options)
+    : generateFromHtml(html, docDir, isRootMode, options)
   const childDir = path.join(docDir, childScssDir)
   await fsp.mkdir(childDir, { recursive: true })
   const indexUses: string[] = []
@@ -371,6 +418,8 @@ async function generateScss(
 /* ---------- command registration ---------- */
 export function activate(ctx: vscode.ExtensionContext): void {
   ctx.subscriptions.push(outputChannel)
+  const diagnostics = vscode.languages.createDiagnosticCollection('spiracss-source')
+  ctx.subscriptions.push(diagnostics)
   const createHandler = (isRoot: boolean) => async (): Promise<void> => {
     const ed = vscode.window.activeTextEditor
     if (!ed) return
@@ -388,29 +437,93 @@ export function activate(ctx: vscode.ExtensionContext): void {
 
     globalWriteChoice = null
     try {
-      const lintIssues = lintHtmlStructure(
-        html,
-        isRoot,
-        options.naming,
-        options.selectorPolicy,
-        options.external,
-        options.jsxClassBindings,
-        options.htmlLint
+      const byLanguage: Record<string, MarkupFormat> = {
+        html: 'html',
+        webc: 'webc',
+        javascriptreact: 'jsx',
+        typescriptreact: 'tsx',
+        astro: 'astro',
+        vue: 'vue'
+      }
+      const extension = path.extname(ed.document.uri.fsPath).toLowerCase()
+      const byExtension: Record<string, MarkupFormat> = {
+        '.html': 'html',
+        '.htm': 'html',
+        '.webc': 'webc',
+        '.jsx': 'jsx',
+        '.tsx': 'tsx',
+        '.astro': 'astro',
+        '.vue': 'vue'
+      }
+      const legacy = ['.ejs', '.njk', '.nunjucks', '.svelte'].includes(extension)
+      const format = legacy
+        ? undefined
+        : extension === '.webc'
+          ? 'webc'
+          : (byLanguage[ed.document.languageId] ?? byExtension[extension])
+      let document: MarkupDocument | undefined
+      const parsers = format ? await loadMarkupParsers([format]) : {}
+      const parser = format ? parsers[format] : undefined
+      const formal = format
+        ? lintMarkup(html, {
+            format,
+            mode: isRoot ? 'root' : 'selection',
+            config: options,
+            parsers: {
+              [format]: parser?.available
+                ? {
+                    available: true,
+                    parse: (source: string, mode: 'root' | 'selection', config: MarkupConfig) => {
+                      document = parser.parse(source, mode, config)
+                      return document
+                    }
+                  }
+                : parser
+            }
+          })
+        : undefined
+      const lintIssues: HtmlLintIssue[] =
+        formal?.errors ??
+        (legacy
+          ? lintHtmlStructure(
+              html,
+              isRoot,
+              options.naming,
+              options.selectorPolicy,
+              options.external,
+              options.jsxClassBindings,
+              options.htmlLint
+            )
+          : [
+              {
+                code: 'FORMAT_UNSUPPORTED',
+                kind: 'unsupported',
+                message: 'Select HTML, WebC, JSX, TSX, Astro or Vue using the document language or file extension.',
+                reason: 'No supported source format was selected.',
+                baseClass: '',
+                path: []
+              }
+            ])
+      const adjusted = adjustLintIssuePositions(
+        lintIssues,
+        selectedSource,
+        ed.selection.start,
+        ed.document.offsetAt(ed.selection.start)
       )
+      diagnostics.set(ed.document.uri, diagnosticsForLintIssues(adjusted, ed.document))
       if (lintIssues.length > 0) {
-        await reportLintIssues(
-          adjustLintIssuePositions(
-            lintIssues,
-            selectedSource,
-            ed.selection.start,
-            ed.document.offsetAt(ed.selection.start)
-          )
-        )
+        await reportLintIssues(adjusted)
         return
       }
-      const rootSummary = isRoot ? [] : summarizeRootBlocks(html, false, options)
+      const rootSummary = isRoot
+        ? []
+        : document
+          ? summarizeMarkupRootBlocks(document, options)
+          : summarizeRootBlocks(html, false, options)
       const mergedRoots = rootSummary.filter((entry) => entry.count > 1)
-      const result = await generateScss(html, docDir, isRoot, options)
+      const result = await generateScss(html, docDir, isRoot, options, document)
+      const coverageLine = generationCoverageLine(formal?.coverage)
+      if (coverageLine) outputChannel.appendLine(coverageLine)
       if (result.generatedCount === 0) {
         vscode.window.showWarningMessage(
           vscode.l10n.t('No SCSS was generated. Check the root selection and SpiraCSS naming rules.')

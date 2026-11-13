@@ -1,4 +1,5 @@
 {
+  "Selectors were not generated for unenumerable dynamic values at {0} site(s).": "Selectors were not generated for unenumerable dynamic values at {0} site(s).",
   "Failed to load spiracss.config.js. Settings might not be applied.": "Failed to load spiracss.config.js. Settings might not be applied.",
   "Overwrite": "Overwrite",
   "Skip": "Skip",

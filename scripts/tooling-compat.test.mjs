@@ -12,6 +12,11 @@ const extensionRequire = createRequire(new URL('../vscode/spiracss-html-to-scss/
 const mochaRequire = createRequire(pluginRequire.resolve('mocha'))
 const cliRequire = createRequire(extensionRequire.resolve('@vscode/test-cli'))
 const vsceRequire = createRequire(extensionRequire.resolve('@vscode/vsce'))
+const htmlRequire = createRequire(new URL('../packages/html-cli/package.json', import.meta.url))
+const eslintRequire = createRequire(htmlRequire.resolve('eslint'))
+const configArrayRequire = createRequire(eslintRequire.resolve('@eslint/config-array'))
+const tsParserRequire = createRequire(htmlRequire.resolve('@typescript-eslint/parser'))
+const tsEstreeRequire = createRequire(tsParserRequire.resolve('@typescript-eslint/typescript-estree'))
 const c8Require = createRequire(cliRequire.resolve('c8'))
 const excludeRequire = createRequire(c8Require.resolve('test-exclude'))
 const parents = [
@@ -31,6 +36,30 @@ const fixture = (t) => {
   }
   return dir
 }
+
+for (const [name, parentRequire] of [['ESLint 10.14.0', eslintRequire], ['ESLint config-array 0.23.5', configArrayRequire], ['TypeScript ESTree 8.72.1', tsEstreeRequire]]) {
+  test(`${name}: parent-resolved minimatch supports the used matcher APIs`, () => {
+    assert.equal(parentRequire('minimatch/package.json').version, '11.0.5')
+    const { Minimatch, minimatch } = parentRequire('minimatch')
+    const matcher = new Minimatch('**/*.{html,webc}', { dot: true, matchBase: true })
+    assert.equal(matcher.match('src/component.webc'), true)
+    assert.equal(matcher.match('src/component.html'), true)
+    assert.equal(matcher.match('src/component.js'), false)
+    assert.equal(minimatch('src/skip.html', '**/skip.*'), true)
+    assert.equal(minimatch('vendor/component.html', 'src/**/*.html'), false)
+  })
+}
+
+test('ESLint patched parents preserve real flat-config file and ignore selection', async (t) => {
+  const cwd = fixture(t)
+  const { ESLint } = htmlRequire('eslint')
+  const eslint = new ESLint({ cwd, overrideConfigFile: true, overrideConfig: [{ ignores: ['vendor/**'] }, { files: ['src/**/*.{js,ts}'], ignores: ['**/*.test.js'], languageOptions: { ecmaVersion: 2022 }, rules: { 'no-debugger': 'error' } }] })
+  assert.equal((await eslint.lintText('debugger;', { filePath: 'src/main.js' }))[0].errorCount, 1)
+  assert.equal((await eslint.lintText('debugger;', { filePath: 'src/nested/child.ts' }))[0].errorCount, 1)
+  assert.equal((await eslint.lintText('debugger;', { filePath: 'src/skip.test.js' }))[0].errorCount, 0)
+  assert.equal(await eslint.isPathIgnored(path.join(cwd, 'vendor/ignore.js')), true)
+  assert.equal(await eslint.isPathIgnored(path.join(cwd, 'src/not-included.webc')), true)
+})
 
 for (const [name, parentRequire] of parents) {
   test(`${name}: patched glob preserves sync/async discovery and ignores`, async (t) => {

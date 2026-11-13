@@ -1,4 +1,5 @@
 const esbuild = require('esbuild')
+const { buildParserAssets } = require('../../packages/html-cli/scripts/build-parser-assets.cjs')
 
 const production = process.argv.includes('--production')
 const watch = process.argv.includes('--watch')
@@ -24,6 +25,7 @@ const esbuildProblemMatcherPlugin = {
 }
 
 async function main() {
+  await buildParserAssets('dist')
   // VSCode extension build (no shebang)
   const ctx = await esbuild.context({
     entryPoints: {

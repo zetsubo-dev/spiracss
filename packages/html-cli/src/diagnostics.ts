@@ -16,9 +16,6 @@ export function formatIssueLocation(issue: Pick<HtmlLintIssue, 'path' | 'target'
 
 export type ValidationStatus = 'pass' | 'provisional' | 'ignored' | 'failed' | 'blocked'
 
-export const findMaxDepthIssue = (issues: HtmlLintIssue[]): HtmlLintIssue | undefined =>
-  issues.find((issue) => issue.code === 'MAX_DEPTH_EXCEEDED')
-
 export const validationStatusFor = (args: {
   configStatus: 'missing' | 'loaded' | 'error'
   hasIssues: boolean

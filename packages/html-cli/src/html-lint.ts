@@ -4,8 +4,13 @@ import * as path from 'path'
 import { warnInvalidCustomPatterns } from './config-warnings'
 import { parseCliArgs } from './cli-args'
 import { loadProjectOptions } from './config-options'
-import { findMaxDepthIssue, formatIssueLocation, validationStatusFor } from './diagnostics'
+import { formatIssueLocation, validationStatusFor } from './diagnostics'
+import { isBlockingMarkupIssue } from './markup/failures'
 import { type HtmlLintIssue, lintHtmlStructure } from './generator-core'
+import { lintMarkup, loadMarkupParsers } from './markup'
+import { sourceFormat } from './markup/format'
+import { completeDiagnostic } from './markup/repair'
+import { SourceIndex } from './markup/source'
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -96,18 +101,30 @@ async function run(): Promise<void> {
   html = args.useStdin ? await readStdin() : await fsp.readFile(filePath as string, 'utf8')
 
   const isRootMode = args.mode === 'root'
-  const issues: HtmlLintIssue[] = lintHtmlStructure(
-    html,
-    isRootMode,
-    naming,
-    selectorPolicy,
-    external,
-    jsxClassBindings,
-    htmlLint
-  )
-  const maxDepthIssue = findMaxDepthIssue(issues)
-  if (maxDepthIssue) {
-    const blocked = { code: maxDepthIssue.code, message: maxDepthIssue.message }
+  const format = sourceFormat(filePath, args.format)
+  const formalResult =
+    format && format !== 'legacy'
+      ? lintMarkup(html, { format, mode: args.mode, parsers: await loadMarkupParsers([format]), config: options })
+      : undefined
+  const issues: HtmlLintIssue[] = !format
+    ? [
+        completeDiagnostic(
+          {
+            code: 'FORMAT_UNSUPPORTED',
+            kind: 'unsupported',
+            message: `Unsupported source format: ${args.format ?? filePath}. Select --format explicitly.`,
+            baseClass: '',
+            path: []
+          },
+          options,
+          new SourceIndex(html)
+        )
+      ]
+    : (formalResult?.errors ??
+      lintHtmlStructure(html, isRootMode, naming, selectorPolicy, external, jsxClassBindings, htmlLint))
+  const blockingIssue = issues.find(isBlockingMarkupIssue)
+  if (blockingIssue) {
+    const blocked = { code: blockingIssue.code, message: blockingIssue.message }
     if (args.json) {
       console.log(
         JSON.stringify(
@@ -119,7 +136,11 @@ async function run(): Promise<void> {
             config: { status: configStatus, path: configPath },
             provisional: configStatus === 'missing',
             blocked,
-            errors: issues
+            errors: issues,
+            format: format ?? null,
+            parserPath: format === 'legacy' ? 'legacy' : 'parser',
+            coverage: formalResult?.coverage,
+            metrics: formalResult?.metrics
           },
           null,
           2
@@ -147,7 +168,11 @@ async function run(): Promise<void> {
           status,
           config: { status: configStatus, path: configPath },
           provisional: configStatus === 'missing',
-          errors: issues
+          errors: issues,
+          format,
+          parserPath: format === 'legacy' ? 'legacy' : 'parser',
+          coverage: formalResult?.coverage,
+          metrics: formalResult?.metrics
         },
         null,
         2
@@ -156,6 +181,11 @@ async function run(): Promise<void> {
   } else {
     if (issues.length === 0) {
       console.log('No SpiraCSS HTML structure errors.')
+      console.log(
+        formalResult
+          ? `Static-source inspection only; ${formalResult.coverage.outOfScope} source site(s) were outside scope. Rendered DOM was not inspected.`
+          : 'Static-source inspection only. Rendered DOM was not inspected.'
+      )
     } else {
       for (const issue of issues) {
         const loc = formatIssueLocation(issue)

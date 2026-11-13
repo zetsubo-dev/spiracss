@@ -2,6 +2,27 @@
 
 All notable changes to this package will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Add source-aware HTML, WebC, JSX, TSX, Astro and Vue validation through asynchronous `loadMarkupParsers()` handles and synchronous `lintMarkup()`, with bundled JavaScript parsers and the official Astro compiler WASM asset. Select the format by extension or explicit `--format`.
+- Add the optional `@spiracss/html-cli/eslint` integration with the shared validator and repair conditions. The rule consumes supplied ASTs without reparsing; the WebC HTML-parser wrapper parses relevant attribute expressions first and supplies them through parser services.
+- Add diagnostic kinds, reasons, branch conditions and effective-config repair conditions for AI correction loops. Diagnostics include original UTF-16 ranges only when source evidence supports them, without invented positions for file-level failures.
+- Add source coverage and parser-operation metadata to JSON, including separate out-of-scope and unresolved evidence. ESLint config cache identity includes custom naming RegExp source and flags.
+
+### Changed
+
+- Lint each source occurrence and report later unclassified tokens as `UNCLASSIFIED_CLASS_TOKEN`, so newly detected violations can stop default generation. Generation alone aggregates repeated classes; existing synchronous API signatures and allowed-input generation and format output remain compatible.
+- Evaluate supported finite class expressions with binding scopes, branch conditions and host-specific attribute composition. Lint and generated selectors use the same effective winners; only optional tokens proved irrelevant to validation, ownership and generation are removed before alternative expansion.
+- Report in-scope unknowns as failed and syntax, parser, configuration or safety-limit failures as blocked. Unsupported and unresolved input is not a pass; only `status: "pass"` has `ok: true` and exit 0.
+- Use official synchronous Astro `convertToTSX`, Babel and the official source map for standalone validation. Keep independently verified siblings checked around unresolved source relations, without asserting uncertain ancestry or permitting document generation.
+- Allow configured dynamic ARIA in data mode without a value-naming rule or forced boolean rewrite. Generate reachable known selectors and report incomplete enumeration separately as `coverage.generationUnenumeratedSites`, with a nonzero-only generation CLI note; existing synchronous generated-file arrays carry no coverage.
+- Treat dynamic configured data values as unresolved, so results can differ from published 0.5.1. Static valid and invalid values retain naming checks.
+- Keep HTML naming, ownership, leaf Blocks, unlimited design-level Block depth and SCSS scope policy unchanged. Validation covers source, not component props forwarding, slots, rendered DOM or complete language grammar.
+- Document the known Astro ESLint host limitation of 70,000 elements exceeding 45 seconds with the SpiraCSS rule disabled. Standalone completion does not establish large-input host support; see the README for host versions and boundaries.
+- Require Node.js >=24.22.3 <25 for the unreleased source and update bundled dependency notices. The published 0.5.1 minimum below is unchanged.
+
 ## 0.5.1
 
 ### Changed

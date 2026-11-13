@@ -55,6 +55,14 @@ const WORD_CHAR_RE = /[A-Za-z0-9_$-]/
 const IDENT_CHAR_RE = /[A-Za-z0-9_$]/
 const IDENT_START_RE = /[A-Za-z_$]/
 const DISALLOWED_MEMBER_BASES = new Set(['props', 'state', 'context', 'ctx', 'this'])
+
+/** Share the existing CSS-module member policy with AST-based markup adapters. */
+export function isStaticClassMemberBase(base: string, values?: readonly string[]): boolean {
+  return (
+    !DISALLOWED_MEMBER_BASES.has(base) &&
+    isAllowedMemberBase(base, normalizeAllowlist(values ? [...values] : undefined))
+  )
+}
 const REGEX_PREFIX_KEYWORDS = new Set(['return', 'throw', 'case', 'typeof', 'void', 'delete', 'await', 'yield'])
 
 const isWhitespace = (ch: string): boolean => /\s/.test(ch)
@@ -107,20 +115,9 @@ function isAttributeBoundary(input: string, start: number, length: number): bool
 function findNextClassAttribute(input: string, start: number): FoundAttribute | null {
   let cursor = start
   while (cursor < input.length) {
-    const nextClassName = input.indexOf('className', cursor)
-    const nextClass = input.indexOf('class', cursor)
-    if (nextClassName === -1 && nextClass === -1) return null
-
-    let index = -1
-    let name: FoundAttribute['name'] | null = null
-
-    if (nextClassName !== -1 && (nextClass === -1 || nextClassName <= nextClass)) {
-      index = nextClassName
-      name = 'className'
-    } else {
-      index = nextClass
-      name = 'class'
-    }
+    const index = input.indexOf('class', cursor)
+    if (index === -1) return null
+    const name: FoundAttribute['name'] = input.startsWith('className', index) ? 'className' : 'class'
 
     if (name && isAttributeBoundary(input, index, name.length)) {
       return { name, index }

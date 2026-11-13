@@ -6,6 +6,13 @@ import { type CheerioAPI, load } from 'cheerio'
 import type { AnyNode, Element } from 'domhandler'
 import { lstatSync, readdirSync, realpathSync } from 'fs'
 import * as path from 'path'
+import { htmlClassTokens } from './markup/class-values'
+import { completeDiagnostic } from './markup/repair'
+import { SourceIndex } from './markup/source'
+import { aggregateComponents as dedup } from './generate/aggregate'
+import type { MarkupDocument, MarkupElement } from './markup/types'
+import { combineGuards } from './markup/expressions'
+import type { Guard } from './markup/types'
 
 import {
   type JsxClassBindingOptions,
@@ -931,12 +938,26 @@ export type HtmlLintIssueCode =
   | 'DYNAMIC_CLASS_UNRESOLVED'
   | 'CLASSLESS_TAG_NOT_ALLOWED'
   | 'MAX_DEPTH_EXCEEDED'
+  | 'UNCLASSIFIED_CLASS_TOKEN'
+  | 'PARSE_ERROR'
+  | 'PARSER_RUNTIME_ERROR'
+  | 'CONFIG_INVALID'
+  | 'PARSER_UNAVAILABLE'
+  | 'FORMAT_UNSUPPORTED'
+  | 'SOURCE_RELATION_UNRESOLVED'
 
 export type HtmlLintIssue = {
   code: HtmlLintIssueCode
   message: string
   baseClass: string
   path: string[]
+  kind?: 'violation' | 'unresolved' | 'syntax' | 'unsupported'
+  range?: [number, number]
+  reason?: string
+  repair?: { conditions: string[]; effective: Record<string, unknown>; missingInformation?: string[] }
+  docs?: string
+  condition?: string
+  attributeName?: string
   target?: {
     tagName: string
     siblingIndex: number
@@ -1404,51 +1425,6 @@ function formatElementPath(path: string[]): string {
   return path.map((name) => `> .${name}`).join(' ')
 }
 
-function dedup(arr: ComponentStructure[]): ComponentStructure[] {
-  const map = new Map<string, ComponentStructure>()
-  for (const item of arr) {
-    const ex = map.get(item.baseClass)
-    if (!ex) {
-      map.set(item.baseClass, {
-        ...item,
-        modifiers: [...item.modifiers],
-        variantAttributes: [...item.variantAttributes],
-        stateAttributes: [...item.stateAttributes],
-        nestedChildren: [...item.nestedChildren],
-        independentChildren: [...item.independentChildren],
-        orderedChildren: [...item.orderedChildren]
-      })
-    } else {
-      ex.modifiers = Array.from(new Set([...ex.modifiers, ...item.modifiers]))
-      ex.variantAttributes = dedupAttributeSelectors([...ex.variantAttributes, ...item.variantAttributes])
-      ex.stateAttributes = dedupAttributeSelectors([...ex.stateAttributes, ...item.stateAttributes])
-      ex.nestedChildren.push(...item.nestedChildren)
-      ex.independentChildren.push(...item.independentChildren)
-      item.orderedChildren.forEach((child) => {
-        if (!ex.orderedChildren.some((x) => x.baseClass === child.baseClass)) {
-          ex.orderedChildren.push(child)
-        }
-      })
-    }
-  }
-  return Array.from(map.values()).map((c) => {
-    const nestedChildren = dedup(c.nestedChildren)
-    const independentChildren = dedup(c.independentChildren)
-    const orderedChildren = c.orderedChildren.map(
-      (child) =>
-        nestedChildren.find((n) => n.baseClass === child.baseClass) ??
-        independentChildren.find((i) => i.baseClass === child.baseClass) ??
-        child
-    )
-    return {
-      ...c,
-      nestedChildren,
-      independentChildren,
-      orderedChildren
-    }
-  })
-}
-
 const MAX_DEPTH = 256
 const MAX_DIAGNOSTIC_PATH_DEPTH = 32
 
@@ -1550,18 +1526,21 @@ function collectDeep(
   policy: NormalizedSelectorPolicy,
   external: NormalizedExternalOptions,
   depth = 0,
-  targetPath: HtmlTargetPath = []
+  targetPath: HtmlTargetPath = [],
+  aggregate = true
 ): ComponentStructure[] {
   if (depth > MAX_DEPTH) return []
   const list: ComponentStructure[] = []
   logicalChildElements($, node).forEach((ch, index) => {
     const childTargetPath = [...targetPath, targetPathSegment(ch, index + 1)]
-    const comp = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1, childTargetPath) : null
+    const comp = isElement(ch)
+      ? buildTreeInternal($, ch, naming, policy, external, depth + 1, childTargetPath, aggregate)
+      : null
     if (comp) {
       comp.viaDeep = true
       list.push(comp)
     } else {
-      list.push(...collectDeep($, ch, naming, policy, external, depth + 1, childTargetPath))
+      list.push(...collectDeep($, ch, naming, policy, external, depth + 1, childTargetPath, aggregate))
     }
   })
   return list
@@ -1574,7 +1553,8 @@ function buildTreeInternal(
   policy: NormalizedSelectorPolicy,
   external: NormalizedExternalOptions,
   depth = 0,
-  targetPath: HtmlTargetPath = []
+  targetPath: HtmlTargetPath = [],
+  aggregate = true
 ): ComponentStructure | null {
   if (depth > MAX_DEPTH) return null
   const [base, ...mods] = elem.attribs.class?.split(/\s+/) ?? []
@@ -1598,10 +1578,19 @@ function buildTreeInternal(
 
   logicalChildElements($, elem).forEach((ch, index) => {
     const childTargetPath = [...targetPath, targetPathSegment(ch, index + 1)]
-    const direct = isElement(ch) ? buildTreeInternal($, ch, naming, policy, external, depth + 1, childTargetPath) : null
-    const comps = direct ? [direct] : collectDeep($, ch, naming, policy, external, depth + 1, childTargetPath)
+    const direct = isElement(ch)
+      ? buildTreeInternal($, ch, naming, policy, external, depth + 1, childTargetPath, aggregate)
+      : null
+    const comps = direct
+      ? [direct]
+      : collectDeep($, ch, naming, policy, external, depth + 1, childTargetPath, aggregate)
     comps.forEach((c) => {
       const tgt = c.isIndependent ? node.independentChildren : node.nestedChildren
+      if (!aggregate) {
+        tgt.push(c)
+        node.orderedChildren.push(c)
+        return
+      }
       const oth = c.isIndependent ? node.nestedChildren : node.independentChildren
       const dup = tgt.find((x) => x.baseClass === c.baseClass)
       const swp = oth.find((x) => x.baseClass === c.baseClass)
@@ -1630,6 +1619,7 @@ function buildTreeInternal(
     })
   })
 
+  if (!aggregate) return node
   node.nestedChildren = dedup(node.nestedChildren)
   node.independentChildren = dedup(node.independentChildren)
   node.orderedChildren = node.orderedChildren.map(
@@ -1748,6 +1738,7 @@ function lintNodeStructure(
       node.variantAttributes.forEach((attr) => {
         issues.push({
           code: 'DISALLOWED_VARIANT_ATTRIBUTE',
+          attributeName: attr.key,
           message: `Variant attribute "${attr.key}" is not allowed when selectorPolicy.variant.mode is "class".`,
           baseClass: base,
           path
@@ -1759,6 +1750,7 @@ function lintNodeStructure(
       node.stateAttributes.forEach((attr) => {
         issues.push({
           code: 'DISALLOWED_STATE_ATTRIBUTE',
+          attributeName: attr.key,
           message: `State attribute "${attr.key}" is not allowed when selectorPolicy.state.mode is "class".`,
           baseClass: base,
           path
@@ -1777,6 +1769,7 @@ function lintNodeStructure(
         if (!variantValuePattern.test(attr.value)) {
           issues.push({
             code: 'INVALID_VARIANT_VALUE',
+            attributeName: attr.key,
             message: `Attribute "${attr.key}" value "${attr.value}" does not match selectorPolicy valueNaming.`,
             baseClass: base,
             path
@@ -1792,6 +1785,7 @@ function lintNodeStructure(
         if (!stateValuePattern.test(attr.value)) {
           issues.push({
             code: 'INVALID_STATE_VALUE',
+            attributeName: attr.key,
             message: `Attribute "${attr.key}" value "${attr.value}" does not match selectorPolicy valueNaming.`,
             baseClass: base,
             path
@@ -1847,6 +1841,18 @@ function lintNodeStructure(
         break
       }
     }
+  }
+
+  for (const token of node.modifiers) {
+    if (isExternalClass(token, external) || token.startsWith('u-') || modifierPattern.test(token)) continue
+    if (classifyBaseClass(token, naming) !== 'invalid') continue
+    issues.push({
+      code: 'UNCLASSIFIED_CLASS_TOKEN',
+      message: `Class token "${token}" is neither a Block/Element, a configured Modifier, a utility nor an external class.`,
+      baseClass: base,
+      path,
+      reason: `Unclassified token: ${token}`
+    })
   }
 
   if (!isExternalBase && isRootMode && isRootNode && baseKind !== 'block') {
@@ -2185,6 +2191,18 @@ function attachSourcePositions(issues: HtmlLintIssue[], sourceHtml: string, isRo
       startIndex - sourceLookup.wrapperLength,
       endIndex - sourceLookup.wrapperLength
     )
+    if (issue.code === 'UNCLASSIFIED_CLASS_TOKEN') {
+      const offset = startIndex - sourceLookup.wrapperLength
+      const rawTag = sourceHtml.slice(offset, endIndex - sourceLookup.wrapperLength)
+      const attribute = /\bclass(?:Name)?\s*=\s*(["'])([\s\S]*?)\1/.exec(rawTag)
+      if (attribute && typeof attribute.index === 'number') {
+        const valueOffset = offset + attribute.index + attribute[0].indexOf(attribute[1]) + 1
+        const token = htmlClassTokens(attribute[2], valueOffset).find(
+          (candidate) => issue.reason === `Unclassified token: ${candidate.value}`
+        )
+        if (token) issue.range = token.range
+      }
+    }
   })
 }
 
@@ -2218,6 +2236,15 @@ export function lintHtmlStructure(
   const htmlLint = normalizeHtmlLintOptions(htmlLintOptions)
 
   const issues: HtmlLintIssue[] = []
+  const sourceIndex = new SourceIndex(rawHtml)
+  const finish = () =>
+    issues.map((issue) =>
+      completeDiagnostic(
+        issue,
+        { naming, selectorPolicy, external: externalOptions, htmlLint: htmlLintOptions },
+        sourceIndex
+      )
+    )
   const unbalanced = findUnbalancedTags(sanitized)
   if (unbalanced) {
     issues.push({
@@ -2252,7 +2279,7 @@ export function lintHtmlStructure(
         path: []
       })
       attachSourcePositions(issues, rawHtml, isRootMode)
-      return issues
+      return finish()
     }
     classlessRoots = [node]
     const nodeTargetPath = [targetPathSegment(node, 1)]
@@ -2268,13 +2295,13 @@ export function lintHtmlStructure(
       })
       const descendantRoots = collectClassedDescendantRoots($, [node])
       for (const rootEl of descendantRoots) {
-        const tree = buildTreeInternal($, rootEl.element, naming, policy, external, 0, rootEl.targetPath)
+        const tree = buildTreeInternal($, rootEl.element, naming, policy, external, 0, rootEl.targetPath, false)
         if (!tree) continue
         lintNodeStructure(tree, null, null, naming, policy, external, [], false, false, issues)
       }
       lintClasslessTags($, classlessRoots, htmlLint, issues)
       attachSourcePositions(issues, rawHtml, isRootMode)
-      return issues
+      return finish()
     }
     roots = [{ element: node, targetPath: nodeTargetPath }]
   } else {
@@ -2294,11 +2321,11 @@ export function lintHtmlStructure(
       path: []
     })
     attachSourcePositions(issues, rawHtml, isRootMode)
-    return issues
+    return finish()
   }
 
   for (const rootEl of roots) {
-    const tree = buildTreeInternal($, rootEl.element, naming, policy, external, 0, rootEl.targetPath)
+    const tree = buildTreeInternal($, rootEl.element, naming, policy, external, 0, rootEl.targetPath, false)
     if (!tree) continue
     lintNodeStructure(tree, null, null, naming, policy, external, [], true, isRootMode, issues)
   }
@@ -2306,7 +2333,58 @@ export function lintHtmlStructure(
   lintClasslessTags($, classlessRoots, htmlLint, issues)
   attachSourcePositions(issues, rawHtml, isRootMode)
 
-  return issues
+  return finish()
+}
+
+/** Shared pure rule operations used by source adapters; configuration is invocation-local. */
+export function createMarkupRuleContext(config: {
+  naming?: NamingOptions
+  selectorPolicy?: SelectorPolicy
+  external?: ExternalOptions
+  htmlLint?: HtmlLintOptions
+}) {
+  const rawNaming = config.naming ?? {}
+  const naming = {
+    ...rawNaming,
+    blockCase: rawNaming.blockCase || 'kebab',
+    blockMaxWords: normalizeBlockMaxWords(rawNaming.blockMaxWords),
+    elementCase: rawNaming.elementCase || 'kebab',
+    modifierCase: rawNaming.modifierCase || 'kebab',
+    modifierPrefix: rawNaming.modifierPrefix ?? '-',
+    customPatterns: Object.fromEntries(
+      Object.entries(rawNaming.customPatterns ?? {}).flatMap(([key, value]) => {
+        const pattern = normalizeCustomPattern(value)
+        return pattern ? [[key, pattern]] : []
+      })
+    )
+  }
+  const policy = normalizeSelectorPolicy(config.selectorPolicy)
+  const external = normalizeExternalOptions(config.external)
+  const htmlLint = normalizeHtmlLintOptions(config.htmlLint)
+  return {
+    naming,
+    policy,
+    external,
+    htmlLint,
+    htmlClosesParagraph: (tag: string) => IMPLIED_END_TAGS_ON_START.get(tag)?.has('p') ?? false,
+    classify: (value: string) => classifyBaseClassWithExternal(value, naming, external),
+    inertClassExtra: (value: string) =>
+      isExternalClass(value, external) ||
+      (value.startsWith('u-') &&
+        !buildModifierPattern(naming).test(value) &&
+        classifyBaseClass(value, naming) === 'invalid'),
+    attributes: (values: Record<string, string>) => collectAttributeSelectors(values, policy),
+    validate: (
+      node: ComponentStructure,
+      parent: ComponentStructure | null,
+      ancestor: ComponentStructure | null,
+      root: boolean
+    ) => {
+      const issues: HtmlLintIssue[] = []
+      lintNodeStructure(node, parent, ancestor, naming, policy, external, [], true, root, issues)
+      return issues
+    }
+  }
 }
 
 /* ---------- SCSS Writer ---------- */
@@ -2548,6 +2626,25 @@ export function generateFromHtml(
     throw new Error(depthExceededIssue(exceededDepth.depth, exceededDepth.targetPath).message)
   }
 
+  const rootTrees: ComponentStructure[] = []
+  for (const rootEl of roots) {
+    const tree = buildTree($, rootEl, opts.naming, policy, external)
+    if (!tree || !tree.isIndependent) continue
+    tree.isRoot = isRootMode
+    rootTrees.push(tree)
+  }
+  return renderGeneratedTrees(rootTrees, docDir, isRootMode, opts)
+}
+
+/** Render already prepared generation trees; no source parsing belongs here. */
+function renderGeneratedTrees(
+  rootTrees: ComponentStructure[],
+  docDir: string,
+  isRootMode: boolean,
+  opts: GeneratorOptions
+): GeneratedFile[] {
+  const policy = normalizeSelectorPolicy(opts.selectorPolicy)
+  const external = normalizeExternalOptions(opts.external)
   const results: GeneratedFile[] = []
   const uses = new Set<string>()
   const childDir = opts.childScssDir
@@ -2585,14 +2682,6 @@ export function generateFromHtml(
     }
   }
 
-  const rootTrees: ComponentStructure[] = []
-  for (const rootEl of roots) {
-    const tree = buildTree($, rootEl, opts.naming, policy, external)
-    if (!tree || !tree.isIndependent) continue
-    tree.isRoot = isRootMode
-    rootTrees.push(tree)
-  }
-
   const mergedRoots = isRootMode ? rootTrees : dedup(rootTrees)
 
   for (const tree of mergedRoots) {
@@ -2623,6 +2712,99 @@ export function generateFromHtml(
   // Result paths are relative to docDir (caller joins).
   assertGeneratedFilesWithinDirectory(results, docDir, opts.childScssDir)
   return results
+}
+
+/** Host bridge: generate from the very document that was source-linted. */
+function markupRootTrees(document: MarkupDocument, opts: GeneratorOptions): ComponentStructure[] {
+  const rules = createMarkupRuleContext(opts)
+  const visits = new Map<MarkupElement, number>()
+  const collect = (element: MarkupElement, inherited: Guard, depth: number, viaDeep = false): ComponentStructure[] => {
+    document.index.metrics.generationVisits += 1
+    const count = (visits.get(element) ?? 0) + 1
+    visits.set(element, count)
+    if (count > 256) throw new Error('Conditional generation reached its implementation safety budget.')
+    if (depth > MAX_DEPTH) throw new Error(depthExceededIssue(depth).message)
+    const outerGuard = combineGuards(inherited, element.guard ?? {})
+    if (!outerGuard) return []
+    if (DOCUMENT_METADATA_TAGS.has(element.tag)) return []
+    const result: ComponentStructure[] = []
+    const reachable = element.classes.flatMap((alternative) => {
+      const guard = combineGuards(outerGuard, alternative.guard)
+      return guard ? [{ alternative, guard }] : []
+    })
+    const first = reachable[0]?.alternative
+    const invariant =
+      first &&
+      reachable.every(
+        ({ alternative }) =>
+          alternative.tokens[0]?.value === first.tokens[0]?.value &&
+          String(alternative.unresolved) === String(first.unresolved)
+      )
+    const groups = invariant ? [reachable] : reachable.map((alternative) => [alternative])
+    for (const group of groups) {
+      const { alternative } = group[0]
+      const guard = invariant ? outerGuard : group[0].guard
+      const [base] = alternative.tokens
+      const modifiers =
+        group.length === 1
+          ? alternative.tokens.slice(1).map((token) => token.value)
+          : [...new Set(group.flatMap(({ alternative }) => alternative.tokens.slice(1).map((token) => token.value)))]
+      if (!base) {
+        for (const child of element.children)
+          result.push(...collect(child, guard, depth + (element.implicit ? 0 : 1), true))
+        continue
+      }
+      const selectors = { variantAttributes: [] as AttributeSelector[], stateAttributes: [] as AttributeSelector[] }
+      const effective = new Map(element.attributes.map((attribute) => [attribute.name, attribute]))
+      for (const attribute of effective.values()) {
+        const values = attribute.alternatives ?? [{ value: attribute.value, guard: {}, range: attribute.valueRange }]
+        for (const value of values) {
+          if (!group.some((entry) => combineGuards(entry.guard, value.guard))) continue
+          for (const literal of value.value !== undefined ? [value.value] : (value.generationValues ?? [])) {
+            const selected = rules.attributes({ [attribute.name]: literal })
+            selectors.variantAttributes.push(...selected.variantAttributes)
+            selectors.stateAttributes.push(...selected.stateAttributes)
+          }
+        }
+      }
+      const children = dedup(element.children.flatMap((child) => collect(child, guard, depth + 1)))
+      result.push({
+        baseClass: base.value,
+        isIndependent: rules.classify(base.value) === 'block',
+        modifiers,
+        variantAttributes: dedupAttributeSelectors(selectors.variantAttributes),
+        stateAttributes: dedupAttributeSelectors(selectors.stateAttributes),
+        nestedChildren: children.filter((child) => !child.isIndependent),
+        independentChildren: children.filter((child) => child.isIndependent),
+        orderedChildren: children,
+        elementTag: element.tag,
+        viaDeep,
+        targetPath: element.targetPath
+      })
+    }
+    return dedup(result)
+  }
+  return document.roots.flatMap((element) => collect(element, {}, 0)).filter((tree) => tree.isIndependent)
+}
+
+export function summarizeMarkupRootBlocks(document: MarkupDocument, opts: GeneratorOptions): RootBlockSummary[] {
+  const counts = new Map<string, number>()
+  for (const tree of markupRootTrees(document, opts)) counts.set(tree.baseClass, (counts.get(tree.baseClass) ?? 0) + 1)
+  return [...counts].map(([baseClass, count]) => ({ baseClass, count }))
+}
+
+export function generateFromMarkupDocument(
+  document: MarkupDocument,
+  docDir: string,
+  isRootMode: boolean,
+  opts: GeneratorOptions
+): GeneratedFile[] {
+  if (document.generationUnresolved)
+    throw new Error('Resolve the unverified original source boundaries before generation.')
+  const roots = dedup(markupRootTrees(document, opts))
+  if (!roots.length) throw new Error('No source Block is available for SCSS generation.')
+  for (const tree of roots) tree.isRoot = isRootMode
+  return renderGeneratedTrees(roots, docDir, isRootMode, opts)
 }
 
 export function summarizeRootBlocks(rawHtml: string, isRootMode: boolean, opts: GeneratorOptions): RootBlockSummary[] {

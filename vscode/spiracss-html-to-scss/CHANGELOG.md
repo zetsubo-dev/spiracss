@@ -2,6 +2,22 @@
 
 All notable changes to this extension will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Integrate the shared source-aware HTML CLI validator for HTML, WebC, JSX, TSX, Astro and Vue, using editor language or file format and bundled parser assets.
+- Show shared diagnostic codes at supported original UTF-16 ranges, with reasons and effective-config repair conditions in output. Selection diagnostics retain document-relative positions; reports without a proven position remain in output without a fabricated squiggle.
+
+### Changed
+
+- Reuse the parsed core document for generation instead of duplicating markup parsing or structure rules in the extension. Host-specific class composition and selector winners come from the shared core.
+- Stop default generation on newly detected source violations; report in-scope unknowns as failed and parser, configuration or safety-limit failures as blocked. Dynamic configured data values remain unresolved, so results can differ from published 0.5.1.
+- Allow configured dynamic ARIA in data mode and generate reachable known selectors without forcing a boolean rewrite. Show a nonzero-only informational Output line from preflight `coverage.generationUnenumeratedSites`, without reparsing or recounting.
+- Declare the bundled l10n directory for the unenumerated-selector notification and existing dictionary translations. The same 10 existing message keys missing from the dictionaries still fall back to English.
+- Keep naming, scope generation, leaf Blocks, unlimited design-level Block depth, the VS Code minimum and existing files unchanged. Validation covers source rather than component props forwarding, slots, rendered DOM or complete language grammar.
+- Include updated bundled JavaScript and WASM third-party notices and pin development Node to 24.22.3.
+
 ## 0.5.1
 
 ### Changed

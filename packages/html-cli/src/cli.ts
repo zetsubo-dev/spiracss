@@ -4,8 +4,19 @@ import * as path from 'path'
 import { warnInvalidCustomPatterns } from './config-warnings'
 import { loadProjectOptions } from './config-options'
 import { parseCliArgs } from './cli-args'
-import { findMaxDepthIssue, formatIssueLocation, validationStatusFor } from './diagnostics'
-import { generateFromHtml, isGeneratedIndexFile, lintHtmlStructure } from './generator-core'
+import { formatIssueLocation, validationStatusFor } from './diagnostics'
+import { isBlockingMarkupIssue } from './markup/failures'
+import {
+  generateFromHtml,
+  generateFromMarkupDocument,
+  isGeneratedIndexFile,
+  lintHtmlStructure,
+  type HtmlLintIssue
+} from './generator-core'
+import { lintMarkup, loadMarkupParsers, type MarkupConfig, type MarkupDocument } from './markup'
+import { sourceFormat } from './markup/format'
+import { completeDiagnostic } from './markup/repair'
+import { SourceIndex } from './markup/source'
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -35,6 +46,7 @@ async function mergeIndex(dir: string, entries: string[]): Promise<void> {
 
 async function run(): Promise<void> {
   const args = parseCliArgs(process.argv.slice(2))
+  let sourceReport: Record<string, unknown> = {}
 
   if (!args.useStdin && !args.inputPath) {
     console.error(
@@ -80,6 +92,7 @@ async function run(): Promise<void> {
       console.log(
         JSON.stringify(
           {
+            ...sourceReport,
             ok: false,
             status: 'blocked',
             mode: args.mode,
@@ -105,22 +118,67 @@ async function run(): Promise<void> {
   html = args.useStdin ? await readStdin() : await fsp.readFile(inputPath as string, 'utf8')
 
   const isRootMode = args.mode === 'root'
-  const structureIssues = lintHtmlStructure(
-    html,
-    isRootMode,
-    options.naming,
-    options.selectorPolicy,
-    options.external,
-    options.jsxClassBindings,
-    options.htmlLint
-  )
-  const maxDepthIssue = findMaxDepthIssue(structureIssues)
-  if (maxDepthIssue) {
-    const blocked = { code: maxDepthIssue.code, message: maxDepthIssue.message }
+  const format = sourceFormat(inputPath ?? undefined, args.format)
+  let document: MarkupDocument | undefined
+  const parsers = format && format !== 'legacy' ? await loadMarkupParsers([format]) : {}
+  const parser = format && format !== 'legacy' ? parsers[format] : undefined
+  const formal =
+    format && format !== 'legacy'
+      ? lintMarkup(html, {
+          format,
+          mode: args.mode,
+          config: options,
+          parsers: {
+            [format]: parser?.available
+              ? {
+                  available: true,
+                  parse: (source: string, mode: 'root' | 'selection', config: MarkupConfig) => {
+                    document = parser.parse(source, mode, config)
+                    return document
+                  }
+                }
+              : parser
+          }
+        })
+      : undefined
+  const structureIssues: HtmlLintIssue[] = !format
+    ? [
+        completeDiagnostic(
+          {
+            code: 'FORMAT_UNSUPPORTED',
+            kind: 'unsupported',
+            message: `Unsupported source format: ${args.format ?? inputPath}. Select --format explicitly.`,
+            baseClass: '',
+            path: []
+          },
+          options,
+          new SourceIndex(html)
+        )
+      ]
+    : (formal?.errors ??
+      lintHtmlStructure(
+        html,
+        isRootMode,
+        options.naming,
+        options.selectorPolicy,
+        options.external,
+        options.jsxClassBindings,
+        options.htmlLint
+      ))
+  sourceReport = {
+    format: format ?? null,
+    parserPath: format === 'legacy' ? 'legacy' : 'parser',
+    coverage: formal?.coverage,
+    metrics: formal?.metrics
+  }
+  const blockingIssue = structureIssues.find(isBlockingMarkupIssue)
+  if (blockingIssue) {
+    const blocked = { code: blockingIssue.code, message: blockingIssue.message }
     if (args.json) {
       console.log(
         JSON.stringify(
           {
+            ...sourceReport,
             ok: false,
             status: 'blocked',
             mode: args.mode,
@@ -160,6 +218,7 @@ async function run(): Promise<void> {
         console.log(
           JSON.stringify(
             {
+              ...sourceReport,
               ok: false,
               status: validationStatusFor({
                 configStatus: options.configStatus,
@@ -192,7 +251,9 @@ async function run(): Promise<void> {
 
   let generated: ReturnType<typeof generateFromHtml>
   try {
-    generated = generateFromHtml(html, docDir, isRootMode, options)
+    generated = document
+      ? generateFromMarkupDocument(document, docDir, isRootMode, options)
+      : generateFromHtml(html, docDir, isRootMode, options)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const code = message.startsWith('HTML traversal exceeded the safety limit')
@@ -203,6 +264,7 @@ async function run(): Promise<void> {
       console.log(
         JSON.stringify(
           {
+            ...sourceReport,
             ok: false,
             status: 'blocked',
             mode: args.mode,
@@ -229,6 +291,7 @@ async function run(): Promise<void> {
     console.log(
       JSON.stringify(
         {
+          ...sourceReport,
           ok: status === 'pass',
           status,
           mode: args.mode,
@@ -246,6 +309,10 @@ async function run(): Promise<void> {
     if (status !== 'pass') process.exitCode = 1
     return
   }
+
+  const unenumerated = formal?.coverage.generationUnenumeratedSites ?? 0
+  if (unenumerated > 0)
+    console.error(`INFO: Selectors were not generated for unenumerable dynamic values at ${unenumerated} site(s).`)
 
   if (args.dryRun) {
     for (const file of generated) {

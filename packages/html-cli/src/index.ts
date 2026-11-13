@@ -1,4 +1,5 @@
 export * from './generator-core'
+export * from './markup'
 export {
   loadProjectOptions,
   resolveProjectOptions,

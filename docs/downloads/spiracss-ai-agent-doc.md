@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Routing Guide v0.5.1
+# SpiraCSS AI Agent Routing Guide v0.6.0
 
 This is the small, diagnostic-first entry point for AI agents working with SpiraCSS. Do not load the full reference for every task. Read the current project config and tool output first, then load only the linked rule or option page required by the diagnostic.
 
@@ -14,9 +14,11 @@ Use these sources in this order:
 
 If the tool output conflicts with documentation, follow the tool output, re-check the config, and report possible documentation drift. Do not change config unless explicitly requested.
 
-Compatibility: `@spiracss/stylelint-plugin` v0.5.1 and `@spiracss/html-cli` v0.5.1. Confirm the installed versions before applying version-specific guidance.
+Compatibility: `@spiracss/stylelint-plugin` v0.6.0 and `@spiracss/html-cli` v0.6.0. Confirm the installed versions before applying version-specific guidance.
 
-Version 0.5.1 requires Node.js `>=24.22.2 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.0 requires Node.js `>=24.15.0 <25` and supports Stylelint 17 only. Do not force incompatible peer dependencies in SCSS plugins and shared configs. Check installed package requirements before upgrading.
+Version 0.6.0 requires Node.js `>=24.22.3 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.1 requires Node.js `>=24.22.2 <25`. Version 0.5.0 requires Node.js `>=24.15.0 <25` and supports Stylelint 17 only. Do not force incompatible peer dependencies in SCSS plugins and shared configs. Check installed package requirements before upgrading.
+
+The six-format source-aware APIs and repair fields below are available in 0.6.0, not 0.5.1. Confirm the installed CLI supports them before use.
 
 When upgrading from v0.4.x, the component root default changes to `scope-explicit`. To preserve existing class-form roots and CSS, the project owner can select `generator.scssRootStyle: 'class'`. This does not exempt child files from the new scope prohibition. Do not change config or migrate styles automatically; follow the chosen project setting.
 
@@ -32,8 +34,8 @@ Do not preload every rule page, every example, or the full reference. Expand the
 
 ## Diagnostic-first fix loop
 
-1. Capture the tool name, file, line/column, rule or error code, message, code frame, and `Docs:` URL.
-2. If the message contains a `Docs:` URL, open that exact URL and anchor. The URL is the route, not a request to read this entire document again.
+1. Capture the tool name, file, code, original UTF-16 range when present, reason and repair conditions. Source-unattributable file-level parser/runtime/config/unsupported reports omit `range` and `position`; do not invent `[0, 0]` or 1:1. Proven zero/EOF positions remain valid. For source-aware markup, read `repair.conditions`, `repair.effective`, any `condition` and `repair.missingInformation`. Effective settings depend on the diagnostic and may include `mode` or be empty.
+2. Use the diagnostic conditions first. Open the exact `Docs:` URL only when the diagnostic is insufficient; do not reload this guide or the full reference for each correction.
 3. Apply the smallest correction that satisfies the message and the project config. Preserve unrelated structure.
 4. Treat `Auto-fix:` text as a repair strategy. Do not assume that the Stylelint rule will rewrite the file automatically; verify the tool's actual fix support and result.
 5. Re-run the same lint command. Use the new diagnostic as the next source of truth.
@@ -75,9 +77,26 @@ For `INVALID_BASE_CLASS`, `MODIFIER_WITHOUT_BASE`, `UTILITY_WITHOUT_BASE`, `MULT
 
 For `DYNAMIC_CLASS_UNRESOLVED`, resolve the template binding first. Do not invent a replacement class or treat the element as classless from incomplete static input.
 
+For the 0.6.0 six-format engine, use these diagnostic routes. See [the source-aware HTML CLI reference](https://spiracss.jp/tooling/html-cli/#source-aware-engine-060) for API fields, composition rules, coverage and known parser boundaries.
+
+- `UNCLASSIFIED_CLASS_TOKEN` targets the later token, not the valid first base. Conditional violations apply only under the reported condition.
+- `SOURCE_RELATION_UNRESOLVED` means relevant static evidence is missing. Preserve dynamic behavior and provide the evidence or ask for intent. Do not delete or rename classes merely to silence it.
+- `MULTIPLE_ROOT_ELEMENTS` requires a decision about the intended root. Keep one component root, or use selection mode if the source intentionally contains multiple components. Valid class names are not the cause.
+- For duplicate HTML/WebC `class` or configured selector attributes, confirm the intended attribute in the original markup and rerun lint. Do not mechanically choose or delete one.
+- Vue `Class`, class property/attribute targets and differently spelled configured keys may remain unresolved with a generic reason. Confirm intent before changing them to `class`, because that can change runtime composition.
+- `PARSE_ERROR` means proven syntax failure. `PARSER_RUNTIME_ERROR` can mean a backend/resource failure or an unattributed conversion/source-relation constraint. Read its reason and repair. `CONFIG_INVALID` means invalid settings. Do not repair resource failures by renaming classes or removing dynamic behavior.
+- Do not invent missing source locations or use generated coordinates as original positions. A point-only failure has a zero-width range; proven offset zero and EOF remain valid. Positionless VS Code reports belong in output, not fabricated squiggles.
+- Source validation does not expand component props, slots or rendered DOM. Out-of-scope counts are not inspected coverage; unknown in-scope values are not pass. Formal syntax failures are blocked without legacy fallback. HTML Block design depth and leaf-Block rules are unchanged.
+- If a supplied HTML/WebC AST absorbs real following elements into raw text beyond their source closing tag, use the native CLI. Do not change valid text, naming or nesting, or claim lost elements were checked.
+- Unknown hidden-input type requires static evidence or hidden/non-hidden intent, not an added class. Do not turn class-composition or ownership uncertainty into a naming fix.
+- Dynamic configured variant/state data values remain unresolved. Configured dynamic ARIA is lint-valid in default data mode if no other rule is violated. Do not force a boolean-string rewrite that can change nullable absence.
+- `coverage.generationUnenumeratedSites` is generation information, not an error or a status change. Existing synchronous `GeneratedFile[]` APIs do not carry it; use preflight lint coverage.
+- Use `createMarkupEslintConfig(config, parser, files)` when combining ESLint cache with RegExp custom naming.
+- Standalone success does not establish host success, or vice versa. The documented Astro host exceeded 45 seconds at 70,000 elements with the SpiraCSS rule disabled. Confirm [the host limitation](https://spiracss.jp/tooling/html-cli/#astro-wide-input-verification-boundary) is acceptable and verify larger inputs in the user's environment.
+
 For `CONFIG_MISSING`, stop. Do not present fallback defaults as final project validation. A provisional command is valid only when explicitly accepted and must remain marked provisional.
 
-For `UNBALANCED_HTML`, `MULTIPLE_ROOT_ELEMENTS`, or `MAX_DEPTH_EXCEEDED`, fix or simplify the input before attempting SCSS generation. `--ignore-structure-errors` does not make blocked input valid.
+For `MULTIPLE_ROOT_ELEMENTS`, decide on one component root or intentional selection mode before generation; do not rename valid classes. For `UNBALANCED_HTML` or `MAX_DEPTH_EXCEEDED`, fix or simplify the input before attempting SCSS generation. `--ignore-structure-errors` does not make blocked input valid.
 
 ## When to expand context
 

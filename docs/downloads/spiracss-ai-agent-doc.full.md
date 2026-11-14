@@ -1,4 +1,4 @@
-# SpiraCSS AI Agent Full Reference v0.5.1
+# SpiraCSS AI Agent Full Reference v0.6.0
 
 This is the optional full reference. Start with the [diagnostic-first routing guide](https://spiracss.jp/downloads/spiracss-ai-agent-doc.md) and load this file only when the current diagnostic and focused rule pages are insufficient.
 The project config and current tool output remain authoritative. If they conflict with this reference, follow the tool output, re-check the config, and report the mismatch.
@@ -11,10 +11,10 @@ The project config and current tool output remain authoritative. If they conflic
 
 Defaults are only an explicit fallback for HTML tools when config is missing. Stylelint requires a config (path or object) with aliasRoots; if missing, stop and report. If you use a path, spiracss.config.js must be readable. Do not use defaults for final decisions if config exists.
 
-Version compatibility: @spiracss/stylelint-plugin v0.5.1, @spiracss/html-cli v0.5.1.
+Version compatibility: @spiracss/stylelint-plugin v0.6.0, @spiracss/html-cli v0.6.0.
 If actual tool versions differ or cannot be confirmed, stop and ask before applying rules from this document.
 
-Version 0.5.1 requires Node.js `>=24.22.2 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.0 supports Stylelint 17 only. Check the peer dependencies of other SCSS plugins and shared configs before upgrading; do not force incompatible dependency versions.
+Version 0.6.0 requires Node.js `>=24.22.3 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.1 requires Node.js `>=24.22.2 <25`. Version 0.5.0 supports Stylelint 17 only. Check the peer dependencies of other SCSS plugins and shared configs before upgrading; do not force incompatible dependency versions.
 
 ## 1. Design Overview (minimum)
 
@@ -624,6 +624,9 @@ spiracss/property-placement (see §6.3 for fix details):
 - forbiddenExtend: `@extend` forbidden → use mixin, CSS variables, or direct styles
 - selectorResolutionSkipped: selector resolution skipped due to complexity (Stylelint rule severity; error by default)
 - selectorParseFailed: selector parse failed; some checks skipped (Stylelint rule severity; error by default)
+  Also reports unchecked nested declarations in valid empty-valued literal Sass property groups such as `font: { size: 12px; }`.
+  Flatten to prefixed properties such as `font-size: 12px` in the same owning rule, preserving every value.
+  This does not add nested-property expansion or full Sass support.
 
 spiracss/interaction-scope:
 - needAtRoot: interaction selectors must be inside `@at-root & { ... }` and start with `&` (when enabled)
@@ -641,6 +644,9 @@ spiracss/interaction-properties:
 - invalidTransitionProperty: disallow keywords/custom properties in transition targets
 - initialOutsideInteraction: transitioned property is declared outside interaction
 - selectorParseFailed: selector parse failed; some checks were skipped (Stylelint rule severity; error by default)
+  Also reports unchecked nested declarations in valid empty-valued literal Sass property groups such as `transition: { duration: 0.2s; }`.
+  Flatten to prefixed properties such as `transition-duration: 0.2s` in the same owning rule, preserving every value.
+  This does not add nested-property expansion or full Sass support.
 
 spiracss/keyframes-naming:
 - needRoot: `@keyframes` must be at root level

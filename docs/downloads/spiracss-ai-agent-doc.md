@@ -1,117 +1,53 @@
-# SpiraCSS AI Agent Routing Guide v0.6.0
+# SpiraCSS AI agent guide v0.6.0
 
-This is the small, diagnostic-first entry point for AI agents working with SpiraCSS. Do not load the full reference for every task. Read the current project config and tool output first, then load only the linked rule or option page required by the diagnostic.
+SpiraCSS tools check whether class names and SCSS selectors follow the SpiraCSS structure. Your job is to fix what the diagnostics report. For a normal lint fix, read this guide and the diagnostic output. Do not load the full reference.
 
-## Authority and version
+Compatibility: `@spiracss/stylelint-plugin` v0.6.0 and `@spiracss/html-cli` v0.6.0. Both require Node.js `>=24.22.3 <25`. The Stylelint plugin supports Stylelint 17 and 18.
 
-Use these sources in this order:
+## Prepare before you edit
 
-1. The project `spiracss.config.js` (project-specific settings always win).
-2. Current Stylelint / HTML CLI output (the reported location, rule/code, message, and `Docs:` URL are the immediate evidence).
-3. The rule or option page linked by the diagnostic.
-4. This routing guide.
-5. The [full reference](https://spiracss.jp/downloads/spiracss-ai-agent-doc.full.md) only when the diagnostic and focused pages are insufficient.
+1. Find the lint commands the project already uses. Look in `package.json` scripts, the Stylelint config, and CI or Git hook config. SpiraCSS checks can run through Stylelint, `spiracss-html-lint`, or the ESLint `markup` rule.
+2. If the project defines no command, run the locally installed binary through the project's package manager, for example `pnpm exec stylelint "src/**/*.scss"`. `npx`, `pnpm dlx`, and `yarn dlx` can download packages. Do not use them, and do not install or upgrade packages without approval.
+3. Check the installed version of each SpiraCSS package that the project's commands use, for example in `node_modules/@spiracss/stylelint-plugin/package.json`. This guide describes 0.6.0. If the installed version differs, check the documentation for that version before you apply guidance that depends on the version.
+4. Find the SpiraCSS settings each tool uses. The HTML CLI reads `spiracss.config.js` from the current directory, so run it from the directory that contains that file. Stylelint gets SpiraCSS settings from the Stylelint config, through `createRules()` with an object, `createRulesAsync()` with a path, or rule options written directly. Run Stylelint from the project root, because path checks such as `@rel` resolve from the current directory. To see the rule options that Stylelint applies to a file, run `stylelint --print-config <file>` through the same package manager.
+5. If a tool's required SpiraCSS settings are unavailable, stop validation with that tool and report the missing settings. `createRules()` and `createRulesAsync()` throw an error without `aliasRoots`. The HTML CLI returns `CONFIG_MISSING` when it finds no `spiracss.config.js`. Use `--allow-provisional` only when the user accepts default settings, and report every such result as provisional.
 
-If the tool output conflicts with documentation, follow the tool output, re-check the config, and report possible documentation drift. Do not change config unless explicitly requested.
+## Fix from the diagnostic
 
-Compatibility: `@spiracss/stylelint-plugin` v0.6.0 and `@spiracss/html-cli` v0.6.0. Confirm the installed versions before applying version-specific guidance.
+1. Run the lint command and read each diagnostic. A SpiraCSS Stylelint message names its `spiracss/` rule and includes a `Docs:` URL. The URL anchor is the message key. Messages from other Stylelint rules do not include these SpiraCSS details. An HTML CLI `--json` diagnostic gives `code`, `reason`, `repair.conditions`, `repair.effective`, and `docs`. It adds `range` and `position` only when the report can be traced to the source, and it adds `condition` and `repair.missingInformation` when they apply.
+2. Decide the fix from those fields. Open the `Docs:` or `docs` page only when the fields do not settle the fix. Do not reload this guide or the full reference for each diagnostic.
+3. Make the smallest change that satisfies the diagnostic under the effective config. Leave unrelated code as it is.
+4. If several diagnostics point at one selector or element, fix the highest-level structural issue first. Then rerun.
+5. Rerun the same command with the same format, mode, and config. The new output replaces the old one as the current state.
+6. If one diagnostic survives three attempts, stop. Report the diagnostic, the code, the config section, and each change you tried.
 
-Version 0.6.0 requires Node.js `>=24.22.3 <25`; the Stylelint plugin supports Stylelint 17 and 18. Version 0.5.1 requires Node.js `>=24.22.2 <25`. Version 0.5.0 requires Node.js `>=24.15.0 <25` and supports Stylelint 17 only. Do not force incompatible peer dependencies in SCSS plugins and shared configs. Check installed package requirements before upgrading.
+## Keep the fix honest
 
-The six-format source-aware APIs and repair fields below are available in 0.6.0, not 0.5.1. Confirm the installed CLI supports them before use.
+- Do not change `spiracss.config.js`, rule options, severities, or ignore lists to remove an error, unless the user asks for that change.
+- Do not delete, rename, or add classes, attributes, or dynamic bindings only to reach zero errors.
+- The `Auto-fix:` text in a Stylelint message describes a repair. The tool does not apply it. In 0.6.0, `stylelint --fix` does not fix any SpiraCSS rule. Make the change yourself and rerun lint.
+- If `repair.missingInformation` is present, resolve it from project evidence, such as the config, the surrounding source, and the project's requirements. Ask the user only when the intended role or runtime behavior is still unknown. For `SOURCE_RELATION_UNRESOLVED` and `DYNAMIC_CLASS_UNRESOLVED`, supply the missing static evidence or ask for the intent. For `MULTIPLE_ROOT_ELEMENTS`, keep the intended root, or use selection mode for input that holds several components on purpose.
+- Only a pass is a pass. Report every unresolved, skipped, ignored, provisional, blocked, or downgraded result. `--ignore-structure-errors` does not make blocked input valid.
+- A diagnostic without `range` or `position` is a file-level report. Do not invent a location for it.
+- A pass in the ESLint host does not prove a pass in the CLI, and the reverse is also true. ESLint does not report coverage.
 
-When upgrading from v0.4.x, the component root default changes to `scope-explicit`. To preserve existing class-form roots and CSS, the project owner can select `generator.scssRootStyle: 'class'`. This does not exempt child files from the new scope prohibition. Do not change config or migrate styles automatically; follow the chosen project setting.
+## Know what SpiraCSS checks
 
-## Default context budget
+- The HTML CLI checks class names and the relationships between Blocks and Elements in source markup. It does not expand component props or slots to reconstruct rendered DOM. The CLI counts some unexpanded sites in `coverage`, and a count is not an inspection.
+- HTML has no SpiraCSS limit on Block nesting depth. `MAX_DEPTH_EXCEEDED` is an HTML traversal safety limit, not a design rule. Simplify or split the input.
+- Stylelint checks how selectors and properties are written inside each SCSS file. Its depth checks, such as `tooDeepBlockNesting`, apply to SCSS selectors, not to HTML.
+- SpiraCSS is not a replacement for syntax, accessibility, or general CSS linters. A parser failure, such as `PARSE_ERROR` or `UNBALANCED_HTML`, blocks class-structure analysis. Repair only the reported cause, then rerun.
 
-For a normal lint-fix task, load only:
+## Load more only when the diagnostic needs it
 
-- the project config;
-- this guide;
-- the exact rule page named by `Docs:` (prefer the `#messageKey` anchor).
+- One rule or code in detail: the `Docs:` URL, the [Stylelint rules](https://spiracss.jp/tooling/stylelint/#rules), or the [HTML CLI error codes](https://spiracss.jp/tooling/html-cli/#error-codes).
+- Messages that depend on config, such as naming, selector policy, paths, placement, interaction, or keyframes: [configuration options](https://spiracss.jp/configuration/options/) and [troubleshooting](https://spiracss.jp/configuration/troubleshooting/).
+- The 0.6.0 diagnostic fields, parser limits, Vue and Astro cases, ESLint setup, and host limits: [source-aware engine](https://spiracss.jp/tooling/html-cli/#source-aware-engine-060).
+- Component root `@scope` syntax and the upgrade from v0.4.x: [scope root syntax](https://spiracss.jp/configuration/options/#scope-root-syntax). Do not change `generator.scssRootStyle` or migrate styles without the user's decision.
+- Fixes across files, `@rel` links, or page and component boundaries: [workflow guide](https://spiracss.jp/guides/workflow/).
+- Requirements of earlier versions: section 0 of the [full reference](https://spiracss.jp/downloads/spiracss-ai-agent-doc.full.md), and the [changelog](https://spiracss.jp/introduction/changelog/) for release notes.
+- New generation, diagnostics that no page documents, or a conflict between tools and docs: the [full reference](https://spiracss.jp/downloads/spiracss-ai-agent-doc.full.md).
 
-Do not preload every rule page, every example, or the full reference. Expand the context only when the diagnostic is config-dependent, spans multiple files, or remains ambiguous after one focused read.
+## Resolve conflicts
 
-## Diagnostic-first fix loop
-
-1. Capture the tool name, file, code, original UTF-16 range when present, reason and repair conditions. Source-unattributable file-level parser/runtime/config/unsupported reports omit `range` and `position`; do not invent `[0, 0]` or 1:1. Proven zero/EOF positions remain valid. For source-aware markup, read `repair.conditions`, `repair.effective`, any `condition` and `repair.missingInformation`. Effective settings depend on the diagnostic and may include `mode` or be empty.
-2. Use the diagnostic conditions first. Open the exact `Docs:` URL only when the diagnostic is insufficient; do not reload this guide or the full reference for each correction.
-3. Apply the smallest correction that satisfies the message and the project config. Preserve unrelated structure.
-4. Treat `Auto-fix:` text as a repair strategy. Do not assume that the Stylelint rule will rewrite the file automatically; verify the tool's actual fix support and result.
-5. Re-run the same lint command. Use the new diagnostic as the next source of truth.
-6. When several messages point to the same selector, fix the highest-level structural issue first, then re-run instead of applying every suggestion blindly.
-7. Stop after three unsuccessful attempts on the same diagnostic. Report the exact diagnostic, relevant code, config section, and attempted changes.
-
-Do not turn skipped, unresolved, provisional, or downgraded coverage into a clean pass without reporting it.
-
-## Stylelint routing
-
-Use the exact `Docs: https://spiracss.jp/stylelint-rules/<rule>/#<messageKey>` URL emitted by the plugin whenever available.
-
-| Diagnostic rule | Focused page |
-| --- | --- |
-| `spiracss/class-structure` | [class-structure](https://spiracss.jp/stylelint-rules/class-structure/) |
-| `spiracss/property-placement` | [property-placement](https://spiracss.jp/stylelint-rules/property-placement/) |
-| `spiracss/page-layer` | [page-layer](https://spiracss.jp/stylelint-rules/page-layer/) |
-| `spiracss/interaction-scope` | [interaction-scope](https://spiracss.jp/stylelint-rules/interaction-scope/) |
-| `spiracss/interaction-properties` | [interaction-properties](https://spiracss.jp/stylelint-rules/interaction-properties/) |
-| `spiracss/keyframes-naming` | [keyframes-naming](https://spiracss.jp/stylelint-rules/keyframes-naming/) |
-| `spiracss/pseudo-nesting` | [pseudo-nesting](https://spiracss.jp/stylelint-rules/pseudo-nesting/) |
-| `spiracss/rel-comments` | [rel-comments](https://spiracss.jp/stylelint-rules/rel-comments/) |
-
-Load [configuration options](https://spiracss.jp/configuration/options/) as well when the message depends on naming, selector policy, section comments, paths, `marginSide`, `sizeInternal`, `position`, interaction settings, keyframes settings, or cache/path resolution.
-
-Important boundaries:
-
-- `spiracss/class-structure` checks SCSS selector structure. It does not impose a maximum HTML Block nesting depth.
-- For `rootScopeRequired` (v0.5.0+), load the [exact repair section](https://spiracss.jp/stylelint-rules/class-structure/#rootScopeRequired) and `generator.scssRootStyle` in [configuration options](https://spiracss.jp/configuration/options/). Repair the component root only; meta-loaded child Block files do not need conversion. This diagnostic and setting are not available before v0.5.0.
-- For `childScopeNotAllowed` (v0.5.0+), keep child and descendant Block files under configured `childDir` in class form. Every child-file `@scope`, including a theme wrapper, is an error for all settings. Loading a child `:scope` inside the root's `:scope` can produce the non-matching `:scope :scope`. Follow the [exact repair section](https://spiracss.jp/stylelint-rules/class-structure/#childScopeNotAllowed); do not move the root include or auto-rewrite CSS.
-- For `scopeOwnerAmbiguous` (v0.5.0+), follow the [ownership repair section](https://spiracss.jp/stylelint-rules/class-structure/#scopeOwnerAmbiguous). Identify the component via its filename/directory or declare a thematic wrapper in existing external-class configuration; do not invent ownership or disable structural checks.
-- `spiracss/property-placement` is config-sensitive. Resolve the effective config before moving properties.
-- `spiracss/page-layer` and `spiracss/rel-comments` can require file-path and cross-file checks; do not solve them from the warning text alone.
-- A message may include an `Auto-fix:` suggestion while the rule remains non-fixable by Stylelint. Follow the suggestion manually and verify with a fresh lint run.
-
-## HTML CLI routing
-
-For `INVALID_BASE_CLASS`, `MODIFIER_WITHOUT_BASE`, `UTILITY_WITHOUT_BASE`, `MULTIPLE_BASE_CLASSES`, `ELEMENT_WITHOUT_BLOCK_ANCESTOR`, `ELEMENT_PARENT_OF_BLOCK`, or variant/state errors, load [HTML CLI](https://spiracss.jp/tooling/html-cli/) and the relevant [configuration options](https://spiracss.jp/configuration/options/).
-
-For `DYNAMIC_CLASS_UNRESOLVED`, resolve the template binding first. Do not invent a replacement class or treat the element as classless from incomplete static input.
-
-For the 0.6.0 six-format engine, use these diagnostic routes. See [the source-aware HTML CLI reference](https://spiracss.jp/tooling/html-cli/#source-aware-engine-060) for API fields, composition rules, coverage and known parser boundaries.
-
-- `UNCLASSIFIED_CLASS_TOKEN` targets the later token, not the valid first base. Conditional violations apply only under the reported condition.
-- `SOURCE_RELATION_UNRESOLVED` means relevant static evidence is missing. Preserve dynamic behavior and provide the evidence or ask for intent. Do not delete or rename classes merely to silence it.
-- `MULTIPLE_ROOT_ELEMENTS` requires a decision about the intended root. Keep one component root, or use selection mode if the source intentionally contains multiple components. Valid class names are not the cause.
-- For duplicate HTML/WebC `class` or configured selector attributes, confirm the intended attribute in the original markup and rerun lint. Do not mechanically choose or delete one.
-- Vue `Class`, class property/attribute targets and differently spelled configured keys may remain unresolved with a generic reason. Confirm intent before changing them to `class`, because that can change runtime composition.
-- `PARSE_ERROR` means proven syntax failure. `PARSER_RUNTIME_ERROR` can mean a backend/resource failure or an unattributed conversion/source-relation constraint. Read its reason and repair. `CONFIG_INVALID` means invalid settings. Do not repair resource failures by renaming classes or removing dynamic behavior.
-- Do not invent missing source locations or use generated coordinates as original positions. A point-only failure has a zero-width range; proven offset zero and EOF remain valid. Positionless VS Code reports belong in output, not fabricated squiggles.
-- Source validation does not expand component props, slots or rendered DOM. Out-of-scope counts are not inspected coverage; unknown in-scope values are not pass. Formal syntax failures are blocked without legacy fallback. HTML Block design depth and leaf-Block rules are unchanged.
-- If a supplied HTML/WebC AST absorbs real following elements into raw text beyond their source closing tag, use the native CLI. Do not change valid text, naming or nesting, or claim lost elements were checked.
-- Unknown hidden-input type requires static evidence or hidden/non-hidden intent, not an added class. Do not turn class-composition or ownership uncertainty into a naming fix.
-- Dynamic configured variant/state data values remain unresolved. Configured dynamic ARIA is lint-valid in default data mode if no other rule is violated. Do not force a boolean-string rewrite that can change nullable absence.
-- `coverage.generationUnenumeratedSites` is generation information, not an error or a status change. Existing synchronous `GeneratedFile[]` APIs do not carry it; use preflight lint coverage.
-- Use `createMarkupEslintConfig(config, parser, files)` when combining ESLint cache with RegExp custom naming.
-- Standalone success does not establish host success, or vice versa. The documented Astro host exceeded 45 seconds at 70,000 elements with the SpiraCSS rule disabled. Confirm [the host limitation](https://spiracss.jp/tooling/html-cli/#astro-wide-input-verification-boundary) is acceptable and verify larger inputs in the user's environment.
-
-For `CONFIG_MISSING`, stop. Do not present fallback defaults as final project validation. A provisional command is valid only when explicitly accepted and must remain marked provisional.
-
-For `MULTIPLE_ROOT_ELEMENTS`, decide on one component root or intentional selection mode before generation; do not rename valid classes. For `UNBALANCED_HTML` or `MAX_DEPTH_EXCEEDED`, fix or simplify the input before attempting SCSS generation. `--ignore-structure-errors` does not make blocked input valid.
-
-## When to expand context
-
-Load [configuration troubleshooting](https://spiracss.jp/configuration/troubleshooting/) when the effective config cannot be resolved or the diagnostic appears inconsistent with it.
-
-Load [the workflow guide](https://spiracss.jp/guides/workflow/) when a fix spans generated files, `@rel` relationships, page/component boundaries, or more than one package.
-
-Load [component structure](https://spiracss.jp/architecture/components/structure/) when the error cannot be resolved locally without deciding whether a class is a Block, Element, Modifier, Utility, or External class.
-
-Use the [full reference](https://spiracss.jp/downloads/spiracss-ai-agent-doc.full.md) only for undocumented diagnostics, version migration, broad generation tasks, or unresolved documentation drift. It is a fallback reference, not the default context.
-
-## Completion criteria
-
-- The same lint command passes for the changed scope.
-- Config-dependent checks used the effective project config.
-- No unresolved, skipped, ignored, provisional, or downgraded result is silently reported as a clean pass.
-- Changes unrelated to the reported diagnostic were not introduced.
-- If the diagnostic and documentation disagree, the mismatch is reported with the rule, message key, versions, and URL.
+The project config overrides every document. If tool output disagrees with the documentation, follow the tool output and recheck the config. Report the mismatch with the rule or code, the installed versions, and the URL.

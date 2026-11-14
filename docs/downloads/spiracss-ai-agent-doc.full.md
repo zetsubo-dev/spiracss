@@ -1,6 +1,6 @@
 # SpiraCSS AI Agent Full Reference v0.6.0
 
-This is the optional full reference. Start with the [diagnostic-first routing guide](https://spiracss.jp/downloads/spiracss-ai-agent-doc.md) and load this file only when the current diagnostic and focused rule pages are insufficient.
+This is the optional full reference. Start with the [AI agent guide](https://spiracss.jp/downloads/spiracss-ai-agent-doc.md) and load this file only when the current diagnostic and focused rule pages are insufficient.
 The project config and current tool output remain authoritative. If they conflict with this reference, follow the tool output, re-check the config, and report the mismatch.
 
 ## 0. Source of Truth and Fix Guidance (must follow)

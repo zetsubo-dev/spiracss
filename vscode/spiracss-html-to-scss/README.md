@@ -25,6 +25,12 @@ This extension is designed to be used with the [SpiraCSS Design Principles](http
 - Reads naming and generator options from `spiracss.config.js`
 - Generation logic is powered by `@spiracss/html-cli`
 
+## Source-aware validation in 0.6.0
+
+Version 0.6.0 uses the shared HTML CLI engine for HTML, WebC, JSX, TSX, Astro, and Vue, selected by editor language or file format. Parser assets are bundled. Diagnostics show original UTF-16 ranges when proven, with reasons and repair conditions; reports without a proven position remain in Output without a fabricated squiggle.
+
+Generation reuses the parsed core document and stops by default on source violations or unresolved evidence. Dynamic configured data values can therefore produce different results from 0.5.1. Validation covers source, not component props forwarding, slots, rendered DOM, or complete language grammar. Placeholder insertion remains a separate static-HTML feature. See the [source-aware HTML CLI reference](https://spiracss.jp/tooling/html-cli/#source-aware-engine-060) for API and parser boundaries.
+
 ## Commands
 
 | Command                                            | Keybinding   |

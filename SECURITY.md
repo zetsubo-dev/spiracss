@@ -2,13 +2,13 @@
 
 ## Node.js 24 LTS
 
-Development is pinned to Node.js 24.22.3, and current source manifests require
-`>=24.22.3 <25`. The already-published v0.5.1 npm releases still declare
-`>=24.22.2 <25`; this development update does not republish or change those
+Development is pinned to Node.js 24.22.3, and v0.6.0 manifests require
+`>=24.22.3 <25`. The v0.5.1 npm releases still declare
+`>=24.22.2 <25`; v0.6.0 does not republish or change those
 artifacts. Use the newest available Node.js 24 patch, not an older patch that
 merely satisfies a package's minimum.
 
-Checked on 2026-11-12: the official distribution index lists 24.22.3 as the
+Checked on 2026-11-14: the official distribution index lists 24.22.3 as the
 latest Node.js 24 release, dated 2026-11-10, with `security: true` and OpenSSL
 3.5.9. The release blog dates the security release November 11. Its HTTP/2 and
 TLS/HTTPS fixes matter to affected server workloads; this is not evidence of

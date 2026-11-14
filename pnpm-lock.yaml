@@ -181,7 +181,7 @@ importers:
   vscode/spiracss-html-to-scss:
     dependencies:
       '@spiracss/html-cli':
-        specifier: workspace:^0.5.1
+        specifier: workspace:^0.6.0
         version: link:../../packages/html-cli
     devDependencies:
       '@types/mocha':

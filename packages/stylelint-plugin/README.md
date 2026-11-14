@@ -16,16 +16,16 @@ Beta release. Breaking changes may still occur.
 
 ## Requirements
 
-- Node.js >= 24.22.2 and < 25 (Node.js 24 LTS)
+- Node.js >= 24.22.3 and < 25 (Node.js 24 LTS; from 0.6.0)
 - Stylelint v17 or v18
 
-The published 0.5.1 minimum above is unchanged. Current development requires
-Node.js >= 24.22.3 and < 25; use the latest Node.js 24 security patch.
+Version 0.5.1 requires Node.js >= 24.22.2 and < 25.
+Use the latest Node.js 24 security patch.
 
 The development dependency uses Stylelint 18; Stylelint 17 remains supported for
 projects whose SCSS plugins and shared configs do not yet support 18. Check their
-peer dependencies before upgrading the whole lint toolchain. These requirements
-apply from 0.5.1; version 0.5.0 supports Stylelint 17 only.
+peer dependencies before upgrading the whole lint toolchain. Stylelint 18 support
+is available from 0.5.1; version 0.5.0 supports Stylelint 17 only.
 
 > Stylelint v16 users: use `@spiracss/stylelint-plugin@0.3.x`.
 

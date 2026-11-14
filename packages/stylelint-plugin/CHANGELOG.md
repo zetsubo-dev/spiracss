@@ -2,6 +2,18 @@
 
 All notable changes to this package will be documented in this file.
 
+## 0.6.0
+
+### Fixed
+
+- Attach selector parse failures to the failing source Rule, preserving repeated occurrences, line-level disable directives, and ancestor or scope locations. Report selector expansion-limit failures on the interrupted Rule without changing the 1,000-expansion cap.
+- Exclude empty-valued literal Sass nested property groups from parse failures in the six structural rules. `property-placement` and `interaction-properties` still report `selectorParseFailed` because the nested declarations are not checked, with guidance to flatten them into prefixed properties in the same owning rule while preserving all values. This does not add nested-property expansion or change existing limits for valued groups, interpolation, or whitespace variants.
+
+### Changed
+
+- Require Node.js >= 24.22.3 and < 25 and align development to 24.22.3. Stylelint 17 and 18 remain supported.
+- Remove unused internal paths and share existing selector handling without changing public APIs, configuration, or rule policies.
+
 ## 0.5.1
 
 ### Changed

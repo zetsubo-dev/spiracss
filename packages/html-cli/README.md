@@ -16,10 +16,10 @@ Beta release. Breaking changes may still occur.
 
 ## Requirements
 
-- Node.js >= 24.22.2 and < 25 (Node.js 24 LTS; from 0.5.1)
+- Node.js >= 24.22.3 and < 25 (Node.js 24 LTS; from 0.6.0)
 
-The published 0.5.1 minimum above is unchanged. Current development requires
-Node.js >= 24.22.3 and < 25; use the latest Node.js 24 security patch.
+Version 0.5.1 requires Node.js >= 24.22.2 and < 25.
+Use the latest Node.js 24 security patch.
 
 ## Install
 
@@ -62,9 +62,9 @@ Note: If you use npm, replace `pnpm exec` with `npx` or `npm exec`.
 
 HTML lint and HTML-to-SCSS require `spiracss.config.js` by default. If the project config is intentionally unavailable, pass `--allow-provisional` explicitly; the result uses fallback defaults and must not be treated as final project validation. Without that flag, the commands fail with `CONFIG_MISSING` (including JSON mode).
 
-## Unreleased source-aware engine
+## Source-aware engine in 0.6.0
 
-The development source adds HTML/WebC/JSX/TSX/Astro/Vue selection by extension or `--format`; stdin still defaults to HTML. This is not a claim that published 0.5.1 contains the new engine. Formal-parser failures do not fall back to text extraction.
+Version 0.6.0 adds HTML/WebC/JSX/TSX/Astro/Vue selection by extension or `--format`; stdin still defaults to HTML. Version 0.5.1 does not contain this engine. Formal-parser failures do not fall back to text extraction.
 
 `loadMarkupParsers(formats)` asynchronously loads invocation-local handles; `lintMarkup(source, { format, mode, parsers, config })` then runs synchronously. Resolve the project config with `loadProjectOptions()` first and reject missing/error config rather than accepting fallback defaults unintentionally. Existing synchronous APIs retain their signatures.
 

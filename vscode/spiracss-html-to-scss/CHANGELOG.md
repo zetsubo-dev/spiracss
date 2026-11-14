@@ -2,7 +2,7 @@
 
 All notable changes to this extension will be documented in this file.
 
-## Unreleased
+## 0.6.0
 
 ### Added
 
@@ -17,6 +17,12 @@ All notable changes to this extension will be documented in this file.
 - Declare the bundled l10n directory for the unenumerated-selector notification and existing dictionary translations. The same 10 existing message keys missing from the dictionaries still fall back to English.
 - Keep naming, scope generation, leaf Blocks, unlimited design-level Block depth, the VS Code minimum and existing files unchanged. Validation covers source rather than component props forwarding, slots, rendered DOM or complete language grammar.
 - Include updated bundled JavaScript and WASM third-party notices and pin development Node to 24.22.3.
+- Align the bundled `@spiracss/html-cli` dependency and extension version to 0.6.0.
+
+### Fixed
+
+- Use the shared validator's corrected WebC dynamic input type and finite attribute-object handling, retaining parser-owned first expression parsing and avoiding unrelated type diagnostics.
+- Avoid duplicate bare `@use` statements for the same URL despite quote or tab differences when merging `index.scss`. Preserve existing content and indentation, and leave content and modification time unchanged when no entries are missing. Multiline statements, comments, `as` or `with` clauses, trailing comments, and relative-URL resolution retain their existing limits.
 
 ## 0.5.1
 

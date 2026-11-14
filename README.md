@@ -44,6 +44,7 @@ Beta
 
 ## Monorepo Development
 
+- Version 0.6.0 requires Node.js >= 24.22.3 and < 25.
 - Node.js: 24.22.3 (Node.js 24 LTS; `.node-version`)
 - Package manager: `pnpm` (`pnpm-workspace.yaml`)
 - Install workspace dependencies from the repo root: `pnpm install`

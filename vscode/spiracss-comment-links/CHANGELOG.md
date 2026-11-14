@@ -2,6 +2,12 @@
 
 All notable changes to this extension will be documented in this file.
 
+## 0.6.0
+
+### Changed
+
+- Align the extension version with the monorepo release and the development and packaging Node.js pin to 24.22.3. The VS Code host requirement and comment-link behavior are unchanged.
+
 ## 0.5.1
 
 ### Changed

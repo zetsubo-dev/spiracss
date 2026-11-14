@@ -2,7 +2,7 @@
 
 All notable changes to this package will be documented in this file.
 
-## Unreleased
+## 0.6.0
 
 ### Added
 
@@ -21,7 +21,13 @@ All notable changes to this package will be documented in this file.
 - Treat dynamic configured data values as unresolved, so results can differ from published 0.5.1. Static valid and invalid values retain naming checks.
 - Keep HTML naming, ownership, leaf Blocks, unlimited design-level Block depth and SCSS scope policy unchanged. Validation covers source, not component props forwarding, slots, rendered DOM or complete language grammar.
 - Document the known Astro ESLint host limitation of 70,000 elements exceeding 45 seconds with the SpiraCSS rule disabled. Standalone completion does not establish large-input host support; see the README for host versions and boundaries.
-- Require Node.js >=24.22.3 <25 for the unreleased source and update bundled dependency notices. The published 0.5.1 minimum below is unchanged.
+- Require Node.js >=24.22.3 <25 and update bundled dependency notices. The historical 0.5.1 minimum below is unchanged.
+- Remove unused internal paths without changing public API signatures or configuration.
+
+### Fixed
+
+- Pass relevant WebC dynamic input types and finite attribute objects to the shared validator. Keep the first expression parse in the parser or host wrapper, and avoid unrelated type diagnostics and type-expression parsing.
+- Preserve existing comments, `@forward` statements, variables, and indentation when merging `index.scss`. Avoid adding duplicate bare `@use` statements for the same URL despite quote or tab differences, and leave content and modification time unchanged when no entries are missing. Multiline statements, comments, `as` or `with` clauses, trailing comments, and relative-URL resolution retain their existing limits.
 
 ## 0.5.1
 

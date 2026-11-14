@@ -8,7 +8,6 @@ import type { FileNameCase } from '../types'
 import { createLruCache } from '../utils/cache'
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { formatFileBase } from '../utils/formatting'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { normalizeCustomPattern } from '../utils/naming'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
@@ -19,14 +18,10 @@ import {
   markInteractionRules,
   markSharedRules
 } from '../utils/section'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { createSelectorParseTracker } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
-import {
-  splitSelectors,
-  stripGlobalSelector,
-  stripGlobalSelectorForRoot
-} from './spiracss-property-placement.selectors'
+import { getRootLocalSelectorTexts, stripGlobalSelector } from './spiracss-property-placement.selectors'
 import {
   extractLinkTargets,
   normalizeRelPath,
@@ -39,7 +34,6 @@ import { normalizeOptions } from './spiracss-rel-comments.options'
 import {
   findFirstBodyNode,
   findTopRelComment,
-  getFirstRuleNode,
   getFirstRuleNodeInScope,
   getRootScopeContainer,
   hasMetaLoadCss,
@@ -206,8 +200,7 @@ const rule = createRule(
       const { options, aliasRoots, childScssDir, commentPatterns, hasInvalidOptions } = getCache(reportInvalid)
       if (shouldValidate && hasInvalidOptions) return
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector)
       const pathExistsCache = createLruCache<string, boolean>(cacheSizes.path)
       const targetExistsCache = createLruCache<string, boolean>(cacheSizes.path)
       const checkPathExists = (candidate: string): boolean => {
@@ -222,7 +215,6 @@ const rule = createRule(
       const inScssDir = filePath.split(path.sep).includes(childScssDir)
       const containsRules = hasRuleNodes(root)
       const needsRulesCheck = !options.skip.noRules || containsRules
-      const firstRule = getFirstRuleNode(root)
       const projectRoot = (result.opts as { cwd?: string } | undefined)?.cwd ?? process.cwd()
       const aliasKeys = Object.keys(aliasRoots).filter((key) => {
         if (!ALIAS_KEY_PATTERN.test(key) || key === 'rel') return false
@@ -248,12 +240,8 @@ const rule = createRule(
         if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
         if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
         if (typeof rule.selector !== 'string') return
-        const selectorTexts = splitSelectors(rule.selector, selectorCache)
-        const localSelectors = selectorTexts
-          .map((selectorText) =>
-            stripGlobalSelectorForRoot(selectorText, selectorCache, cacheSizes.selector, { preserveCombinator: true })
-          )
-          .filter((selector): selector is string => Boolean(selector))
+        const selectorCache = selectorState.forNode(rule)
+        const localSelectors = getRootLocalSelectorTexts(rule.selector, selectorCache, cacheSizes.selector)
         if (localSelectors.length === 0) return
 
         const selectors = localSelectors.flatMap((selector) => selectorCache.parse(selector))
@@ -355,6 +343,7 @@ const rule = createRule(
           const isInteraction = interactionRules.has(rule)
           if (isShared && !options.require.child.shared) return
           if (isInteraction && !options.require.child.interaction) return
+          const selectorCache = selectorState.forNode(rule)
           const strippedSelector =
             stripGlobalSelector(rule.selector || '', selectorCache, cacheSizes.selector, {
               preserveCombinator: true
@@ -475,13 +464,12 @@ const rule = createRule(
         })
       }
 
-      if (selectorState.hasError()) {
-        const targetNode: Node = firstRule ?? root.first ?? root
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

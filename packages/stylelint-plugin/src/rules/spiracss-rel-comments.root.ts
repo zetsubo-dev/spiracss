@@ -81,11 +81,6 @@ const findFirstRuleNode = (nodes: Node[]): Rule | null => {
   return null
 }
 
-export const getFirstRuleNode = (root: Root): Rule | null => {
-  if (!root.nodes) return null
-  return findFirstRuleNode(root.nodes)
-}
-
 export const getRootScopeContainer = (rule: Rule): Root | AtRule => {
   let scope: AtRule | null = null
   let current: Node | undefined = rule.parent

@@ -32,16 +32,35 @@ async function readStdin(): Promise<string> {
 
 async function mergeIndex(dir: string, entries: string[]): Promise<void> {
   const file = path.join(dir, 'index.scss')
-  let cur: string[] = []
+  const useKey = (line: string): string => {
+    const normalized = line.trim()
+    const bare = /^@use\s+(['"])([^'"]+)\1\s*;$/.exec(normalized)
+    return bare ? bare[2] : normalized
+  }
+  const isUseLine = (line: string): boolean => /^@use\s/.test(line.trim())
+  let current = ''
   try {
-    const text = await fsp.readFile(file, 'utf8')
-    cur = text.split('\n')
+    current = await fsp.readFile(file, 'utf8')
   } catch {
     // no-op (create new if missing)
   }
-  const uses = new Set(cur.filter((l) => l.startsWith('@use')))
-  entries.forEach((e) => uses.add(e))
-  await fsp.writeFile(file, Array.from(uses).join('\n') + '\n', 'utf8')
+  const lines = current.split('\n')
+  const uses = new Set(lines.filter(isUseLine).map(useKey))
+  const missing = entries.filter((line) => {
+    const key = useKey(line)
+    if (uses.has(key)) return false
+    uses.add(key)
+    return true
+  })
+  if (missing.length === 0) return
+  let lastUseIndex = -1
+  lines.forEach((line, index) => {
+    if (isUseLine(line)) lastUseIndex = index
+  })
+  const insertAt = lastUseIndex + 1
+  let updated = [...lines.slice(0, insertAt), ...missing, ...lines.slice(insertAt)].join('\n')
+  if (!updated.endsWith('\n')) updated += '\n'
+  await fsp.writeFile(file, updated, 'utf8')
 }
 
 async function run(): Promise<void> {

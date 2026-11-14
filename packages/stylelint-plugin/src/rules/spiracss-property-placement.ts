@@ -3,13 +3,12 @@ import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { normalizeCustomPattern } from '../utils/naming'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule, isAtRule, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isRuleInsideAtRule, markInteractionContainers } from '../utils/section'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { createSelectorParseTracker, type SelectorParserCache } from '../utils/selector'
 import { getLowercasePolicyKeys } from '../utils/selector-policy'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
@@ -27,13 +26,12 @@ import {
   normalizeUnverifiedScopePrelude,
   parseMixinName,
   type PolicySets,
+  getRootLocalSelectorTexts,
   resolveSelectors,
   type SelectorAnalysis,
-  type SelectorInfo,
   splitSelectors,
   stripGlobalSelectorForRoot
 } from './spiracss-property-placement.selectors'
-import type { Options } from './spiracss-property-placement.types'
 import { createValueTokenHelpers } from './spiracss-property-placement.values'
 
 export { ruleName }
@@ -260,8 +258,7 @@ const rule = createRule(
       if (shouldValidate && hasInvalidOptions) return
 
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector, { reportNestedPropertyGroups: true })
       const resolvedSelectorsCache = new WeakMap<Rule, string[]>()
       const ruleAnalysisCache = new WeakMap<
         Rule,
@@ -275,7 +272,6 @@ const rule = createRule(
       const wrapperKeyCache = new WeakMap<Node, string>()
       const atRuleIds = new WeakMap<AtRule, number>()
       let atRuleIdSeed = 0
-      let firstRule: Rule | null = null
       const responsiveMixins = new Set(options.responsive.mixins.map((name) => name.toLowerCase()))
       const { checkMarginSide, parsePositionValue, isZeroMinSize } = createValueTokenHelpers()
       const selectorPolicy = options.selectorPolicy
@@ -300,7 +296,7 @@ const rule = createRule(
       const externalRootRules = new WeakSet<Rule>()
       const declsByRule = new Map<Rule, Declaration[]>()
 
-      const isExternalRootSelectors = (selectors: ReturnType<typeof selectorCache.parse>): boolean => {
+      const isExternalRootSelectors = (selectors: ReturnType<SelectorParserCache['parse']>): boolean => {
         if (selectors.length === 0) return false
         return selectors.every((sel) => {
           let hasClass = false
@@ -333,20 +329,12 @@ const rule = createRule(
       root.walk((node) => {
         if (node.type === 'rule') {
           const rule = node as Rule
-          if (!firstRule) firstRule = rule
           if (isRuleInsideAtRule(rule, NON_SELECTOR_AT_RULE_NAMES)) return
           if (findParentRule(rule)) return
           if (!isRootBlockRule(rule)) return
           if (typeof rule.selector !== 'string') return
-          const selectorTexts = splitSelectors(rule.selector, selectorCache)
-          // Root block detection strips :global parts while preserving leading combinators.
-          const localSelectors = selectorTexts
-            .map((selector) =>
-              stripGlobalSelectorForRoot(selector, selectorCache, options.cache.selector, {
-                preserveCombinator: true
-              })
-            )
-            .filter((selector): selector is string => Boolean(selector))
+          const selectorCache = selectorState.forNode(rule)
+          const localSelectors = getRootLocalSelectorTexts(rule.selector, selectorCache, options.cache.selector)
           if (localSelectors.length === 0) return
           const selectors = localSelectors.flatMap((selector) => selectorCache.parse(selector))
           const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
@@ -382,13 +370,16 @@ const rule = createRule(
         commentPatterns,
         (_comment, parent) => isRule(parent) && (rootBlockRules.has(parent) || externalRootRules.has(parent))
       )
-      const selectorExplosion = { example: null as string | null, limit: 0 }
-      const reportSelectorExplosion = (selector: string, limit: number): void => {
-        if (!selectorExplosion.example) selectorExplosion.example = selector
-        selectorExplosion.limit = limit
+      const reportSelectorExplosion = (rule: Rule, limit: number): void => {
+        stylelint.utils.report({
+          ruleName,
+          result,
+          node: rule,
+          message: messages.selectorResolutionSkipped(limit, rule.selector)
+        })
       }
       const getResolvedSelectors = (rule: Rule): string[] =>
-        resolveSelectors(rule, selectorCache, resolvedSelectorsCache, reportSelectorExplosion)
+        resolveSelectors(rule, selectorState, resolvedSelectorsCache, reportSelectorExplosion)
       const resolveContextSelector = (rule: Rule | null | undefined): string => {
         if (!rule || typeof rule.selector !== 'string') return '(unknown)'
         const resolved = getResolvedSelectors(rule)
@@ -409,7 +400,14 @@ const rule = createRule(
         const analysis: SelectorAnalysis =
           resolvedSelectors.length === 0
             ? { status: 'skip' }
-            : analyzeSelectorList(resolvedSelectors, selectorCache, options, policySets, patterns, classifyOptions)
+            : analyzeSelectorList(
+                resolvedSelectors,
+                selectorState.forNode(rule),
+                options,
+                policySets,
+                patterns,
+                classifyOptions
+              )
         const entry = {
           resolvedSelectors,
           analysis,
@@ -482,7 +480,8 @@ const rule = createRule(
         return key
       }
 
-      const shouldCheckMarginSideForTagSelectors = (resolvedSelectors: string[]): boolean => {
+      const shouldCheckMarginSideForTagSelectors = (rule: Rule, resolvedSelectors: string[]): boolean => {
+        const selectorCache = selectorState.forNode(rule)
         const localSelectors = resolvedSelectors.flatMap((selectorText) =>
           splitSelectors(selectorText, selectorCache)
             .map((selector) => stripGlobalSelectorForRoot(selector, selectorCache, options.cache.selector))
@@ -553,7 +552,9 @@ const rule = createRule(
 
         const { resolvedSelectors, analysis, resolvedSelectorText } = getRuleAnalysis(rule)
         const checkTagMarginSideOnly =
-          analysis.status === 'skip' && options.margin.tags && shouldCheckMarginSideForTagSelectors(resolvedSelectors)
+          analysis.status === 'skip' &&
+          options.margin.tags &&
+          shouldCheckMarginSideForTagSelectors(rule, resolvedSelectors)
         if (analysis.status === 'skip' && !checkTagMarginSideOnly) continue
         if (analysis.status === 'error') {
           stylelint.utils.report({
@@ -742,22 +743,12 @@ const rule = createRule(
         })
       }
 
-      if (selectorState.hasError()) {
-        const targetNode = firstRule || root
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
-        })
-      }
-      if (selectorExplosion.example) {
-        const targetNode = firstRule || root
-        stylelint.utils.report({
-          ruleName,
-          result,
-          node: targetNode,
-          message: messages.selectorResolutionSkipped(selectorExplosion.limit, selectorExplosion.example)
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

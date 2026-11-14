@@ -8,64 +8,65 @@ import {
   evaluateClassExpression,
   type ExpressionNode
 } from '../expressions'
-import type { SourceIndex } from '../source'
 import type { Guard, MarkupAttribute, MarkupConfig, MarkupDocument, MarkupElement } from '../types'
 
 export type WebcExpression = { node?: ExpressionNode; reason?: string; syntaxOffset?: number }
 export type WebcExpressions = Map<number, WebcExpression>
 
-function relevantNames(config: MarkupConfig): Set<string> {
-  const policy = createMarkupRuleContext(config).policy
-  return new Set(['class', ...policy.variant.dataKeys, policy.state.dataKey, ...policy.state.ariaKeys])
+function relevantAttributes(config: MarkupConfig): (node: MarkupElement, name: string) => boolean {
+  const { policy, htmlLint } = createMarkupRuleContext(config)
+  const names = new Set(['class', ...policy.variant.dataKeys, policy.state.dataKey, ...policy.state.ariaKeys])
+  // Keep this predicate a superset of the validator's needsInputType check.
+  return (node, name) =>
+    names.has(name) ||
+    (name === 'type' &&
+      node.tag === 'input' &&
+      !node.component &&
+      (!node.namespace || node.namespace === 'http://www.w3.org/1999/xhtml') &&
+      htmlLint.classlessTagCheck &&
+      !htmlLint.classlessTagAllowlist.has('input') &&
+      (node.attributes.some((attribute) => attribute.name === '@attributes') ||
+        node.classes.every((alternative) => alternative.tokens.length === 0)))
 }
 
 /** First parse of WebC expressions: invoked by the CLI parser or host parser wrapper. */
-export function parseWebcAttributeExpressions(
-  attributes: MarkupAttribute[],
-  config: MarkupConfig,
-  index: SourceIndex
-): WebcExpressions {
-  const relevant = relevantNames(config)
+export function parseWebcAttributeExpressions(document: MarkupDocument, config: MarkupConfig): WebcExpressions {
+  const relevant = relevantAttributes(config)
+  const { index } = document
   const expressions: WebcExpressions = new Map()
-  for (const attribute of attributes) {
-    if (
-      !(attribute.name.startsWith(':') && relevant.has(attribute.name.slice(1))) &&
-      !['@attributes', 'webc:if', 'webc:elseif'].includes(attribute.name)
-    )
-      continue
-    if (!attribute.value && attribute.name === '@attributes') continue
-    const raw = index.source.slice(...attribute.valueRange)
-    if (raw !== attribute.value) {
-      expressions.set(attribute.range[0], {
-        reason: 'Entity-encoded WebC expression needs an exact decoded-to-source expression map.'
-      })
-      continue
-    }
-    index.metrics.expressionParses += 1
-    try {
-      expressions.set(attribute.range[0], {
-        node: parseExpression(attribute.value, { allowAwaitOutsideFunction: true }) as unknown as ExpressionNode
-      })
-    } catch (error) {
-      expressions.set(attribute.range[0], {
-        reason: error instanceof Error ? error.message : String(error),
-        syntaxOffset:
-          error && typeof error === 'object' && 'pos' in error && typeof error.pos === 'number' ? error.pos : 0
-      })
-    }
-  }
-  return expressions
-}
-
-export function allMarkupAttributes(document: MarkupDocument): MarkupAttribute[] {
-  const result: MarkupAttribute[] = []
   const stack = [...document.roots]
   while (stack.length) {
     const node = stack.pop()!
-    result.push(...node.attributes)
     stack.push(...node.children)
+    for (const attribute of node.attributes) {
+      if (
+        !(attribute.name.startsWith(':') && relevant(node, attribute.name.slice(1))) &&
+        !['@attributes', 'webc:if', 'webc:elseif'].includes(attribute.name)
+      )
+        continue
+      if (!attribute.value && attribute.name === '@attributes') continue
+      const raw = index.source.slice(...attribute.valueRange)
+      if (raw !== attribute.value) {
+        expressions.set(attribute.range[0], {
+          reason: 'Entity-encoded WebC expression needs an exact decoded-to-source expression map.'
+        })
+        continue
+      }
+      index.metrics.expressionParses += 1
+      try {
+        expressions.set(attribute.range[0], {
+          node: parseExpression(attribute.value, { allowAwaitOutsideFunction: true }) as unknown as ExpressionNode
+        })
+      } catch (error) {
+        expressions.set(attribute.range[0], {
+          reason: error instanceof Error ? error.message : String(error),
+          syntaxOffset:
+            error && typeof error === 'object' && 'pos' in error && typeof error.pos === 'number' ? error.pos : 0
+        })
+      }
+    }
   }
-  return result
+  return expressions
 }
 
 /** WebC merges class/style in source order and deduplicates class values.
@@ -76,7 +77,7 @@ export function applyWebcBindings(
   config: MarkupConfig,
   expressions: WebcExpressions
 ): MarkupDocument {
-  const relevant = relevantNames(config)
+  const relevant = relevantAttributes(config)
   const contextFor = (attribute: MarkupAttribute) => ({
     index: document.index,
     offset: attribute.valueRange[0],
@@ -86,7 +87,8 @@ export function applyWebcBindings(
   })
   const entryFor = (attribute: MarkupAttribute) => {
     const entry = expressions.get(attribute.range[0])
-    if (entry?.syntaxOffset !== undefined)
+    // Keep malformed :type unresolved so irrelevant type expressions do not block the whole document.
+    if (attribute.name !== ':type' && entry?.syntaxOffset !== undefined)
       throw Object.assign(new SyntaxError(entry.reason), { pos: attribute.valueRange[0] + entry.syntaxOffset })
     return entry
   }
@@ -166,7 +168,7 @@ export function applyWebcBindings(
         classes = combineClasses(classes, node.classes)
         continue
       }
-      if (!attribute.name.startsWith(':') || !relevant.has(attribute.name.slice(1))) continue
+      if (!attribute.name.startsWith(':') || !relevant(node, attribute.name.slice(1))) continue
       const name = attribute.name.slice(1)
       const entry = entryFor(attribute)
       const context = contextFor(attribute)
@@ -201,7 +203,7 @@ export function applyWebcBindings(
           const name = property.key?.name ?? property.key?.value
           if (name === 'class')
             classes = evaluateClassExpression(property.value as ExpressionNode, contextFor(attribute), 'scalar')
-          else if (typeof name === 'string' && relevant.has(name))
+          else if (typeof name === 'string' && relevant(node, name))
             node.attributes.push({
               name,
               value: '',
@@ -213,7 +215,7 @@ export function applyWebcBindings(
       } else {
         document.outOfScope += 1
         classes = classes.map((alternative) => ({ ...alternative, ownerUnknown: true }))
-        for (const value of node.attributes) if (relevant.has(value.name)) value.overwrittenBy = attribute.range
+        for (const value of node.attributes) if (relevant(node, value.name)) value.overwrittenBy = attribute.range
       }
     }
     node.classes = classes.map((alternative) => {

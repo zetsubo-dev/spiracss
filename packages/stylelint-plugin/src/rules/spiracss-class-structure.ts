@@ -5,20 +5,19 @@ import stylelint from 'stylelint'
 
 import { NON_SELECTOR_AT_RULE_NAMES, ROOT_WRAPPER_NAMES } from '../utils/constants'
 import { formatFileBase } from '../utils/formatting'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isAmbiguousScope, isScopeOwnerRule } from '../utils/scope-context'
 import { getCommentText, isRuleInsideAtRule, safeTestPattern } from '../utils/section'
-import { createSelectorCacheWithErrorFlag, type SelectorParserCache } from '../utils/selector'
+import { createSelectorParseTracker, type SelectorParserCache } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isNumber, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { ruleName } from './spiracss-class-structure.constants'
 import { messages } from './spiracss-class-structure.messages'
 import { normalizeOptions } from './spiracss-class-structure.options'
 import { buildPatterns, buildSelectorPolicyData, formatNamingHint } from './spiracss-class-structure.patterns'
-import { isRootBlockRule, markInteractionRules, markSharedRules } from './spiracss-class-structure.sections'
+import { markInteractionRules, markSharedRules } from './spiracss-class-structure.sections'
 import {
   analyzeRootSelector,
   collectRootBlockNames,
@@ -29,7 +28,11 @@ import {
 } from './spiracss-class-structure.selectors'
 import type { Kind } from './spiracss-class-structure.types'
 import { hasMetaLoadCss } from './spiracss-rel-comments.root'
-import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
+import {
+  getRootLocalSelectorTexts,
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 
 export { ruleName }
 
@@ -149,8 +152,7 @@ const rule = createRule(
       if (shouldValidate && hasInvalidOptions) return
 
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector)
       const ruleKinds = new WeakMap<Rule, Kind>()
       const elementDepths = new WeakMap<Rule, number>()
       const blockDepths = new WeakMap<Rule, number>()
@@ -168,15 +170,9 @@ const rule = createRule(
       const fileBaseRaw = fileName && fileName.endsWith('.scss') ? path.basename(fileName, '.scss') : ''
       const fileBase = fileBaseRaw.endsWith('.module') ? fileBaseRaw.slice(0, -'.module'.length) : fileBaseRaw
 
-      const parseStrippedSelectors = (selectorText: string): ReturnType<SelectorParserCache['parse']> => {
-        const selectorTexts = splitSelectors(selectorText, selectorCache)
-        const localSelectors = selectorTexts
-          .map((selector) =>
-            stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector, { preserveCombinator: true })
-          )
-          .filter((selector): selector is string => Boolean(selector))
-        // Preserve leading combinators so relative selectors (e.g. :global(...) > .block)
-        // do not count as root Block definitions.
+      const parseStrippedSelectors = (rule: Rule): ReturnType<SelectorParserCache['parse']> => {
+        const selectorCache = selectorState.forNode(rule)
+        const localSelectors = getRootLocalSelectorTexts(rule.selector, selectorCache, cacheSizes.selector)
         return localSelectors.flatMap((selector) => selectorCache.parse(selector))
       }
 
@@ -186,6 +182,7 @@ const rule = createRule(
         if (!lowered.includes(':global') && !lowered.includes(':local')) return false
         const hasNestedRules = (rule.nodes ?? []).some((node) => node.type === 'rule')
         if (!hasNestedRules) return false
+        const selectorCache = selectorState.forNode(rule)
 
         // Wrapper detection should look for root Blocks without being affected by
         // leading combinators introduced by stripping `:global(...)`.
@@ -240,7 +237,7 @@ const rule = createRule(
         topLevelRules.push(rule)
         if (typeof rule.selector !== 'string') return
 
-        const selectors = parseStrippedSelectors(rule.selector)
+        const selectors = parseStrippedSelectors(rule)
         if (selectors.length === 0) return
         const rootBlocks = collectRootBlockNames(selectors, options, patterns)
         if (rootBlocks.length === 0) return
@@ -297,7 +294,7 @@ const rule = createRule(
 
         const isShared = sharedRules.has(rule)
         const isInteraction = interactionRules.has(rule)
-        const selectors = parseStrippedSelectors(rule.selector)
+        const selectors = parseStrippedSelectors(rule)
         if (selectors.length === 0) return
         if (!hasSpiraClassForRootCheck && hasValidSpiraClass(selectors, options, patterns)) {
           hasSpiraClassForRootCheck = true
@@ -376,7 +373,7 @@ const rule = createRule(
           if (duplicateRootBlockRules.has(rule)) return
           if (typeof rule.selector !== 'string') return
 
-          const selectors = parseStrippedSelectors(rule.selector)
+          const selectors = parseStrippedSelectors(rule)
           if (selectors.length === 0) return
           selectors.forEach((sel) => {
             const { hasAnyClass, hasRootBlock, hasOtherBlock, hasRootBlockCompoundExternal } = analyzeRootSelector(
@@ -471,7 +468,7 @@ const rule = createRule(
         if (requiresScope && isComponentRoot) {
           topLevelRules.forEach((rule) => {
             if (!rootBlockRules.has(rule) || isScopeOwnerRule(rule)) return
-            const blockNames = collectRootBlockNames(parseStrippedSelectors(rule.selector), options, patterns)
+            const blockNames = collectRootBlockNames(parseStrippedSelectors(rule), options, patterns)
             if (blockNames.length === 0) return
             stylelint.utils.report({
               ruleName,
@@ -499,13 +496,12 @@ const rule = createRule(
         }
       }
 
-      if (selectorState.hasError()) {
-        const targetNode = firstRule || root
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

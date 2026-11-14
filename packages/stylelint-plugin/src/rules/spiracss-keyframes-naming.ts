@@ -5,12 +5,11 @@ import stylelint from 'stylelint'
 
 import type { NamingOptions, WordCase } from '../types'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import { isAtRule, isComment, isInsideKeyframes, isKeyframesAtRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { isRuleInRootScope } from '../utils/section'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { createSelectorParseTracker, type SelectorParseTracker } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isNumber, isPlainObject, isRegExp, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
@@ -20,7 +19,7 @@ import { ruleName } from './spiracss-keyframes-naming.constants'
 import { messages } from './spiracss-keyframes-naming.messages'
 import { normalizeOptions } from './spiracss-keyframes-naming.options'
 import type { Options } from './spiracss-keyframes-naming.types'
-import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
+import { getRootLocalSelectorTexts } from './spiracss-property-placement.selectors'
 
 export { ruleName }
 
@@ -113,7 +112,7 @@ const isKeyframesAtEnd = (node: AtRule, root: Root): boolean => {
 
 const resolveRootBlockName = (
   root: Root,
-  selectorCache: ReturnType<typeof createSelectorCacheWithErrorFlag>['cache'],
+  selectorState: SelectorParseTracker,
   options: Options,
   patterns: ReturnType<typeof buildPatterns>
 ): string | null => {
@@ -122,12 +121,8 @@ const resolveRootBlockName = (
     if (rootBlock) return
     if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
     if (typeof rule.selector !== 'string') return
-    const selectorTexts = splitSelectors(rule.selector, selectorCache)
-    const localSelectors = selectorTexts
-      .map((selectorText) =>
-        stripGlobalSelectorForRoot(selectorText, selectorCache, options.cache.selector, { preserveCombinator: true })
-      )
-      .filter((selectorText): selectorText is string => Boolean(selectorText))
+    const selectorCache = selectorState.forNode(rule)
+    const localSelectors = getRootLocalSelectorTexts(rule.selector, selectorCache, options.cache.selector)
     if (localSelectors.length === 0) return
     const selectors = localSelectors.flatMap((selectorText) => selectorCache.parse(selectorText))
     const rootBlocks = collectRootBlockNames(selectors, options as unknown as ClassStructureOptions, patterns)
@@ -155,7 +150,7 @@ const matchAny = (text: string, patterns: RegExp[]): boolean =>
 
 const collectElementNames = (
   root: Root,
-  selectorCache: ReturnType<typeof createSelectorCacheWithErrorFlag>['cache'],
+  selectorState: SelectorParseTracker,
   options: Options,
   patterns: ReturnType<typeof buildPatterns>
 ): Set<string> => {
@@ -164,12 +159,8 @@ const collectElementNames = (
     if (isInsideKeyframes(rule)) return
     const selector = typeof rule.selector === 'string' ? rule.selector : ''
     if (!selector) return
-    const selectorTexts = splitSelectors(selector, selectorCache)
-    const localSelectors = selectorTexts
-      .map((selectorText) =>
-        stripGlobalSelectorForRoot(selectorText, selectorCache, options.cache.selector, { preserveCombinator: true })
-      )
-      .filter((selectorText): selectorText is string => Boolean(selectorText))
+    const selectorCache = selectorState.forNode(rule)
+    const localSelectors = getRootLocalSelectorTexts(selector, selectorCache, options.cache.selector)
     if (localSelectors.length === 0) return
     const selectors = localSelectors.flatMap((selectorText) => selectorCache.parse(selectorText))
     selectors.forEach((sel) => {
@@ -287,15 +278,14 @@ const rule = createRule(
         return
       }
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector)
       const patterns = buildPatterns(options as unknown as ClassStructureOptions, options.cache, reportInvalid)
-      const elementNames = collectElementNames(root, selectorCache, options, patterns)
+      const elementNames = collectElementNames(root, selectorState, options, patterns)
       const sharedFiles = options.shared.files
       const ignorePatterns = options.ignore.patterns
 
       const rootBlockName =
-        options.block.source === 'file' ? null : resolveRootBlockName(root, selectorCache, options, patterns)
+        options.block.source === 'file' ? null : resolveRootBlockName(root, selectorState, options, patterns)
       const fileBlockName = options.block.source === 'selector' ? null : resolveFileBlockName(filePath, patterns)
       const blockName =
         options.block.source === 'selector'
@@ -381,12 +371,12 @@ const rule = createRule(
         }
       })
 
-      if (selectorState.hasError()) {
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: root,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

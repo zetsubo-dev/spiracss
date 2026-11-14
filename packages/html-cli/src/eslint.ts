@@ -8,12 +8,7 @@ import { SourceIndex } from './markup/source'
 import type { MarkupConfig, MarkupFormat } from './markup/types'
 import { createMarkupRuleContext, type HtmlLintIssue } from './generator-core'
 import { markupFailure } from './markup/failures'
-import {
-  allMarkupAttributes,
-  applyWebcBindings,
-  parseWebcAttributeExpressions,
-  type WebcExpressions
-} from './markup/adapters/webc'
+import { applyWebcBindings, parseWebcAttributeExpressions, type WebcExpressions } from './markup/adapters/webc'
 
 const codes = [
   'INVALID_BASE_CLASS',
@@ -152,7 +147,7 @@ export function createMarkupEslintConfig(config: MarkupConfig, parser: unknown, 
       const parsed = host.parseForESLint(source, options)
       if (sourceFormat(typeof options?.filePath === 'string' ? options.filePath : undefined) !== 'webc') return parsed
       const document = adaptHtmlAst(source, parsed.ast, config)
-      const expressions = parseWebcAttributeExpressions(allMarkupAttributes(document), config, document.index)
+      const expressions = parseWebcAttributeExpressions(document, config)
       return {
         ...parsed,
         services: {

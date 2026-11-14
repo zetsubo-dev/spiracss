@@ -2,7 +2,7 @@ import { parseHtmlSource } from './adapters/html'
 import { parseJsxSource } from './adapters/jsx'
 import { parseAstroSource, type AstroCompiler } from './adapters/astro'
 import { parseVueSource } from './adapters/vue'
-import { allMarkupAttributes, applyWebcBindings, parseWebcAttributeExpressions } from './adapters/webc'
+import { applyWebcBindings, parseWebcAttributeExpressions } from './adapters/webc'
 import { createRequire } from 'node:module'
 import { existsSync } from 'node:fs'
 import * as path from 'node:path'
@@ -42,11 +42,7 @@ export async function loadMarkupParsers(formats: readonly MarkupFormat[]): Promi
               available: true,
               parse: (source, mode, config) => {
                 const document = parseHtmlSource(source, mode, config)
-                return applyWebcBindings(
-                  document,
-                  config,
-                  parseWebcAttributeExpressions(allMarkupAttributes(document), config, document.index)
-                )
+                return applyWebcBindings(document, config, parseWebcAttributeExpressions(document, config))
               }
             }
           : format === 'jsx' || format === 'tsx'

@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+import stylelint from 'stylelint'
 import classStructure from '../dist/esm/rules/spiracss-class-structure.js'
 import { invalidNameMessage, testRule, withClassMode } from './rule-test-utils.js'
 
@@ -57,6 +59,18 @@ describe('spiracss/class-structure - edge cases', () => {
 })
 
 describe('spiracss/class-structure - selector parse failure', () => {
+  const multipleFailures = `
+.block-name {
+  > : {
+    color: red;
+  }
+}
+
+:root {
+  > : {
+    color: blue;
+  }
+}`
   testRule({
     plugins: [classStructure],
     ruleName: classStructure.ruleName,
@@ -87,20 +101,13 @@ describe('spiracss/class-structure - selector parse failure', () => {
         ]
       },
       {
-        code: `
-.block-name {
-  > : {
-    color: red;
-  }
-}
-
-:root {
-  > : {
-    color: blue;
-  }
-}`,
-        description: 'emit a single warning even when multiple selectors fail',
+        code: multipleFailures,
+        description: 'emit one warning per parsed rule when multiple selectors fail',
         warnings: [
+          {
+            message:
+              'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `> :`. (spiracss/class-structure)'
+          },
           {
             message:
               'Failed to parse one or more selectors, so some checks were skipped. Ensure selectors are valid CSS/SCSS or avoid interpolation in selectors. Example: `> :`. (spiracss/class-structure)'
@@ -108,6 +115,24 @@ describe('spiracss/class-structure - selector parse failure', () => {
         ]
       }
     ]
+  })
+
+  it('reports both failing rules at their original locations', async () => {
+    const result = await stylelint.lint({
+      code: multipleFailures,
+      config: {
+        plugins: [classStructure],
+        rules: { [classStructure.ruleName]: [true, withClassMode({})] }
+      },
+      customSyntax: 'postcss-scss'
+    })
+    assert.deepEqual(
+      result.results[0]!.warnings.map((warning) => [warning.line, warning.column]),
+      [
+        [3, 3],
+        [9, 3]
+      ]
+    )
   })
 })
 

@@ -148,14 +148,20 @@ async function writeSafely(file: string, content: string): Promise<boolean> {
 
 /* ---------- index.scss merge ---------- */
 const normalizeUseLine = (line: string): string => line.trim()
-const isUseLine = (line: string): boolean => normalizeUseLine(line).startsWith('@use ')
+const useKey = (line: string): string => {
+  const normalized = normalizeUseLine(line)
+  const bare = /^@use\s+(['"])([^'"]+)\1\s*;$/.exec(normalized)
+  return bare ? bare[2] : normalized
+}
+const isUseLine = (line: string): boolean => /^@use\s/.test(normalizeUseLine(line))
 const extractUseLines = (lines: string[]): string[] => {
   const uses: string[] = []
   const seen = new Set<string>()
   lines.forEach((line) => {
     const normalized = normalizeUseLine(line)
-    if (!isUseLine(normalized) || seen.has(normalized)) return
-    seen.add(normalized)
+    const key = useKey(normalized)
+    if (!isUseLine(normalized) || seen.has(key)) return
+    seen.add(key)
     uses.push(normalized)
   })
   return uses
@@ -173,8 +179,8 @@ async function mergeIndex(dir: string, entries: string[]): Promise<boolean> {
 
   const current = await fsp.readFile(file, 'utf8')
   const lines = current.split('\n')
-  const existingUses = new Set(extractUseLines(lines))
-  const missingUses = incomingUses.filter((line) => !existingUses.has(line))
+  const existingUses = new Set(extractUseLines(lines).map(useKey))
+  const missingUses = incomingUses.filter((line) => !existingUses.has(useKey(line)))
   if (missingUses.length === 0) return false
 
   let lastUseIndex = -1

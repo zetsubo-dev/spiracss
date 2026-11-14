@@ -2,7 +2,7 @@ import type { Rule } from 'postcss'
 
 import { createSharedCacheAccessor } from '../utils/cache'
 import { findParentRule } from '../utils/postcss-helpers'
-import type { SelectorParserCache } from '../utils/selector'
+import type { SelectorParserCache, SelectorParseTracker } from '../utils/selector'
 import { buildSelectorPolicySetsBase, type SelectorPolicySetsBase } from '../utils/selector-policy'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
@@ -622,6 +622,20 @@ export const splitSelectors = (selector: string, cache: SelectorParserCache): st
   return selectors.map((sel) => sel.toString().trim()).filter((text) => text.length > 0)
 }
 
+// Preserve leading combinators so relative selectors do not count as root Block definitions.
+export const getRootLocalSelectorTexts = (
+  selector: string,
+  selectorCache: SelectorParserCache,
+  cacheSize: number
+): string[] =>
+  splitSelectors(selector, selectorCache)
+    .map((selectorText) =>
+      stripGlobalSelectorForRoot(selectorText, selectorCache, cacheSize, {
+        preserveCombinator: true
+      })
+    )
+    .filter((selectorText): selectorText is string => Boolean(selectorText))
+
 const combineSelectors = (parent: string, child: string): string | null => {
   const trimmedChild = child.trim()
   if (!trimmedChild) return null
@@ -633,9 +647,9 @@ const combineSelectors = (parent: string, child: string): string | null => {
 
 export const resolveSelectors = (
   rule: Rule,
-  cache: SelectorParserCache,
+  tracker: SelectorParseTracker,
   resolvedCache: WeakMap<Rule, string[]>,
-  reportExplosion?: (selector: string, limit: number) => void
+  reportExplosion?: (rule: Rule, limit: number) => void
 ): string[] => {
   const cached = resolvedCache.get(rule)
   if (cached !== undefined) return cached
@@ -661,7 +675,7 @@ export const resolveSelectors = (
       resolvedCache.set(currentRule, resolved)
       continue
     }
-    const currentSelectors = splitSelectors(currentRule.selector, cache)
+    const currentSelectors = splitSelectors(currentRule.selector, tracker.forNode(currentRule))
     if (!resolved) {
       resolved = currentSelectors
       resolvedCache.set(currentRule, resolved)
@@ -673,32 +687,20 @@ export const resolveSelectors = (
       continue
     }
     if (resolved.length * currentSelectors.length > MAX_RESOLVED_SELECTORS) {
-      reportExplosion?.(currentRule.selector, MAX_RESOLVED_SELECTORS)
+      reportExplosion?.(currentRule, MAX_RESOLVED_SELECTORS)
       resolved = []
       resolvedCache.set(currentRule, resolved)
       continue
     }
     // Expand selectors with a hard cap to keep worst-case cost bounded.
     const combined: string[] = []
-    let exceeded = false
     resolved.forEach((parent) => {
-      if (exceeded) return
       currentSelectors.forEach((child) => {
-        if (exceeded) return
         const combinedSelector = combineSelectors(parent, child)
         if (!combinedSelector) return
         combined.push(combinedSelector)
-        if (combined.length > MAX_RESOLVED_SELECTORS) {
-          exceeded = true
-        }
       })
     })
-    if (exceeded) {
-      reportExplosion?.(currentRule.selector, MAX_RESOLVED_SELECTORS)
-      resolved = []
-      resolvedCache.set(currentRule, resolved)
-      continue
-    }
     resolved = combined
     resolvedCache.set(currentRule, resolved)
   }

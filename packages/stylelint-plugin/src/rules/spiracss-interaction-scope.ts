@@ -2,12 +2,11 @@ import type { AtRule, Root, Rule } from 'postcss'
 import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
-import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, POLICY_SCHEMA } from '../utils/option-schema'
 import { findParentRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { safeTestPattern } from '../utils/section'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { createSelectorParseTracker } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isBoolean, isPlainObject, isString, isStringArray } from '../utils/validate'
 import { ruleName } from './spiracss-interaction-scope.constants'
@@ -130,13 +129,11 @@ const rule = createRule(
       if (shouldValidate && hasInvalidOptions) return
 
       const checkedTailTargets = new WeakSet<AtRule>()
-      let firstRule: Rule | null = null
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector)
 
       root.walkRules((rule: Rule) => {
-        if (!firstRule) firstRule = rule
+        const selectorCache = selectorState.forNode(rule)
         const selector: string = rule.selector || ''
 
         const atRootNode = findAtRootAncestor(rule)
@@ -204,13 +201,12 @@ const rule = createRule(
         })
       })
 
-      if (selectorState.hasError()) {
-        const targetNode = firstRule || root
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

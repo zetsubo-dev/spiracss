@@ -5,22 +5,25 @@ import stylelint from 'stylelint'
 
 import { PSEUDO_ELEMENTS } from '../utils/constants'
 import { ROOT_WRAPPER_NAMES } from '../utils/constants'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, COMMENTS_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import { findParentRule, isContainer, isInsideKeyframes, isRule } from '../utils/postcss-helpers'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { getCommentText, isRuleInRootScope, markInteractionContainers, safeTestPattern } from '../utils/section'
 import { isInsideNonSameElementPseudo } from '../utils/selector'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { createSelectorParseTracker } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
-import { isPlainObject, isString, isStringArray } from '../utils/validate'
+import { isPlainObject, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
 import { collectRootBlockNames } from './spiracss-class-structure.selectors'
 import type { ClassifyOptions } from './spiracss-class-structure.types'
 import { ruleName } from './spiracss-interaction-properties.constants'
 import { messages } from './spiracss-interaction-properties.messages'
 import { normalizeOptions } from './spiracss-interaction-properties.options'
-import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
+import {
+  getRootLocalSelectorTexts,
+  splitSelectors,
+  stripGlobalSelectorForRoot
+} from './spiracss-property-placement.selectors'
 
 export { ruleName }
 
@@ -248,8 +251,7 @@ const rule = createRule(
 
       const options = normalizeOptions(rawOptions, reportInvalid)
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector, { reportNestedPropertyGroups: true })
       const classifyOptions: ClassifyOptions = {
         external: options.external,
         naming: options.naming
@@ -328,12 +330,8 @@ const rule = createRule(
         if (rootBlockName) return
         if (!isRuleInRootScope(rule, ROOT_WRAPPER_NAMES)) return
         if (typeof rule.selector !== 'string') return
-        const selectorTexts = splitSelectors(rule.selector, selectorCache)
-        const localSelectors = selectorTexts
-          .map((selectorText) =>
-            stripGlobalSelectorForRoot(selectorText, selectorCache, cacheSizes.selector, { preserveCombinator: true })
-          )
-          .filter((selector): selector is string => Boolean(selector))
+        const selectorCache = selectorState.forNode(rule)
+        const localSelectors = getRootLocalSelectorTexts(rule.selector, selectorCache, cacheSizes.selector)
         if (localSelectors.length === 0) return
         const selectors = localSelectors.flatMap((selector) => selectorCache.parse(selector))
         const rootBlocks = collectRootBlockNames(selectors, classifyOptions, patterns)
@@ -346,6 +344,7 @@ const rule = createRule(
       const resolveKeys = (rule: Rule): string[] => {
         const cached = ruleKeys.get(rule)
         if (cached) return cached
+        const selectorCache = selectorState.forNode(rule)
         const selector = typeof rule.selector === 'string' ? rule.selector : ''
         const stripped = stripGlobalSelectorForRoot(selector, selectorCache, cacheSizes.selector, {
           preserveCombinator: true
@@ -511,12 +510,12 @@ const rule = createRule(
         })
       })
 
-      if (selectorState.hasError()) {
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: root,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

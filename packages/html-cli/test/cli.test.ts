@@ -3,7 +3,7 @@ import { spawnSync } from 'child_process'
 import { promises as fsp } from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { after, before, describe, it } from 'mocha'
+import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 
 const cliSource = path.resolve('src/cli.ts')
 const lintSource = path.resolve('src/html-lint.ts')
@@ -409,4 +409,94 @@ describe('CLI config safety contract', () => {
       await fsp.rm(path.join(projectDir, 'spiracss.config.js'), { force: true })
     }
   })
+})
+
+describe('CLI index merge', () => {
+  let projectDir: string
+  let htmlPath: string
+  let indexPath: string
+  beforeEach(async () => {
+    projectDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'spiracss-index-merge-'))
+    htmlPath = path.join(projectDir, 'component.html')
+    indexPath = path.join(projectDir, 'scss', 'index.scss')
+    await fsp.mkdir(path.dirname(indexPath))
+    await fsp.writeFile(path.join(projectDir, 'spiracss.config.js'), 'module.exports = {}\n', 'utf8')
+    await fsp.writeFile(
+      htmlPath,
+      '<section class="sample-section"><div class="child-card"><p class="body"></p></div></section>',
+      'utf8'
+    )
+  })
+  afterEach(async () => {
+    await fsp.rm(projectDir, { recursive: true, force: true })
+  })
+  const generate = () => {
+    const result = runTsCli(cliSource, ['--root', htmlPath], projectDir)
+    assert.strictEqual(result.status, 0, result.stderr)
+  }
+
+  it('preserves all existing lines and inserts after the last use', async () => {
+    const current = "// Keep the hand-written note.\n@forward './tokens';\n$accent: red;\n@use './existing-card';\n"
+    await fsp.writeFile(indexPath, current, 'utf8')
+    generate()
+    assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), `${current}@use 'child-card';\n`)
+    const modified = (await fsp.stat(indexPath)).mtimeMs
+    generate()
+    assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), `${current}@use 'child-card';\n`)
+    assert.strictEqual((await fsp.stat(indexPath)).mtimeMs, modified)
+  })
+
+  for (const quote of ["'", '"']) {
+    for (const whitespace of [' ', '\t']) {
+      it(`does not rewrite a complete index with ${quote} quoted uses and ${JSON.stringify(whitespace)} whitespace`, async () => {
+        const current = `// Preserve exact bytes.\n@use${whitespace}${quote}child-card${quote};`
+        await fsp.writeFile(indexPath, current, 'utf8')
+        const old = new Date('2020-01-01T00:00:00Z')
+        await fsp.utimes(indexPath, old, old)
+        const modified = (await fsp.stat(indexPath)).mtimeMs
+        generate()
+        assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), current)
+        assert.strictEqual((await fsp.stat(indexPath)).mtimeMs, modified)
+      })
+    }
+  }
+
+  it('prepends missing uses when no use exists', async () => {
+    const current = '// Keep this note.\n$accent: red;'
+    await fsp.writeFile(indexPath, current, 'utf8')
+    generate()
+    assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), `@use 'child-card';\n${current}\n`)
+  })
+
+  it('keeps the existing bare-use merge output', async () => {
+    await fsp.writeFile(indexPath, "@use './existing-card';\n", 'utf8')
+    generate()
+    assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), "@use './existing-card';\n@use 'child-card';\n")
+  })
+
+  it('creates an index when none exists', async () => {
+    generate()
+    assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), "@use 'child-card';\n")
+  })
+
+  it('retains an indented use and inserts immediately after it', async () => {
+    await fsp.writeFile(indexPath, "// Before\n  @use './existing-card';\n// After\n", 'utf8')
+    generate()
+    assert.strictEqual(
+      await fsp.readFile(indexPath, 'utf8'),
+      "// Before\n  @use './existing-card';\n@use 'child-card';\n// After\n"
+    )
+  })
+
+  for (const current of [
+    '@use "child-card" as card;',
+    '@use "child-card" with ($accent: red);',
+    '@use "child-card"; // Keep'
+  ]) {
+    it(`does not equate a non-bare use with generated uses (${current})`, async () => {
+      await fsp.writeFile(indexPath, current, 'utf8')
+      generate()
+      assert.strictEqual(await fsp.readFile(indexPath, 'utf8'), `${current}\n@use 'child-card';\n`)
+    })
+  }
 })

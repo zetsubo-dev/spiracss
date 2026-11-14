@@ -9,14 +9,12 @@ import type {
   Options as ClassStructureOptions,
   SelectorPolicy as ClassStructureSelectorPolicy
 } from './rules/spiracss-class-structure.types'
-import type { Options as InteractionPropertiesOptions } from './rules/spiracss-interaction-properties.types'
 import type {
   Options as InteractionScopeOptions,
   SelectorPolicy as InteractionScopeSelectorPolicy
 } from './rules/spiracss-interaction-scope.types'
 import type { Options as KeyframesNamingOptions } from './rules/spiracss-keyframes-naming.types'
 import type { Options as PropertyPlacementOptions } from './rules/spiracss-property-placement.types'
-import type { Options as PseudoNestingOptions } from './rules/spiracss-pseudo-nesting.types'
 import type { Options as RelCommentsOptions } from './rules/spiracss-rel-comments.types'
 import type { CacheSizes, FileNameCase, NamingOptions } from './types'
 import { isAliasRoots, isPlainObject } from './utils/validate'

@@ -1,3 +1,4 @@
+import type { Rule } from 'postcss'
 import selectorParser, {
   type Attribute,
   type ClassName,
@@ -35,9 +36,10 @@ export type SelectorParserCache = {
 }
 
 export type SelectorParseTracker = {
-  cache: SelectorParserCache
-  hasError: () => boolean
-  getErrorSelector: () => string | null
+  /** Returns a parser that attributes failures to the given Rule. */
+  forNode: (node: Rule) => SelectorParserCache
+  /** Stores the first failed selector string for each Rule. */
+  failures: Map<Rule, string>
 }
 
 const DEFAULT_SAME_ELEMENT_PSEUDOS = new Set([':not', ':is', ':where'])
@@ -135,17 +137,21 @@ export const createSelectorParserCache = (
   return { parse }
 }
 
-export const createSelectorCacheWithErrorFlag = (maxSize = DEFAULT_CACHE_SIZE): SelectorParseTracker => {
-  let hasError = false
-  let errorSelector: string | null = null
-  const cache = createSelectorParserCache((selector) => {
-    hasError = true
-    if (!errorSelector) errorSelector = selector
-  }, maxSize)
+export const isSassNestedPropertyGroup = (selector: string): boolean =>
+  /^[-_a-zA-Z][-_a-zA-Z0-9]*:$/.test(selector.trim())
+
+export const createSelectorParseTracker = (
+  maxSize = DEFAULT_CACHE_SIZE,
+  { reportNestedPropertyGroups = false }: { reportNestedPropertyGroups?: boolean } = {}
+): SelectorParseTracker => {
+  const failures = new Map<Rule, string>()
   return {
-    cache,
-    hasError: () => hasError,
-    getErrorSelector: () => errorSelector
+    forNode: (node) =>
+      createSelectorParserCache((selector) => {
+        if (!reportNestedPropertyGroups && isSassNestedPropertyGroup(node.selector)) return
+        if (!failures.has(node)) failures.set(node, selector)
+      }, maxSize),
+    failures
   }
 }
 

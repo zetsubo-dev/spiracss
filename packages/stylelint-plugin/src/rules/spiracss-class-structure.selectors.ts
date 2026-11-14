@@ -1,4 +1,3 @@
-import type { Node as PostcssNode, Rule } from 'postcss'
 import type { ClassName, Node as SelectorNode, Selector } from 'postcss-selector-parser'
 
 import {
@@ -345,7 +344,7 @@ const reportBlockGrandchildElementViolation = (ctx: ProcessContext, kind: Kind, 
  * @returns Structural kind used for parent/child depth tracking, or null when ignored.
  */
 export const processSelector = (sel: Selector, ctx: ProcessContext): Kind | null => {
-  const { parentKind, parentDepth, report, options, patterns, policyData, namingHint } = ctx
+  const { parentKind, parentDepth, report, options, patterns, namingHint } = ctx
   const { classes, hasNesting, firstCombinator, combinatorCount } = collectSelectorSummary(sel)
 
   const compounds = collectCompoundNodes(sel)

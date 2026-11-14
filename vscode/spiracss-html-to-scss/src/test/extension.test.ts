@@ -558,9 +558,49 @@ suite('SpiraCSS HTML to SCSS Extension Test Suite', () => {
       await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
 
       const merged = fs.readFileSync(indexFile, 'utf8')
-      const childUses = merged.match(/@use "ChildBox";/g) ?? []
+      const childUses = merged.match(/@use (['"])ChildBox\1;/g) ?? []
       assert.strictEqual(childUses.length, 1, 'Existing @use entries should not be duplicated')
+      assert.ok(merged.includes('@use "ChildBox";'), 'Existing quote style should be preserved')
       assert.ok(merged.includes("@use 'ExtraBox';"), 'Missing @use entries should be added')
+    } finally {
+      removePath(rootFile)
+      removePath(childDir)
+    }
+  })
+
+  test('index.scss preserves tab-separated uses and inserts new entries after them', async function () {
+    this.timeout(10000)
+
+    const htmlFile = path.join(fixturesDir, 'html/index-merge.html')
+    const docDir = path.dirname(htmlFile)
+    const childScssDir = 'scss-test'
+    const childDir = path.join(docDir, childScssDir)
+    const indexFile = path.join(childDir, 'index.scss')
+    const rootFile = path.join(docDir, 'MergeBox.scss')
+
+    removePath(rootFile)
+    removePath(childDir)
+
+    fs.mkdirSync(childDir, { recursive: true })
+    fs.writeFileSync(indexFile, '@use\t"ChildBox";\n', 'utf8')
+
+    try {
+      await openAndSelectAll(htmlFile)
+
+      const ext = vscode.extensions.getExtension('spiracss.spiracss-html-to-scss')
+      assert.ok(ext)
+      await ext.activate()
+
+      await vscode.commands.executeCommand('extension.generateSpiracssScssFromRoot')
+
+      const merged = fs.readFileSync(indexFile, 'utf8')
+      const childUses = merged.match(/@use\s+(['"])ChildBox\1\s*;/g) ?? []
+      assert.strictEqual(childUses.length, 1, 'Existing @use entries should not be duplicated')
+      assert.ok(merged.includes('@use\t"ChildBox";'), 'Existing tab-separated use should be preserved')
+      assert.ok(
+        merged.indexOf("@use 'ExtraBox';") > merged.indexOf('@use\t"ChildBox";'),
+        'Missing @use entries should be inserted after the existing tab-separated use'
+      )
     } finally {
       removePath(rootFile)
       removePath(childDir)

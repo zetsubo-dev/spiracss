@@ -3,11 +3,10 @@ import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
 import { normalizeCacheSizes } from '../utils/cache'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { hasScopeAncestor } from '../utils/scope-context'
-import { collectCompoundSegments, createSelectorCacheWithErrorFlag, type SelectorParserCache } from '../utils/selector'
+import { collectCompoundSegments, createSelectorParseTracker, type SelectorParserCache } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption } from '../utils/stylelint'
 import { isPlainObject } from '../utils/validate'
 import { ruleName } from './spiracss-pseudo-nesting.constants'
@@ -99,15 +98,12 @@ const rule = createRule(
         reportInvalid
       )
 
-      let firstRule: Rule | null = null
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector)
       root.walkRules((rule: Rule) => {
-        if (!firstRule) firstRule = rule
         const selector: string = rule.selector || ''
         if (!selector.includes(':')) return
 
-        const violations = collectViolations(selector, selectorCache, hasScopeAncestor(rule))
+        const violations = collectViolations(selector, selectorState.forNode(rule), hasScopeAncestor(rule))
         if (violations.length === 0) return
 
         violations.forEach(({ index, endIndex }) => {
@@ -122,13 +118,12 @@ const rule = createRule(
         })
       })
 
-      if (selectorState.hasError()) {
-        const targetNode = firstRule || root
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: targetNode,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

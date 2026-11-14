@@ -2,14 +2,16 @@
 
 // @assets/css/home.scss
 
-.home-section {
-  @include meta.load-css('scss');
+@scope (.home-section) {
+  :scope {
+    @include meta.load-css('scss');
 
-  > .home-hero {
-    // @rel/scss/home-hero.scss
-  }
+    > .home-hero {
+      // @rel/scss/home-hero.scss
+    }
 
-  > .home-feature {
-    // @rel/scss/home-feature.scss
+    > .home-feature {
+      // @rel/scss/home-feature.scss
+    }
   }
 }

@@ -1,6 +1,7 @@
 import stylelint from 'stylelint'
 
 import { getRuleDocsUrl } from './rule-docs'
+import { isSassNestedPropertyGroup } from './selector'
 
 const DEFAULT_CODE_MAX_CHARS = 120
 const DEFAULT_LIST_MAX_CHARS = 200
@@ -60,12 +61,17 @@ const normalizeSelectorExample = (example: RuleMessageArg | undefined): string |
 export const formatSelectorParseFailed = (example?: RuleMessageArg): string => {
   const normalized = normalizeSelectorExample(example)
   if (!normalized) return SELECTOR_PARSE_FAILED
+  if (isSassNestedPropertyGroup(normalized)) {
+    return (
+      `Sass nested property group ${formatCode(normalized, { maxChars: 80 })} is not analyzed by this rule, ` +
+      'so the declarations inside it were not checked. ' +
+      'Flatten the group into prefixed properties in the same owning rule, preserving all values.'
+    )
+  }
   return `${SELECTOR_PARSE_FAILED} Example: ${formatCode(normalized, {
     maxChars: 80
   })}.`
 }
-
-export const selectorParseFailedArgs = (example?: string | null): RuleMessageArgs => (example ? [example] : [])
 
 const trimTo = (value: string, maxChars: number): string => {
   if (maxChars <= 0) return ''

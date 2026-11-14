@@ -5,11 +5,10 @@ import type { RuleContext } from 'stylelint'
 import stylelint from 'stylelint'
 
 import { NON_SELECTOR_AT_RULE_NAMES } from '../utils/constants'
-import { selectorParseFailedArgs } from '../utils/messages'
 import { CACHE_SCHEMA, EXTERNAL_SCHEMA, NAMING_SCHEMA } from '../utils/option-schema'
 import { getRuleDocsUrl } from '../utils/rule-docs'
 import { getCommentText, isRuleInsideAtRule } from '../utils/section'
-import { createSelectorCacheWithErrorFlag } from '../utils/selector'
+import { createSelectorParseTracker } from '../utils/selector'
 import { createPlugin, createRule, reportInvalidOption, validateOptionsArrayFields } from '../utils/stylelint'
 import { isPlainObject, isString, isStringArray } from '../utils/validate'
 import { buildPatterns, classify } from './spiracss-class-structure.patterns'
@@ -17,7 +16,7 @@ import { ruleName } from './spiracss-page-layer.constants'
 import { messages } from './spiracss-page-layer.messages'
 import { normalizeOptions } from './spiracss-page-layer.options'
 import type { Options } from './spiracss-page-layer.types'
-import { splitSelectors, stripGlobalSelectorForRoot } from './spiracss-property-placement.selectors'
+import { getRootLocalSelectorTexts } from './spiracss-property-placement.selectors'
 import { extractLinkTargets, normalizeRelPath, resolvePathCandidates } from './spiracss-rel-comments.alias'
 import { findFirstBodyNode } from './spiracss-rel-comments.root'
 
@@ -62,19 +61,6 @@ const isWithinDir = (target: string, rootDir: string): boolean => {
 
 const resolveComponentRoots = (projectRoot: string, options: Options): string[] =>
   options.paths.components.map((dir) => (path.isAbsolute(dir) ? dir : path.resolve(projectRoot, dir)))
-
-const getSelectorTexts = (
-  selector: string,
-  selectorCache: ReturnType<typeof createSelectorCacheWithErrorFlag>['cache'],
-  cacheSize: number
-): string[] =>
-  splitSelectors(selector, selectorCache)
-    .map((selectorText) =>
-      stripGlobalSelectorForRoot(selectorText, selectorCache, cacheSize, {
-        preserveCombinator: true
-      })
-    )
-    .filter((selectorText): selectorText is string => Boolean(selectorText))
 
 const findDirectChildBlock = (
   selector: Selector,
@@ -192,8 +178,7 @@ const rule = createRule(
       if (!isPageEntry) return
 
       const cacheSizes = options.cache
-      const selectorState = createSelectorCacheWithErrorFlag(cacheSizes.selector)
-      const selectorCache = selectorState.cache
+      const selectorState = createSelectorParseTracker(cacheSizes.selector)
       const componentRoots = resolveComponentRoots(projectRoot, options)
       const baseDir = path.dirname(absoluteFilePath)
 
@@ -216,8 +201,9 @@ const rule = createRule(
       root.walkRules((ruleNode: Rule) => {
         if (isRuleInsideAtRule(ruleNode, NON_SELECTOR_AT_RULE_NAMES)) return
         if (typeof ruleNode.selector !== 'string') return
+        const selectorCache = selectorState.forNode(ruleNode)
 
-        const selectorTexts = getSelectorTexts(ruleNode.selector, selectorCache, cacheSizes.selector)
+        const selectorTexts = getRootLocalSelectorTexts(ruleNode.selector, selectorCache, cacheSizes.selector)
         if (selectorTexts.length === 0) return
 
         const selectors = selectorTexts.flatMap((selectorText) => selectorCache.parse(selectorText))
@@ -263,12 +249,12 @@ const rule = createRule(
         }
       })
 
-      if (selectorState.hasError()) {
+      for (const [node, selector] of selectorState.failures) {
         stylelint.utils.report({
           ruleName,
           result,
-          node: root,
-          message: messages.selectorParseFailed(...selectorParseFailedArgs(selectorState.getErrorSelector()))
+          node,
+          message: messages.selectorParseFailed(selector)
         })
       }
     }

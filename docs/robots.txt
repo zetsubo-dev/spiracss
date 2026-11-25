@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://spiracss.jp/sitemap-index.xml
